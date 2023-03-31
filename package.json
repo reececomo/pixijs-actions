@@ -1,15 +1,18 @@
 {
   "name": "pixi-actions",
-  "version": "1.0.6",
-  "description": "An Actions system for easy chainable animations of DisplayObjects.",
+  "version": "1.0.0",
+  "description": "An actions system for PixiJS based on SpriteKit's SKActions. Forked from srpatel/pixi-actions.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc --build",
     "clean": "tsc --build --clean"
   },
-  "repository": "https://github.com/srpatel/pixi-actions",
-  "author": "sunil patel <sunil@xikka.com>",
+  "repository": "https://github.com/reececomo/pixi-actions",
+  "authors": [
+    "sunil patel <sunil@xikka.com>",
+    "Reece Como <reece.como@gmail.com>"
+  ],
   "license": "MIT",
   "keywords": [
     "pixi",

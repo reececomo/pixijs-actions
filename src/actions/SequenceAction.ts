@@ -1,28 +1,28 @@
-import * as PIXI from 'pixi.js';
-import Action from './Action';
+import { Action } from '../Action';
 
-export default class Sequence extends Action {
+export class SequenceAction extends Action {
 	index: number = 0;
-	actions: Array<Action>;
-	
-	constructor(...actions: Array<Action>) {
-		super();
+	actions: Action[];
+
+	constructor(actions: Action[]) {
+		super(undefined, undefined);
 		this.actions = actions;
 	}
-	
-	tick(delta: number): boolean {
+
+	public tick(delta: number): boolean {
 		// If empty, we are done!
 		if (this.index == this.actions.length)
 			return true;
-		
+
 		// Otherwise, tick the first element
 		if (this.actions[this.index].tick(delta)) {
 			this.index++;
 		}
 	}
-	
-	reset() {
+
+	public reset() {
 		super.reset();
+
 		this.index = 0;
 		for (const i in this.actions) {
 			this.actions[i].reset();
