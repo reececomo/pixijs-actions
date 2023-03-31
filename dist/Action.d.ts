@@ -6,7 +6,7 @@ export declare abstract class Action {
     /** Set a global default timing mode. */
     static DefaultTimingMode: TimingModeFn;
     /** All currently running actions. */
-    protected static actions: Action[];
+    static actions: Action[];
     static sequence(actions: Action[]): Action;
     static group(actions: Action[]): Action;
     static repeat(action: Action, repeats: number): Action;
@@ -24,13 +24,15 @@ export declare abstract class Action {
     static scaleBy(target: PIXI.DisplayObject, x: number, y: number, duration: number, timingMode?: TimingModeFn): Action;
     static rotateTo(target: PIXI.DisplayObject, rotation: number, duration: number, timingMode?: TimingModeFn): Action;
     static rotateBy(target: PIXI.DisplayObject, rotation: number, duration: number, timingMode?: TimingModeFn): Action;
+    /** Clear all actions with this target. */
     static clearTargetActions(target: PIXI.DisplayObject | undefined): void;
+    /** Clear all actions. */
     static clearAllActions(): void;
+    /** Play an action. */
     protected static play(action: Action): Action;
+    /** Pause an action. */
     protected static pause(action: Action): Action;
-    /**
-     * Tick all actions forward.
-     */
+    /** Tick all actions forward. */
     static tick(delta: number): void;
     time: number;
     duration: number;
@@ -48,4 +50,88 @@ export declare abstract class Action {
     queue(next: Action): this;
     reset(): this;
     stop(): this;
+}
+export declare class SequenceAction extends Action {
+    index: number;
+    actions: Action[];
+    constructor(actions: Action[]);
+    tick(delta: number): boolean;
+    reset(): this;
+}
+export declare class ScaleToAction extends Action {
+    protected startX: number;
+    protected startY: number;
+    protected x: number;
+    protected y: number;
+    constructor(target: PIXI.DisplayObject, x: number, y: number, duration: number, timingMode?: TimingModeFn);
+    tick(delta: number): boolean;
+}
+export declare class ScaleByAction extends Action {
+    protected startX: number;
+    protected startY: number;
+    protected x: number;
+    protected y: number;
+    constructor(target: PIXI.DisplayObject, x: number, y: number, duration: number, timingMode?: TimingModeFn);
+    tick(delta: number): boolean;
+}
+export declare class RunBlockAction extends Action {
+    protected block: () => any;
+    constructor(block: () => void);
+    tick(delta: number): boolean;
+}
+export declare class RotateToAction extends Action {
+    protected startRotation: number;
+    protected rotation: number;
+    constructor(target: PIXI.DisplayObject, rotation: number, duration: number, timingMode?: TimingModeFn);
+    tick(delta: number): boolean;
+}
+export declare class RotateByAction extends Action {
+    protected startRotation: number;
+    protected rotation: number;
+    constructor(target: PIXI.DisplayObject, rotation: number, duration: number, timingMode?: TimingModeFn);
+    tick(delta: number): boolean;
+}
+export declare class RepeatAction extends Action {
+    protected action: Action;
+    protected maxRepeats: number;
+    protected n: number;
+    /**
+     * @param action Targeted action.
+     * @param repeats A negative value indicates looping forever.
+     */
+    constructor(action: Action, repeats: number);
+    tick(delta: number): boolean;
+    reset(): this;
+}
+export declare class MoveToAction extends Action {
+    protected startX: number;
+    protected startY: number;
+    protected x: number;
+    protected y: number;
+    constructor(target: PIXI.DisplayObject, x: number, y: number, duration: number, timingMode?: TimingModeFn);
+    tick(delta: number): boolean;
+}
+export declare class MoveByAction extends Action {
+    protected startX: number;
+    protected startY: number;
+    protected x: number;
+    protected y: number;
+    constructor(target: PIXI.DisplayObject, x: number, y: number, duration: number, timingMode?: TimingModeFn);
+    tick(delta: number): boolean;
+}
+export declare class GroupAction extends Action {
+    protected index: number;
+    protected actions: Action[];
+    constructor(actions: Action[]);
+    tick(delta: number): boolean;
+    reset(): this;
+}
+export declare class FadeToAction extends Action {
+    protected startAlpha: number;
+    protected alpha: number;
+    constructor(target: PIXI.DisplayObject, alpha: number, duration: number, timingMode?: TimingModeFn);
+    tick(delta: number): boolean;
+}
+export declare class DelayAction extends Action {
+    tick(delta: number): boolean;
 }

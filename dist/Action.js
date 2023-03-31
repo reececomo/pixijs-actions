@@ -1,20 +1,12 @@
 import { ActionTimingMode } from './ActionTimingMode';
-import { DelayAction } from './actions/DelayAction';
-import { FadeToAction } from './actions/FadeToAction';
-import { GroupAction } from './actions/GroupAction';
-import { MoveByAction } from './actions/MoveByAction';
-import { MoveToAction } from './actions/MoveToAction';
-import { RepeatAction } from './actions/RepeatAction';
-import { RotateByAction } from './actions/RotateByAction';
-import { RotateToAction } from './actions/RotateToAction';
-import { RunBlockAction } from './actions/RunBlockAction';
-import { ScaleByAction } from './actions/ScaleByAction';
-import { ScaleToAction } from './actions/ScaleToAction';
-import { SequenceAction } from './actions/SequenceAction';
 export class Action {
-    // Instance methods:
+    //
+    // ----------------- INSTANCE METHODS -----------------
+    //
     constructor(target, duration) {
-        // --------------------- INSTANCE:
+        //
+        // ----------------- INSTANCE PROPERTIES -----------------
+        //
         this.time = 0;
         this.done = false;
         this.timingMode = Action.DefaultTimingMode;
@@ -22,7 +14,9 @@ export class Action {
         this.target = target;
         this.duration = duration;
     }
-    // Shortcuts:
+    //
+    // ----------------- BUILT-INS -----------------
+    //
     static sequence(actions) {
         return new SequenceAction(actions);
     }
@@ -58,8 +52,9 @@ export class Action {
     }
     static remove(target) {
         return this.runBlock(() => {
-            if (target.parent != null)
+            if (target.parent) {
                 target.parent.removeChild(target);
+            }
         });
     }
     static delay(duration) {
@@ -80,6 +75,10 @@ export class Action {
     static rotateBy(target, rotation, duration, timingMode) {
         return new RotateByAction(target, rotation, duration, timingMode);
     }
+    //
+    // ----------------- METHODS -----------------
+    //
+    /** Clear all actions with this target. */
     static clearTargetActions(target) {
         for (let i = this.actions.length - 1; i >= 0; i--) {
             const action = this.actions[i];
@@ -88,13 +87,16 @@ export class Action {
             }
         }
     }
+    /** Clear all actions. */
     static clearAllActions() {
         this.actions = [];
     }
+    /** Play an action. */
     static play(action) {
         this.actions.push(action);
         return action;
     }
+    /** Pause an action. */
     static pause(action) {
         const index = this.actions.indexOf(action);
         if (index >= 0) {
@@ -102,15 +104,13 @@ export class Action {
         }
         return action;
     }
-    /**
-     * Tick all actions forward.
-     */
+    /** Tick all actions forward. */
     static tick(delta) {
         for (let i = this.actions.length - 1; i >= 0; i--) {
             const action = this.actions[i];
             // If the action is targeted, but is no longer on the stage
             // we remove its actions.
-            if (action.target !== undefined) {
+            if (action.target) {
                 if (action.target.parent === undefined) {
                     this.actions.splice(i, 1);
                     continue;
@@ -161,22 +161,257 @@ export class Action {
         return this;
     }
 }
+//
+// ----------------- STATC -----------------
+//
 /** Optionally check a boolean property with this name on display objects. */
 Action.PausedProperty = 'paused';
 /** Set a global default timing mode. */
 Action.DefaultTimingMode = ActionTimingMode.linear;
 /** All currently running actions. */
 Action.actions = [];
+/** Helper method to check if a target is paused. */
 function isTargetPaused(target) {
     var _a;
     let next = target;
     // Check each parent.
-    while (next !== undefined) {
-        if (((_a = next[Action.PausedProperty]) !== null && _a !== void 0 ? _a : false) === true) {
+    while (next) {
+        if (Action.PausedProperty !== undefined && ((_a = next[Action.PausedProperty]) !== null && _a !== void 0 ? _a : false) === true) {
             return true;
         }
         next = next.parent;
     }
     return false;
+}
+//
+// ----------------- BUILT-IN ACTION DEFINITIONS -----------------
+//
+export class SequenceAction extends Action {
+    constructor(actions) {
+        super(undefined, 
+        // Total duration:
+        actions.reduce((total, action) => total + action.duration, 0));
+        this.index = 0;
+        this.actions = actions;
+    }
+    tick(delta) {
+        // If empty, we are done!
+        if (this.index == this.actions.length)
+            return true;
+        // Otherwise, tick the first element
+        if (this.actions[this.index].tick(delta)) {
+            this.index++;
+        }
+        return false;
+    }
+    reset() {
+        super.reset();
+        this.index = 0;
+        for (const i in this.actions) {
+            this.actions[i].reset();
+        }
+        return this;
+    }
+}
+export class ScaleToAction extends Action {
+    constructor(target, x, y, duration, timingMode = Action.DefaultTimingMode) {
+        super(target, duration);
+        this.timingMode = timingMode;
+        this.x = x;
+        this.y = y;
+    }
+    tick(delta) {
+        if (this.time === 0) {
+            this.startX = this.target.scale.x;
+            this.startY = this.target.scale.y;
+        }
+        this.time += delta;
+        const factor = this.easedTimeDistance;
+        this.target.scale.set(this.startX + (this.x - this.startX) * factor, this.startY + (this.y - this.startY) * factor);
+        return this.timeDistance >= 1;
+    }
+}
+export class ScaleByAction extends Action {
+    constructor(target, x, y, duration, timingMode = Action.DefaultTimingMode) {
+        super(target, duration);
+        this.timingMode = timingMode;
+        this.x = x;
+        this.y = y;
+    }
+    tick(delta) {
+        if (this.time === 0) {
+            this.startX = this.target.scale.x;
+            this.startY = this.target.scale.y;
+        }
+        this.time += delta;
+        const factor = this.easedTimeDistance;
+        this.target.scale.set(this.startX + this.x * factor, this.startY + this.y * factor);
+        return this.timeDistance >= 1;
+    }
+}
+export class RunBlockAction extends Action {
+    constructor(block) {
+        super(undefined, 0);
+        this.block = block;
+    }
+    tick(delta) {
+        this.block.call(this);
+        return true;
+    }
+}
+export class RotateToAction extends Action {
+    constructor(target, rotation, duration, timingMode = Action.DefaultTimingMode) {
+        super(target, duration);
+        this.timingMode = timingMode;
+        this.rotation = rotation;
+    }
+    tick(delta) {
+        if (this.time === 0) {
+            this.startRotation = this.target.rotation;
+        }
+        this.time += delta;
+        const factor = this.easedTimeDistance;
+        this.target.rotation = this.startRotation + (this.rotation - this.startRotation) * factor;
+        return this.timeDistance >= 1;
+    }
+}
+export class RotateByAction extends Action {
+    constructor(target, rotation, duration, timingMode = Action.DefaultTimingMode) {
+        super(target, duration);
+        this.timingMode = timingMode;
+        this.rotation = rotation;
+    }
+    tick(delta) {
+        if (this.time === 0) {
+            this.startRotation = this.target.rotation;
+        }
+        this.time += delta;
+        const factor = this.easedTimeDistance;
+        this.target.rotation = this.startRotation + this.rotation * factor;
+        return this.timeDistance >= 1;
+    }
+}
+export class RepeatAction extends Action {
+    /**
+     * @param action Targeted action.
+     * @param repeats A negative value indicates looping forever.
+     */
+    constructor(action, repeats) {
+        super(action.target, 
+        // Duration:
+        repeats === -1 ? Infinity : action.duration * repeats);
+        this.n = 0;
+        this.action = action;
+        this.maxRepeats = repeats;
+    }
+    tick(delta) {
+        if (this.action.tick(delta)) {
+            this.n += 1;
+            if (this.maxRepeats >= 0 && this.n >= this.maxRepeats) {
+                return true;
+            }
+            else {
+                // Reset delta.
+                this.reset();
+            }
+        }
+        return false;
+    }
+    reset() {
+        super.reset();
+        this.action.reset();
+        return this;
+    }
+}
+export class MoveToAction extends Action {
+    constructor(target, x, y, duration, timingMode = Action.DefaultTimingMode) {
+        super(target, duration);
+        this.timingMode = timingMode;
+        this.x = x;
+        this.y = y;
+    }
+    tick(delta) {
+        if (this.time === 0) {
+            this.startX = this.target.x;
+            this.startY = this.target.y;
+        }
+        this.time += delta;
+        const factor = this.easedTimeDistance;
+        this.target.position.set(this.startX + (this.x - this.startX) * factor, this.startY + (this.y - this.startY) * factor);
+        return this.timeDistance >= 1;
+    }
+}
+export class MoveByAction extends Action {
+    constructor(target, x, y, duration, timingMode = Action.DefaultTimingMode) {
+        super(target, duration);
+        this.timingMode = timingMode;
+        this.x = x;
+        this.y = y;
+    }
+    tick(delta) {
+        if (this.time === 0) {
+            this.startX = this.target.x;
+            this.startY = this.target.y;
+        }
+        this.time += delta;
+        const factor = this.easedTimeDistance;
+        this.target.position.set(this.startX + this.x * factor, this.startY + this.y * factor);
+        return this.timeDistance >= 1;
+    }
+}
+export class GroupAction extends Action {
+    constructor(actions) {
+        super(undefined, 
+        // Max duration:
+        Math.max(...actions.map(action => action.duration)));
+        this.index = 0;
+        this.actions = actions;
+    }
+    tick(delta) {
+        // Tick all elements!
+        let allDone = true;
+        for (const action of this.actions) {
+            if (action.done) {
+                continue;
+            }
+            if (action.tick(delta)) {
+                action.done = true;
+            }
+            else {
+                allDone = false;
+            }
+        }
+        return allDone;
+    }
+    reset() {
+        super.reset();
+        this.index = 0;
+        for (const i in this.actions) {
+            this.actions[i].reset();
+        }
+        return this;
+    }
+}
+export class FadeToAction extends Action {
+    constructor(target, alpha, duration, timingMode = Action.DefaultTimingMode) {
+        super(target, duration);
+        this.timingMode = timingMode;
+        this.alpha = alpha;
+    }
+    tick(delta) {
+        if (this.time === 0) {
+            this.startAlpha = this.target.alpha;
+        }
+        this.time += delta;
+        const factor = this.timingMode(this.timeDistance);
+        this.target.alpha = this.startAlpha + (this.alpha - this.startAlpha) * factor;
+        return this.timeDistance >= 1;
+    }
+}
+export class DelayAction extends Action {
+    tick(delta) {
+        this.time += delta;
+        return this.time >= this.duration;
+    }
 }
 //# sourceMappingURL=Action.js.map

@@ -2,21 +2,12 @@ import * as PIXI from 'pixi.js';
 
 import { ActionTimingMode, TimingModeFn } from './ActionTimingMode';
 
-import { DelayAction } from './actions/DelayAction';
-import { FadeToAction } from './actions/FadeToAction';
-import { GroupAction } from './actions/GroupAction';
-import { MoveByAction } from './actions/MoveByAction';
-import { MoveToAction } from './actions/MoveToAction';
-import { RepeatAction } from './actions/RepeatAction';
-import { RotateByAction } from './actions/RotateByAction';
-import { RotateToAction } from './actions/RotateToAction';
-import { RunBlockAction } from './actions/RunBlockAction';
-import { ScaleByAction } from './actions/ScaleByAction';
-import { ScaleToAction } from './actions/ScaleToAction';
-import { SequenceAction } from './actions/SequenceAction';
-import { DisplayObject } from 'pixi.js';
 
 export abstract class Action {
+
+	//
+	// ----------------- STATC -----------------
+	//
 
 	/** Optionally check a boolean property with this name on display objects. */
 	public static PausedProperty: string | undefined = 'paused';
@@ -25,9 +16,11 @@ export abstract class Action {
 	public static DefaultTimingMode: TimingModeFn = ActionTimingMode.linear;
 
 	/** All currently running actions. */
-	protected static actions: Action[] = [];
+	public static actions: Action[] = [];
 
-	// Shortcuts:
+	//
+	// ----------------- BUILT-INS -----------------
+	//
 
 	public static sequence(actions: Action[]): Action {
 		return new SequenceAction(actions);
@@ -103,8 +96,9 @@ export abstract class Action {
 
 	public static remove(target: PIXI.DisplayObject): Action {
 		return this.runBlock(() => {
-			if (target.parent != null)
+			if (target.parent) {
 				target.parent.removeChild(target);
+			}
 		});
 	}
 
@@ -156,6 +150,11 @@ export abstract class Action {
 		return new RotateByAction(target, rotation, duration, timingMode);
 	}
 
+	//
+	// ----------------- METHODS -----------------
+	//
+
+	/** Clear all actions with this target. */
 	public static clearTargetActions(target: PIXI.DisplayObject | undefined): void {
 		for (let i = this.actions.length - 1; i >= 0; i--) {
 			const action: Action = this.actions[i];
@@ -166,15 +165,18 @@ export abstract class Action {
 		}
 	}
 
+	/** Clear all actions. */
 	public static clearAllActions(): void {
 		this.actions = [];
 	}
 
+	/** Play an action. */
 	protected static play(action: Action): Action {
 		this.actions.push(action);
 		return action;
 	}
 
+	/** Pause an action. */
 	protected static pause(action: Action): Action {
 		const index = this.actions.indexOf(action);
 		if (index >= 0) {
@@ -183,16 +185,14 @@ export abstract class Action {
 		return action;
 	}
 
-	/**
-	 * Tick all actions forward.
-	 */
+	/** Tick all actions forward. */
 	public static tick(delta: number): void {
 		for (let i = this.actions.length - 1; i >= 0; i--) {
 			const action: Action = this.actions[i];
 
 			// If the action is targeted, but is no longer on the stage
 			// we remove its actions.
-			if (action.target !== undefined) {
+			if (action.target) {
 				if (action.target.parent === undefined) {
 					this.actions.splice(i, 1);
 					continue;
@@ -219,7 +219,9 @@ export abstract class Action {
 		}
 	}
 
-	// --------------------- INSTANCE:
+	//
+	// ----------------- INSTANCE PROPERTIES -----------------
+	//
 
 	public time: number = 0;
 	public duration: number;
@@ -236,7 +238,9 @@ export abstract class Action {
 		return this.timingMode(this.timeDistance);
 	}
 
-	// Instance methods:
+	//
+	// ----------------- INSTANCE METHODS -----------------
+	//
 
 	constructor(target: PIXI.DisplayObject | undefined, duration: number) {
 		this.target = target;
@@ -273,12 +277,13 @@ export abstract class Action {
 	}
 }
 
-function isTargetPaused(target: DisplayObject): boolean {
+/** Helper method to check if a target is paused. */
+function isTargetPaused(target: PIXI.DisplayObject): boolean {
 	let next: any = target;
 
 	// Check each parent.
-	while (next !== undefined) {
-		if ((next[Action.PausedProperty] ?? false) === true) {
+	while (next) {
+		if (Action.PausedProperty !== undefined && (next[Action.PausedProperty] ?? false) === true) {
 			return true;
 		}
 
@@ -286,4 +291,383 @@ function isTargetPaused(target: DisplayObject): boolean {
 	}
 
 	return false;
+}
+
+//
+// ----------------- BUILT-IN ACTION DEFINITIONS -----------------
+//
+
+export class SequenceAction extends Action {
+	index: number = 0;
+	actions: Action[];
+
+	constructor(actions: Action[]) {
+		super(
+			undefined,
+			// Total duration:
+			actions.reduce((total, action) => total + action.duration, 0)
+		);
+		this.actions = actions;
+	}
+
+	public tick(delta: number): boolean {
+		// If empty, we are done!
+		if (this.index == this.actions.length)
+			return true;
+
+		// Otherwise, tick the first element
+		if (this.actions[this.index].tick(delta)) {
+			this.index++;
+		}
+
+		return false;
+	}
+
+	public reset() {
+		super.reset();
+
+		this.index = 0;
+		for (const i in this.actions) {
+			this.actions[i].reset();
+		}
+		return this;
+	}
+}
+
+export class ScaleToAction extends Action {
+	protected startX!: number;
+	protected startY!: number;
+	protected x: number;
+	protected y: number;
+
+	constructor(
+		target: PIXI.DisplayObject,
+		x: number,
+		y: number,
+		duration: number,
+		timingMode: TimingModeFn = Action.DefaultTimingMode,
+	) {
+		super(target, duration);
+		this.timingMode = timingMode;
+		this.x = x;
+		this.y = y;
+	}
+
+	public tick(delta: number): boolean {
+		if (this.time === 0) {
+			this.startX = this.target!.scale.x;
+			this.startY = this.target!.scale.y;
+		}
+
+		this.time += delta;
+
+		const factor: number = this.easedTimeDistance;
+		this.target!.scale.set(
+			this.startX + (this.x - this.startX) * factor,
+			this.startY + (this.y - this.startY) * factor,
+		);
+
+		return this.timeDistance >= 1;
+	}
+}
+export class ScaleByAction extends Action {
+	protected startX!: number;
+	protected startY!: number;
+	protected x: number;
+	protected y: number;
+
+	constructor(
+		target: PIXI.DisplayObject,
+		x: number,
+		y: number,
+		duration: number,
+		timingMode: TimingModeFn = Action.DefaultTimingMode,
+	) {
+		super(target, duration);
+		this.timingMode = timingMode;
+		this.x = x;
+		this.y = y;
+	}
+
+	public tick(delta: number): boolean {
+		if (this.time === 0) {
+			this.startX = this.target!.scale.x;
+			this.startY = this.target!.scale.y;
+		}
+
+		this.time += delta;
+
+		const factor: number = this.easedTimeDistance;
+		this.target!.scale.set(
+			this.startX + this.x * factor,
+			this.startY + this.y * factor,
+		);
+
+		return this.timeDistance >= 1;
+	}
+}
+
+export class RunBlockAction extends Action {
+	protected block: () => any;
+
+	constructor(block: () => void) {
+		super(undefined, 0);
+		this.block = block;
+	}
+
+	public tick(delta: number): boolean {
+		this.block.call(this);
+
+		return true;
+	}
+}
+
+export class RotateToAction extends Action {
+	protected startRotation!: number;
+	protected rotation: number;
+
+	constructor(
+		target: PIXI.DisplayObject,
+		rotation: number,
+		duration: number,
+		timingMode: TimingModeFn = Action.DefaultTimingMode,
+	) {
+		super(target, duration);
+		this.timingMode = timingMode;
+		this.rotation = rotation;
+	}
+
+	public tick(delta: number): boolean {
+		if (this.time === 0) {
+			this.startRotation = this.target!.rotation;
+		}
+
+		this.time += delta;
+
+		const factor: number = this.easedTimeDistance;
+		this.target!.rotation = this.startRotation + (this.rotation - this.startRotation) * factor;
+		return this.timeDistance >= 1;
+	}
+}
+
+export class RotateByAction extends Action {
+	protected startRotation!: number;
+	protected rotation: number;
+
+	constructor(
+		target: PIXI.DisplayObject,
+		rotation: number,
+		duration: number,
+		timingMode: TimingModeFn = Action.DefaultTimingMode,
+	) {
+		super(target, duration);
+		this.timingMode = timingMode;
+		this.rotation = rotation;
+	}
+
+	public tick(delta: number): boolean {
+		if (this.time === 0) {
+			this.startRotation = this.target!.rotation;
+		}
+
+		this.time += delta;
+
+		const factor: number = this.easedTimeDistance;
+		this.target!.rotation = this.startRotation + this.rotation * factor;
+		return this.timeDistance >= 1;
+	}
+}
+export class RepeatAction extends Action {
+	protected action: Action;
+	protected maxRepeats: number;
+	protected n: number = 0;
+
+	/**
+	 * @param action Targeted action.
+	 * @param repeats A negative value indicates looping forever.
+	 */
+	constructor(action: Action, repeats: number) {
+		super(
+			action.target,
+			// Duration:
+			repeats === -1 ? Infinity : action.duration * repeats
+		);
+
+		this.action = action;
+		this.maxRepeats = repeats;
+	}
+
+	public tick(delta: number): boolean {
+		if (this.action.tick(delta)) {
+			this.n += 1;
+			if (this.maxRepeats >= 0 && this.n >= this.maxRepeats) {
+				return true;
+			} else {
+				// Reset delta.
+				this.reset();
+			}
+		}
+		return false;
+	}
+
+	public reset() {
+		super.reset();
+		this.action.reset();
+		return this;
+	}
+}
+
+export class MoveToAction extends Action {
+	protected startX!: number;
+	protected startY!: number;
+	protected x: number;
+	protected y: number;
+
+	constructor(
+		target: PIXI.DisplayObject,
+		x: number,
+		y: number,
+		duration: number,
+		timingMode: TimingModeFn = Action.DefaultTimingMode,
+	) {
+		super(target, duration);
+		this.timingMode = timingMode;
+		this.x = x;
+		this.y = y;
+	}
+
+	public tick(delta: number): boolean {
+		if (this.time === 0) {
+			this.startX = this.target!.x;
+			this.startY = this.target!.y;
+		}
+
+		this.time += delta;
+
+		const factor: number = this.easedTimeDistance;
+		this.target!.position.set(
+			this.startX + (this.x - this.startX) * factor,
+			this.startY + (this.y - this.startY) * factor,
+		);
+
+		return this.timeDistance >= 1;
+	}
+}
+
+
+export class MoveByAction extends Action {
+	protected startX!: number;
+	protected startY!: number;
+	protected x: number;
+	protected y: number;
+
+	constructor(
+		target: PIXI.DisplayObject,
+		x: number,
+		y: number,
+		duration: number,
+		timingMode: TimingModeFn = Action.DefaultTimingMode,
+	) {
+		super(target, duration);
+		this.timingMode = timingMode;
+		this.x = x;
+		this.y = y;
+	}
+
+	public tick(delta: number): boolean {
+		if (this.time === 0) {
+			this.startX = this.target!.x;
+			this.startY = this.target!.y;
+		}
+
+		this.time += delta;
+
+		const factor: number = this.easedTimeDistance;
+		this.target!.position.set(
+			this.startX + this.x * factor,
+			this.startY + this.y * factor,
+		);
+
+		return this.timeDistance >= 1;
+	}
+}
+
+export class GroupAction extends Action {
+	protected index: number = 0;
+	protected actions: Action[];
+
+	constructor(actions: Action[]) {
+		super(
+			undefined,
+			// Max duration:
+			Math.max(...actions.map(action => action.duration))
+		);
+
+		this.actions = actions;
+	}
+
+	public tick(delta: number): boolean {
+		// Tick all elements!
+		let allDone = true;
+
+		for (const action of this.actions) {
+			if (action.done) {
+				continue;
+			}
+
+			if (action.tick(delta)) {
+				action.done = true;
+			} else {
+				allDone = false;
+			}
+		}
+
+		return allDone;
+	}
+
+	public reset() {
+		super.reset();
+
+		this.index = 0;
+		for (const i in this.actions) {
+			this.actions[i].reset();
+		}
+		return this;
+	}
+}
+
+export class FadeToAction extends Action {
+	protected startAlpha!: number;
+	protected alpha: number;
+
+	constructor(
+		target: PIXI.DisplayObject,
+		alpha: number,
+		duration: number,
+		timingMode: TimingModeFn = Action.DefaultTimingMode,
+	) {
+		super(target, duration);
+		this.timingMode = timingMode;
+		this.alpha = alpha;
+	}
+
+	public tick(delta: number): boolean {
+		if (this.time === 0) {
+			this.startAlpha = this.target!.alpha;
+		}
+
+		this.time += delta;
+
+		const factor: number = this.timingMode(this.timeDistance);
+		this.target!.alpha = this.startAlpha + (this.alpha - this.startAlpha) * factor;
+
+		return this.timeDistance >= 1;
+	}
+}
+
+export class DelayAction extends Action {
+	public tick(delta: number): boolean {
+		this.time += delta;
+		return this.time >= this.duration;
+	}
 }
