@@ -1,4 +1,10 @@
-import { ActionTimingMode } from './ActionTimingMode';
+import { TimingMode } from './TimingMode';
+/**
+ * Action is an animation that is executed by a display object in the scene.
+ * Actions are used to change a display object in some way (like move its position over time).
+ *
+ * Trigger @see {Action.tick(deltaTime)} to update actions.
+ */
 export class Action {
     //
     // ----------------- INSTANCE METHODS -----------------
@@ -13,6 +19,7 @@ export class Action {
         this.queued = [];
         this.target = target;
         this.duration = duration;
+        this.isTargeted = target !== undefined;
     }
     //
     // ----------------- BUILT-INS -----------------
@@ -89,7 +96,7 @@ export class Action {
     }
     /** Clear all actions. */
     static clearAllActions() {
-        this.actions = [];
+        this.actions.splice(0, this.actions.length);
     }
     /** Play an action. */
     static play(action) {
@@ -105,32 +112,52 @@ export class Action {
         return action;
     }
     /** Tick all actions forward. */
-    static tick(delta) {
+    static tick(delta, onErrorHandler) {
         for (let i = this.actions.length - 1; i >= 0; i--) {
             const action = this.actions[i];
-            // If the action is targeted, but is no longer on the stage
-            // we remove its actions.
-            if (action.target) {
-                if (action.target.parent === undefined) {
-                    this.actions.splice(i, 1);
-                    continue;
-                }
-                if (Action.PausedProperty !== undefined && isTargetPaused(action.target)) {
-                    // Display object is paused. Skip tick.
-                    continue;
+            try {
+                this.tickAction(action, delta);
+            }
+            catch (error) {
+                // Isolate individual action errors.
+                if (onErrorHandler !== undefined) {
+                    onErrorHandler(error);
                 }
             }
-            // Otherwise, we tick the action
-            const done = action.tick(delta);
-            if (done) {
-                action.done = true;
-                this.actions.splice(i, 1);
-                // Are there any queued events?
-                for (let j = 0; j < action.queued.length; j++) {
-                    this.play(action.queued[j]);
+        }
+    }
+    static tickAction(action, delta) {
+        if (action.isTargeted || action.target) {
+            // If the action is targeted, but is no longer valid or on the stage
+            // we garbage collect its actions.
+            if (action.target == null
+                || action.target.destroyed
+                || action.target.parent === undefined) {
+                const index = this.actions.indexOf(action);
+                if (index > -1) {
+                    this.actions.splice(index, 1);
                 }
-                action.queued = [];
+                return;
             }
+            if (Action.PausedProperty !== undefined && isTargetPaused(action.target)) {
+                // Display object is paused. Skip tick.
+                return;
+            }
+        }
+        // Otherwise, we tick the action
+        const done = action.tick(delta);
+        if (done) {
+            action.done = true;
+            // Remove this action.
+            const index = this.actions.indexOf(action);
+            if (index > -1) {
+                this.actions.splice(index, 1);
+            }
+            // Are there any queued events?
+            for (let j = 0; j < action.queued.length; j++) {
+                this.play(action.queued[j]);
+            }
+            action.queued = [];
         }
     }
     get timeDistance() {
@@ -162,14 +189,14 @@ export class Action {
     }
 }
 //
-// ----------------- STATC -----------------
+// ----------------- Static -----------------
 //
+/** All currently running actions. */
+Action.actions = [];
 /** Optionally check a boolean property with this name on display objects. */
 Action.PausedProperty = 'paused';
 /** Set a global default timing mode. */
-Action.DefaultTimingMode = ActionTimingMode.linear;
-/** All currently running actions. */
-Action.actions = [];
+Action.DefaultTimingMode = TimingMode.linear;
 /** Helper method to check if a target is paused. */
 function isTargetPaused(target) {
     var _a;

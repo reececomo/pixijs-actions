@@ -1,20 +1,20 @@
 {
-    "editor.tabSize": 2,
-    "editor.formatOnSave": true,
-    "editor.codeActionsOnSave": {
-        "source.fixAll.eslint": true
-    },
-    "eslint.format.enable": true,
-    "files.eol": "\n",
-    "hediet.vscode-drawio.theme": "Kennedy",
-    "search.exclude": {
-        "**/node_modules": true,
-        "**/bower_components": true,
-        "**/*.code-search": true,
-        "**/dist": true,
-        "**/yarn.lock": true,
-        "**/*.d.ts": true,
-        "*.drawio": true,
-    },
-    "workbench.tree.indent": 20
+  "editor.tabSize": 2,
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit"
+  },
+  "eslint.format.enable": true,
+  "files.eol": "\n",
+  "hediet.vscode-drawio.theme": "Kennedy",
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/bower_components": true,
+    "**/*.code-search": true,
+    "**/dist": true,
+    "**/yarn.lock": true,
+    "**/*.d.ts": true,
+    "*.drawio": true
+  },
+  "workbench.tree.indent": 20
 }

@@ -1,6 +1,6 @@
 {
   "name": "pixi-actions",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "An actions system for PixiJS based on SpriteKit's SKActions. Forked from srpatel/pixi-actions.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -10,8 +10,8 @@
   },
   "repository": "https://github.com/reececomo/pixi-actions",
   "authors": [
-    "sunil patel <sunil@xikka.com>",
-    "Reece Como <reece.como@gmail.com>"
+    "Reece Como <reece.como@gmail.com>",
+    "sunil patel <sunil@xikka.com>"
   ],
   "license": "MIT",
   "keywords": [
@@ -19,10 +19,10 @@
     "pixijs"
   ],
   "peerDependencies": {
-    "pixi.js": "^6.0.0"
+    "pixi.js": "^6.1.0"
   },
   "devDependencies": {
-    "pixi.js": "^6.0.0",
+    "pixi.js": "^6.1.0",
     "typescript": "^4.2.3"
   }
 }

@@ -1,2 +1,2 @@
-export * from "./ActionTimingMode";
+export * from "./TimingMode";
 export * from "./Action";

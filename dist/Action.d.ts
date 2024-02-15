@@ -1,12 +1,18 @@
 import * as PIXI from 'pixi.js';
-import { TimingModeFn } from './ActionTimingMode';
+import { TimingModeFn } from './TimingMode';
+/**
+ * Action is an animation that is executed by a display object in the scene.
+ * Actions are used to change a display object in some way (like move its position over time).
+ *
+ * Trigger @see {Action.tick(deltaTime)} to update actions.
+ */
 export declare abstract class Action {
+    /** All currently running actions. */
+    static readonly actions: Action[];
     /** Optionally check a boolean property with this name on display objects. */
-    static PausedProperty: string | undefined;
+    static PausedProperty?: string;
     /** Set a global default timing mode. */
     static DefaultTimingMode: TimingModeFn;
-    /** All currently running actions. */
-    static actions: Action[];
     static sequence(actions: Action[]): Action;
     static group(actions: Action[]): Action;
     static repeat(action: Action, repeats: number): Action;
@@ -33,13 +39,16 @@ export declare abstract class Action {
     /** Pause an action. */
     protected static pause(action: Action): Action;
     /** Tick all actions forward. */
-    static tick(delta: number): void;
+    static tick(delta: number, onErrorHandler?: (error: any) => void): void;
+    private static tickAction;
     time: number;
     duration: number;
     target?: PIXI.DisplayObject;
     done: boolean;
     timingMode: TimingModeFn;
     protected queued: Action[];
+    /** Whether the action is intended to be targeted. */
+    isTargeted: boolean;
     protected get timeDistance(): number;
     protected get easedTimeDistance(): number;
     constructor(target: PIXI.DisplayObject | undefined, duration: number);

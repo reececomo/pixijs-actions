@@ -1,22 +1,27 @@
 import * as PIXI from 'pixi.js';
 
-import { ActionTimingMode, TimingModeFn } from './ActionTimingMode';
+import { TimingMode, TimingModeFn } from './TimingMode';
 
-
+/**
+ * Action is an animation that is executed by a display object in the scene.
+ * Actions are used to change a display object in some way (like move its position over time).
+ *
+ * Trigger @see {Action.tick(deltaTime)} to update actions.
+ */
 export abstract class Action {
 
 	//
-	// ----------------- STATC -----------------
+	// ----------------- Static -----------------
 	//
 
+	/** All currently running actions. */
+	public static readonly actions: Action[] = [];
+
 	/** Optionally check a boolean property with this name on display objects. */
-	public static PausedProperty: string | undefined = 'paused';
+	public static PausedProperty?: string = 'paused';
 
 	/** Set a global default timing mode. */
-	public static DefaultTimingMode: TimingModeFn = ActionTimingMode.linear;
-
-	/** All currently running actions. */
-	public static actions: Action[] = [];
+	public static DefaultTimingMode: TimingModeFn = TimingMode.linear;
 
 	//
 	// ----------------- BUILT-INS -----------------
@@ -167,7 +172,7 @@ export abstract class Action {
 
 	/** Clear all actions. */
 	public static clearAllActions(): void {
-		this.actions = [];
+		this.actions.splice(0, this.actions.length);
 	}
 
 	/** Play an action. */
@@ -186,36 +191,60 @@ export abstract class Action {
 	}
 
 	/** Tick all actions forward. */
-	public static tick(delta: number): void {
+	public static tick(delta: number, onErrorHandler?: (error: any) => void): void {
 		for (let i = this.actions.length - 1; i >= 0; i--) {
 			const action: Action = this.actions[i];
-
-			// If the action is targeted, but is no longer on the stage
-			// we remove its actions.
-			if (action.target) {
-				if (action.target.parent === undefined) {
-					this.actions.splice(i, 1);
-					continue;
-				}
-
-				if (Action.PausedProperty !== undefined && isTargetPaused(action.target)) {
-					// Display object is paused. Skip tick.
-					continue;
+			try {
+				this.tickAction(action, delta);
+			}
+			catch (error) {
+				// Isolate individual action errors.
+				if (onErrorHandler !== undefined) {
+					onErrorHandler(error);
 				}
 			}
+		}
+	}
 
-			// Otherwise, we tick the action
-			const done = action.tick(delta);
-			if (done) {
-				action.done = true;
-				this.actions.splice(i, 1);
-
-				// Are there any queued events?
-				for (let j = 0; j < action.queued.length; j++) {
-					this.play(action.queued[j]);
+	private static tickAction(action: Action, delta: number): void {
+		if (action.isTargeted || action.target) {
+			// If the action is targeted, but is no longer valid or on the stage
+			// we garbage collect its actions.
+			if (
+				action.target == null
+				|| action.target.destroyed
+				|| action.target.parent === undefined
+			) {
+				const index = this.actions.indexOf(action);
+				if (index > -1) {
+					this.actions.splice(index, 1);
 				}
-				action.queued = [];
+
+				return;
 			}
+
+			if (Action.PausedProperty !== undefined && isTargetPaused(action.target)) {
+				// Display object is paused. Skip tick.
+				return;
+			}
+		}
+
+		// Otherwise, we tick the action
+		const done = action.tick(delta);
+		if (done) {
+			action.done = true;
+
+			// Remove this action.
+			const index = this.actions.indexOf(action);
+			if (index > -1) {
+				this.actions.splice(index, 1);
+			}
+
+			// Are there any queued events?
+			for (let j = 0; j < action.queued.length; j++) {
+				this.play(action.queued[j]);
+			}
+			action.queued = [];
 		}
 	}
 
@@ -229,6 +258,9 @@ export abstract class Action {
 	public done: boolean = false;
 	public timingMode: TimingModeFn = Action.DefaultTimingMode;
 	protected queued: Action[] = [];
+
+	/** Whether the action is intended to be targeted. */
+	public isTargeted: boolean;
 
 	protected get timeDistance(): number {
 		return Math.min(1, this.time / this.duration)
@@ -245,6 +277,7 @@ export abstract class Action {
 	constructor(target: PIXI.DisplayObject | undefined, duration: number) {
 		this.target = target;
 		this.duration = duration;
+		this.isTargeted = target !== undefined;
 	}
 
 	/** Must be implmented by each class. */

@@ -16,7 +16,8 @@
 		  "mini-signals": [
 			"node_modules/resource-loader/typings/mini-signals.d.ts"
 		  ]
-		}
+		},
+    "skipLibCheck": true
 	},
 	"include": ["src/**/*"],
 }
