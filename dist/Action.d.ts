@@ -69,6 +69,7 @@ export declare abstract class Action {
     queue(next: Action): this;
     reset(): this;
     stop(): this;
+    setCategory(categoryMask: number): this;
 }
 export declare class SequenceAction extends Action {
     index: number;

@@ -199,6 +199,10 @@ export class Action {
         this.pause().reset();
         return this;
     }
+    setCategory(categoryMask) {
+        this.categoryMask = categoryMask;
+        return this;
+    }
 }
 //
 // ----------------- Static -----------------

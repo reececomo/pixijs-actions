@@ -298,29 +298,34 @@ export abstract class Action {
 	/** Must be implmented by each class. */
 	public abstract tick(progress: number): boolean;
 
-	public play() {
+	public play(): this {
 		Action.play(this);
 		return this;
 	}
 
-	public pause() {
+	public pause(): this {
 		Action.pause(this);
 		return this;
 	}
 
-	public queue(next: Action) {
+	public queue(next: Action): this {
 		this.queued.push(next);
 		return this;
 	}
 
-	public reset() {
+	public reset(): this {
 		this.done = false;
 		this.time = 0;
 		return this;
 	}
 
-	public stop() {
+	public stop(): this {
 		this.pause().reset();
+		return this;
+	}
+
+	public setCategory(categoryMask: number): this {
+		this.categoryMask = categoryMask;
 		return this;
 	}
 }
