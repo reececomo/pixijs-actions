@@ -6,7 +6,9 @@ import { TimingMode, TimingModeFn } from './TimingMode';
  * Action is an animation that is executed by a display object in the scene.
  * Actions are used to change a display object in some way (like move its position over time).
  *
- * Trigger @see {Action.tick(deltaTime)} to update actions.
+ * Trigger @see {Action.tick(...)} to update actions.
+ *
+ * Optionally set Action.categoryMask to allow different action categories to run independently (i.e. UI and Game World).
  */
 export abstract class Action {
 
@@ -22,6 +24,9 @@ export abstract class Action {
 
 	/** Set a global default timing mode. */
 	public static DefaultTimingMode: TimingModeFn = TimingMode.linear;
+
+	/** Set the global default action category. */
+	public static DefaultActionCategoryMask: number = 0x1 << 0;
 
 	//
 	// ----------------- BUILT-INS -----------------
@@ -190,12 +195,22 @@ export abstract class Action {
 		return action;
 	}
 
-	/** Tick all actions forward. */
-	public static tick(delta: number, onErrorHandler?: (error: any) => void): void {
+	/** Tick all actions forward.
+	 *
+	 * @param dt Delta time
+	 * @param categoryMask (Optional) Bitmask to filter which categories of actions to update.
+	 * @param onErrorHandler (Optional) Handler errors from each action's tick.
+	 */
+	public static tick(dt: number, categoryMask: number = 0x1, onErrorHandler?: (error: any) => void): void {
 		for (let i = this.actions.length - 1; i >= 0; i--) {
 			const action: Action = this.actions[i];
+
+			if (categoryMask !== undefined && (categoryMask & action.categoryMask) !== 0) {
+				continue;
+			}
+				
 			try {
-				this.tickAction(action, delta);
+				this.tickAction(action, dt);
 			}
 			catch (error) {
 				// Isolate individual action errors.
@@ -253,10 +268,7 @@ export abstract class Action {
 	//
 
 	public time: number = 0;
-	public duration: number;
-	public target?: PIXI.DisplayObject;
-	public done: boolean = false;
-	public timingMode: TimingModeFn = Action.DefaultTimingMode;
+	public done: boolean = false;;
 	protected queued: Action[] = [];
 
 	/** Whether the action is intended to be targeted. */
@@ -274,9 +286,12 @@ export abstract class Action {
 	// ----------------- INSTANCE METHODS -----------------
 	//
 
-	constructor(target: PIXI.DisplayObject | undefined, duration: number) {
-		this.target = target;
-		this.duration = duration;
+	constructor(
+		public target: PIXI.DisplayObject | undefined,
+		public duration: number,
+		public timingMode: TimingModeFn = Action.DefaultTimingMode,
+		public categoryMask: number = Action.DefaultActionCategoryMask,
+	) {
 		this.isTargeted = target !== undefined;
 	}
 

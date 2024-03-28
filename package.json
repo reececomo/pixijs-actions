@@ -1,6 +1,6 @@
 {
   "name": "pixi-actions",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "An actions system for PixiJS based on SpriteKit's SKActions. Forked from srpatel/pixi-actions.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

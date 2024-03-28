@@ -3,22 +3,25 @@ import { TimingMode } from './TimingMode';
  * Action is an animation that is executed by a display object in the scene.
  * Actions are used to change a display object in some way (like move its position over time).
  *
- * Trigger @see {Action.tick(deltaTime)} to update actions.
+ * Trigger @see {Action.tick(...)} to update actions.
+ *
+ * Optionally set Action.categoryMask to allow different action categories to run independently (i.e. UI and Game World).
  */
 export class Action {
     //
     // ----------------- INSTANCE METHODS -----------------
     //
-    constructor(target, duration) {
+    constructor(target, duration, timingMode = Action.DefaultTimingMode, categoryMask = Action.DefaultActionCategoryMask) {
+        this.target = target;
+        this.duration = duration;
+        this.timingMode = timingMode;
+        this.categoryMask = categoryMask;
         //
         // ----------------- INSTANCE PROPERTIES -----------------
         //
         this.time = 0;
         this.done = false;
-        this.timingMode = Action.DefaultTimingMode;
         this.queued = [];
-        this.target = target;
-        this.duration = duration;
         this.isTargeted = target !== undefined;
     }
     //
@@ -111,12 +114,20 @@ export class Action {
         }
         return action;
     }
-    /** Tick all actions forward. */
-    static tick(delta, onErrorHandler) {
+    /** Tick all actions forward.
+     *
+     * @param dt Delta time
+     * @param categoryMask (Optional) Bitmask to filter which categories of actions to update.
+     * @param onErrorHandler (Optional) Handler errors from each action's tick.
+     */
+    static tick(dt, categoryMask = 0x1, onErrorHandler) {
         for (let i = this.actions.length - 1; i >= 0; i--) {
             const action = this.actions[i];
+            if (categoryMask !== undefined && (categoryMask & action.categoryMask) !== 0) {
+                continue;
+            }
             try {
-                this.tickAction(action, delta);
+                this.tickAction(action, dt);
             }
             catch (error) {
                 // Isolate individual action errors.
@@ -160,6 +171,7 @@ export class Action {
             action.queued = [];
         }
     }
+    ;
     get timeDistance() {
         return Math.min(1, this.time / this.duration);
     }
@@ -197,6 +209,8 @@ Action.actions = [];
 Action.PausedProperty = 'paused';
 /** Set a global default timing mode. */
 Action.DefaultTimingMode = TimingMode.linear;
+/** Set the global default action category. */
+Action.DefaultActionCategoryMask = 0x1 << 0;
 /** Helper method to check if a target is paused. */
 function isTargetPaused(target) {
     var _a;
