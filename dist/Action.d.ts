@@ -20,7 +20,7 @@ export declare abstract class Action {
     /** Set a global default timing mode. */
     static DefaultTimingMode: TimingModeFn;
     /** Set the global default action category. */
-    static DefaultActionCategoryMask: number;
+    static DefaultCategoryMask: number;
     static sequence(actions: Action[]): Action;
     static group(actions: Action[]): Action;
     static repeat(action: Action, repeats: number): Action;

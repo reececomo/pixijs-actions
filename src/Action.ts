@@ -26,7 +26,7 @@ export abstract class Action {
 	public static DefaultTimingMode: TimingModeFn = TimingMode.linear;
 
 	/** Set the global default action category. */
-	public static DefaultActionCategoryMask: number = 0x1 << 0;
+	public static DefaultCategoryMask: number = 0x1 << 0;
 
 	//
 	// ----------------- BUILT-INS -----------------
@@ -205,7 +205,7 @@ export abstract class Action {
 		for (let i = this.actions.length - 1; i >= 0; i--) {
 			const action: Action = this.actions[i];
 
-			if (categoryMask !== undefined && (categoryMask & action.categoryMask) !== 0) {
+			if (categoryMask !== undefined && (categoryMask & action.categoryMask) === 0) {
 				continue;
 			}
 				
@@ -290,7 +290,7 @@ export abstract class Action {
 		public target: PIXI.DisplayObject | undefined,
 		public duration: number,
 		public timingMode: TimingModeFn = Action.DefaultTimingMode,
-		public categoryMask: number = Action.DefaultActionCategoryMask,
+		public categoryMask: number = Action.DefaultCategoryMask,
 	) {
 		this.isTargeted = target !== undefined;
 	}

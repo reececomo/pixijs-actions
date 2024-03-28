@@ -11,7 +11,7 @@ export class Action {
     //
     // ----------------- INSTANCE METHODS -----------------
     //
-    constructor(target, duration, timingMode = Action.DefaultTimingMode, categoryMask = Action.DefaultActionCategoryMask) {
+    constructor(target, duration, timingMode = Action.DefaultTimingMode, categoryMask = Action.DefaultCategoryMask) {
         this.target = target;
         this.duration = duration;
         this.timingMode = timingMode;
@@ -123,7 +123,7 @@ export class Action {
     static tick(dt, categoryMask = 0x1, onErrorHandler) {
         for (let i = this.actions.length - 1; i >= 0; i--) {
             const action = this.actions[i];
-            if (categoryMask !== undefined && (categoryMask & action.categoryMask) !== 0) {
+            if (categoryMask !== undefined && (categoryMask & action.categoryMask) === 0) {
                 continue;
             }
             try {
@@ -214,7 +214,7 @@ Action.PausedProperty = 'paused';
 /** Set a global default timing mode. */
 Action.DefaultTimingMode = TimingMode.linear;
 /** Set the global default action category. */
-Action.DefaultActionCategoryMask = 0x1 << 0;
+Action.DefaultCategoryMask = 0x1 << 0;
 /** Helper method to check if a target is paused. */
 function isTargetPaused(target) {
     var _a;
