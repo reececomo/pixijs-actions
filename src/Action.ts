@@ -274,6 +274,11 @@ export abstract class Action {
 	/** Whether the action is intended to be targeted. */
 	public isTargeted: boolean;
 
+	/** Whether action is in progress */
+	public get isPlaying(): boolean {
+		return !this.done;
+	}
+
 	protected get timeDistance(): number {
 		return Math.min(1, this.time / this.duration)
 	}
