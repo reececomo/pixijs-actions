@@ -21,17 +21,21 @@ export declare abstract class Action {
     static DefaultTimingMode: TimingModeFn;
     /** Set the global default action category. */
     static DefaultCategoryMask: number;
+    /** Infers target from given actions. */
     static sequence(actions: Action[]): Action;
+    /** Infers target from given actions. */
     static group(actions: Action[]): Action;
+    /** Infers target from given action. */
     static repeat(action: Action, repeats: number): Action;
+    /** Infers target from given action. */
     static repeatForever(action: Action): Action;
     static moveTo(target: PIXI.DisplayObject, x: number, y: number, duration: number, timingMode?: TimingModeFn): Action;
     static moveBy(target: PIXI.DisplayObject, x: number, y: number, duration: number, timingMode?: TimingModeFn): Action;
     static fadeTo(target: PIXI.DisplayObject, alpha: number, duration: number, timingMode?: TimingModeFn): Action;
     static fadeOut(target: PIXI.DisplayObject, duration: number, timingMode?: TimingModeFn): Action;
-    static fadeOutAndRemove(target: PIXI.DisplayObject, duration: number, timingMode?: TimingModeFn): Action;
+    static fadeOutAndRemoveFromParent(target: PIXI.DisplayObject, duration: number, timingMode?: TimingModeFn): Action;
     static fadeIn(target: PIXI.DisplayObject, duration: number, timingMode?: TimingModeFn): Action;
-    static remove(target: PIXI.DisplayObject): Action;
+    static removeFromParent(target: PIXI.DisplayObject): Action;
     static delay(duration: number): Action;
     static runBlock(fn: () => void): Action;
     static scaleTo(target: PIXI.DisplayObject, x: number, y: number, duration: number, timingMode?: TimingModeFn): Action;
@@ -39,13 +43,13 @@ export declare abstract class Action {
     static rotateTo(target: PIXI.DisplayObject, rotation: number, duration: number, timingMode?: TimingModeFn): Action;
     static rotateBy(target: PIXI.DisplayObject, rotation: number, duration: number, timingMode?: TimingModeFn): Action;
     /** Clear all actions with this target. */
-    static clearTargetActions(target: PIXI.DisplayObject | undefined): void;
-    /** Clear all actions. */
-    static clearAllActions(): void;
+    static removeActionsForTarget(target: PIXI.DisplayObject | undefined): void;
+    /** Clears all actions. */
+    static removeAllActions(): void;
     /** Play an action. */
-    protected static play(action: Action): Action;
+    protected static playAction(action: Action): Action;
     /** Pause an action. */
-    protected static pause(action: Action): Action;
+    protected static pauseAction(action: Action): Action;
     /** Tick all actions forward.
      *
      * @param dt Delta time
@@ -73,6 +77,7 @@ export declare abstract class Action {
     stop(): this;
     setCategory(categoryMask: number): this;
 }
+/** Infers target from given actions. */
 export declare class SequenceAction extends Action {
     index: number;
     actions: Action[];
@@ -141,6 +146,7 @@ export declare class MoveByAction extends Action {
     constructor(target: PIXI.DisplayObject, x: number, y: number, duration: number, timingMode?: TimingModeFn);
     tick(delta: number): boolean;
 }
+/** Infers target from given actions. */
 export declare class GroupAction extends Action {
     protected index: number;
     protected actions: Action[];

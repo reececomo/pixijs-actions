@@ -27,15 +27,19 @@ export class Action {
     //
     // ----------------- BUILT-INS -----------------
     //
+    /** Infers target from given actions. */
     static sequence(actions) {
         return new SequenceAction(actions);
     }
+    /** Infers target from given actions. */
     static group(actions) {
         return new GroupAction(actions);
     }
+    /** Infers target from given action. */
     static repeat(action, repeats) {
         return new RepeatAction(action, repeats);
     }
+    /** Infers target from given action. */
     static repeatForever(action) {
         return new RepeatAction(action, -1);
     }
@@ -51,21 +55,17 @@ export class Action {
     static fadeOut(target, duration, timingMode) {
         return this.fadeTo(target, 0, duration, timingMode);
     }
-    static fadeOutAndRemove(target, duration, timingMode) {
+    static fadeOutAndRemoveFromParent(target, duration, timingMode) {
         return this.sequence([
             this.fadeOut(target, duration, timingMode),
-            this.remove(target),
+            this.removeFromParent(target),
         ]);
     }
     static fadeIn(target, duration, timingMode) {
         return this.fadeTo(target, 1, duration, timingMode);
     }
-    static remove(target) {
-        return this.runBlock(() => {
-            if (target.parent) {
-                target.parent.removeChild(target);
-            }
-        });
+    static removeFromParent(target) {
+        return this.runBlock(() => { var _a; return (_a = target.parent) === null || _a === void 0 ? void 0 : _a.removeChild(target); });
     }
     static delay(duration) {
         return new DelayAction(undefined, duration);
@@ -89,7 +89,7 @@ export class Action {
     // ----------------- METHODS -----------------
     //
     /** Clear all actions with this target. */
-    static clearTargetActions(target) {
+    static removeActionsForTarget(target) {
         for (let i = this.actions.length - 1; i >= 0; i--) {
             const action = this.actions[i];
             if (action.target === target) {
@@ -97,17 +97,17 @@ export class Action {
             }
         }
     }
-    /** Clear all actions. */
-    static clearAllActions() {
+    /** Clears all actions. */
+    static removeAllActions() {
         this.actions.splice(0, this.actions.length);
     }
     /** Play an action. */
-    static play(action) {
+    static playAction(action) {
         this.actions.push(action);
         return action;
     }
     /** Pause an action. */
-    static pause(action) {
+    static pauseAction(action) {
         const index = this.actions.indexOf(action);
         if (index >= 0) {
             this.actions.splice(index, 1);
@@ -166,7 +166,7 @@ export class Action {
             }
             // Are there any queued events?
             for (let j = 0; j < action.queued.length; j++) {
-                this.play(action.queued[j]);
+                this.playAction(action.queued[j]);
             }
             action.queued = [];
         }
@@ -183,11 +183,11 @@ export class Action {
         return this.timingMode(this.timeDistance);
     }
     play() {
-        Action.play(this);
+        Action.playAction(this);
         return this;
     }
     pause() {
-        Action.pause(this);
+        Action.pauseAction(this);
         return this;
     }
     queue(next) {
@@ -235,9 +235,13 @@ function isTargetPaused(target) {
 //
 // ----------------- BUILT-IN ACTION DEFINITIONS -----------------
 //
+/** Infers target from given actions. */
 export class SequenceAction extends Action {
     constructor(actions) {
-        super(undefined, 
+        var _a;
+        super(
+        // Inferred target:
+        (_a = actions.filter(action => action.target !== undefined)[0]) === null || _a === void 0 ? void 0 : _a.target, 
         // Total duration:
         actions.reduce((total, action) => total + action.duration, 0));
         this.index = 0;
@@ -408,9 +412,13 @@ export class MoveByAction extends Action {
         return this.timeDistance >= 1;
     }
 }
+/** Infers target from given actions. */
 export class GroupAction extends Action {
     constructor(actions) {
-        super(undefined, 
+        var _a;
+        super(
+        // Inferred target:
+        (_a = actions.filter(action => action.target !== undefined)[0]) === null || _a === void 0 ? void 0 : _a.target, 
         // Max duration:
         Math.max(...actions.map(action => action.duration)));
         this.index = 0;

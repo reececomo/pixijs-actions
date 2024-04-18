@@ -32,18 +32,24 @@ export abstract class Action {
 	// ----------------- BUILT-INS -----------------
 	//
 
+	/** Infers target from given actions. */
 	public static sequence(actions: Action[]): Action {
 		return new SequenceAction(actions);
 	}
 
+	
+/** Infers target from given actions. */
 	public static group(actions: Action[]): Action {
 		return new GroupAction(actions);
 	}
-
+	
+/** Infers target from given action. */
 	public static repeat(action: Action, repeats: number): Action {
 		return new RepeatAction(action, repeats);
 	}
 
+	
+	/** Infers target from given action. */
 	public static repeatForever(action: Action): Action {
 		return new RepeatAction(action, -1);
 	}
@@ -85,14 +91,14 @@ export abstract class Action {
 		return this.fadeTo(target, 0, duration, timingMode);
 	}
 
-	public static fadeOutAndRemove(
+	public static fadeOutAndRemoveFromParent(
 		target: PIXI.DisplayObject,
 		duration: number,
 		timingMode?: TimingModeFn
 	): Action {
 		return this.sequence([
 			this.fadeOut(target, duration, timingMode),
-			this.remove(target),
+			this.removeFromParent(target),
 		]);
 	}
 
@@ -104,12 +110,8 @@ export abstract class Action {
 		return this.fadeTo(target, 1, duration, timingMode);
 	}
 
-	public static remove(target: PIXI.DisplayObject): Action {
-		return this.runBlock(() => {
-			if (target.parent) {
-				target.parent.removeChild(target);
-			}
-		});
+	public static removeFromParent(target: PIXI.DisplayObject): Action {
+		return this.runBlock(() => target.parent?.removeChild(target));
 	}
 
 	public static delay(duration: number
@@ -165,7 +167,7 @@ export abstract class Action {
 	//
 
 	/** Clear all actions with this target. */
-	public static clearTargetActions(target: PIXI.DisplayObject | undefined): void {
+	public static removeActionsForTarget(target: PIXI.DisplayObject | undefined): void {
 		for (let i = this.actions.length - 1; i >= 0; i--) {
 			const action: Action = this.actions[i];
 
@@ -175,19 +177,19 @@ export abstract class Action {
 		}
 	}
 
-	/** Clear all actions. */
-	public static clearAllActions(): void {
+	/** Clears all actions. */
+	public static removeAllActions(): void {
 		this.actions.splice(0, this.actions.length);
 	}
 
 	/** Play an action. */
-	protected static play(action: Action): Action {
+	protected static playAction(action: Action): Action {
 		this.actions.push(action);
 		return action;
 	}
 
 	/** Pause an action. */
-	protected static pause(action: Action): Action {
+	protected static pauseAction(action: Action): Action {
 		const index = this.actions.indexOf(action);
 		if (index >= 0) {
 			this.actions.splice(index, 1);
@@ -257,7 +259,7 @@ export abstract class Action {
 
 			// Are there any queued events?
 			for (let j = 0; j < action.queued.length; j++) {
-				this.play(action.queued[j]);
+				this.playAction(action.queued[j]);
 			}
 			action.queued = [];
 		}
@@ -304,12 +306,12 @@ export abstract class Action {
 	public abstract tick(progress: number): boolean;
 
 	public play(): this {
-		Action.play(this);
+		Action.playAction(this);
 		return this;
 	}
 
 	public pause(): this {
-		Action.pause(this);
+		Action.pauseAction(this);
 		return this;
 	}
 
@@ -355,13 +357,15 @@ function isTargetPaused(target: PIXI.DisplayObject): boolean {
 // ----------------- BUILT-IN ACTION DEFINITIONS -----------------
 //
 
+/** Infers target from given actions. */
 export class SequenceAction extends Action {
 	index: number = 0;
 	actions: Action[];
 
 	constructor(actions: Action[]) {
 		super(
-			undefined,
+			// Inferred target:
+			actions.filter(action => action.target !== undefined)[0]?.target,
 			// Total duration:
 			actions.reduce((total, action) => total + action.duration, 0)
 		);
@@ -650,13 +654,15 @@ export class MoveByAction extends Action {
 	}
 }
 
+/** Infers target from given actions. */
 export class GroupAction extends Action {
 	protected index: number = 0;
 	protected actions: Action[];
 
 	constructor(actions: Action[]) {
 		super(
-			undefined,
+			// Inferred target:
+			actions.filter(action => action.target !== undefined)[0]?.target,
 			// Max duration:
 			Math.max(...actions.map(action => action.duration))
 		);
