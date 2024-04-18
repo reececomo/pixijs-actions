@@ -11,18 +11,14 @@ export class Action {
     //
     // ----------------- INSTANCE METHODS -----------------
     //
-    constructor(target, duration, timingMode = Action.DefaultTimingMode, categoryMask = Action.DefaultCategoryMask) {
-        this.target = target;
+    constructor(duration, timingMode = Action.DefaultTimingMode, categoryMask = Action.DefaultCategoryMask) {
         this.duration = duration;
         this.timingMode = timingMode;
         this.categoryMask = categoryMask;
-        //
-        // ----------------- INSTANCE PROPERTIES -----------------
-        //
+        this.speed = 1.0;
         this.time = 0;
-        this.done = false;
-        this.queued = [];
-        this.isTargeted = target !== undefined;
+        this.isDone = false;
+        this.queuedActions = [];
     }
     //
     // ----------------- BUILT-INS -----------------
@@ -43,74 +39,74 @@ export class Action {
     static repeatForever(action) {
         return new RepeatAction(action, -1);
     }
-    static moveTo(target, x, y, duration, timingMode) {
-        return new MoveToAction(target, x, y, duration, timingMode);
+    static moveTo(x, y, duration, timingMode) {
+        return new MoveToAction(x, y, duration, timingMode);
     }
-    static moveBy(target, x, y, duration, timingMode) {
-        return new MoveByAction(target, x, y, duration, timingMode);
+    static moveBy(x, y, duration, timingMode) {
+        return new MoveByAction(x, y, duration, timingMode);
     }
-    static fadeTo(target, alpha, duration, timingMode) {
-        return new FadeToAction(target, alpha, duration, timingMode);
+    static fadeTo(alpha, duration, timingMode) {
+        return new FadeToAction(alpha, duration, timingMode);
     }
-    static fadeOut(target, duration, timingMode) {
-        return this.fadeTo(target, 0, duration, timingMode);
+    static fadeOut(duration, timingMode) {
+        return Action.fadeTo(0.0, duration, timingMode);
     }
-    static fadeOutAndRemoveFromParent(target, duration, timingMode) {
-        return this.sequence([
-            this.fadeOut(target, duration, timingMode),
-            this.removeFromParent(target),
+    static fadeOutAndRemoveFromParent(duration, timingMode) {
+        return Action.sequence([
+            Action.fadeOut(duration, timingMode),
+            Action.removeFromParent(),
         ]);
     }
-    static fadeIn(target, duration, timingMode) {
-        return this.fadeTo(target, 1, duration, timingMode);
+    static fadeIn(duration, timingMode) {
+        return this.fadeTo(1.0, duration, timingMode);
     }
-    static removeFromParent(target) {
-        return this.runBlock(() => { var _a; return (_a = target.parent) === null || _a === void 0 ? void 0 : _a.removeChild(target); });
+    static removeFromParent() {
+        return new RemoveFromParentAction();
     }
     static delay(duration) {
-        return new DelayAction(undefined, duration);
+        return new DelayAction(duration);
     }
     static runBlock(fn) {
         return new RunBlockAction(fn);
     }
-    static scaleTo(target, x, y, duration, timingMode) {
-        return new ScaleToAction(target, x, y, duration, timingMode);
+    static scaleTo(x, y, duration, timingMode) {
+        return new ScaleToAction(x, y, duration, timingMode);
     }
-    static scaleBy(target, x, y, duration, timingMode) {
-        return new ScaleByAction(target, x, y, duration, timingMode);
+    static scaleBy(x, y, duration, timingMode) {
+        return new ScaleByAction(x, y, duration, timingMode);
     }
-    static rotateTo(target, rotation, duration, timingMode) {
-        return new RotateToAction(target, rotation, duration, timingMode);
+    static rotateTo(rotation, duration, timingMode) {
+        return new RotateToAction(rotation, duration, timingMode);
     }
-    static rotateBy(target, rotation, duration, timingMode) {
-        return new RotateByAction(target, rotation, duration, timingMode);
+    static rotateBy(rotation, duration, timingMode) {
+        return new RotateByAction(rotation, duration, timingMode);
     }
     //
     // ----------------- METHODS -----------------
     //
     /** Clear all actions with this target. */
     static removeActionsForTarget(target) {
-        for (let i = this.actions.length - 1; i >= 0; i--) {
+        for (let i = Action.actions.length - 1; i >= 0; i--) {
             const action = this.actions[i];
             if (action.target === target) {
-                this.actions.splice(i, 1);
+                Action.actions.splice(i, 1);
             }
         }
     }
     /** Clears all actions. */
     static removeAllActions() {
-        this.actions.splice(0, this.actions.length);
+        Action.actions.splice(0, this.actions.length);
     }
     /** Play an action. */
     static playAction(action) {
-        this.actions.push(action);
+        Action.actions.push(action);
         return action;
     }
-    /** Pause an action. */
-    static pauseAction(action) {
-        const index = this.actions.indexOf(action);
+    /** Stop an action. */
+    static stopAction(action) {
+        const index = Action.actions.indexOf(action);
         if (index >= 0) {
-            this.actions.splice(index, 1);
+            Action.actions.splice(index, 1);
         }
         return action;
     }
@@ -121,13 +117,13 @@ export class Action {
      * @param onErrorHandler (Optional) Handler errors from each action's tick.
      */
     static tick(dt, categoryMask = 0x1, onErrorHandler) {
-        for (let i = this.actions.length - 1; i >= 0; i--) {
-            const action = this.actions[i];
+        for (let i = Action.actions.length - 1; i >= 0; i--) {
+            const action = Action.actions[i];
             if (categoryMask !== undefined && (categoryMask & action.categoryMask) === 0) {
                 continue;
             }
             try {
-                this.tickAction(action, dt);
+                Action.tickAction(action, dt);
             }
             catch (error) {
                 // Isolate individual action errors.
@@ -138,43 +134,38 @@ export class Action {
         }
     }
     static tickAction(action, delta) {
-        if (action.isTargeted || action.target) {
+        if (action.target) {
             // If the action is targeted, but is no longer valid or on the stage
             // we garbage collect its actions.
             if (action.target == null
                 || action.target.destroyed
                 || action.target.parent === undefined) {
-                const index = this.actions.indexOf(action);
+                const index = Action.actions.indexOf(action);
                 if (index > -1) {
-                    this.actions.splice(index, 1);
+                    Action.actions.splice(index, 1);
                 }
                 return;
             }
-            if (Action.PausedProperty !== undefined && isTargetPaused(action.target)) {
-                // Display object is paused. Skip tick.
-                return;
-            }
         }
-        // Otherwise, we tick the action
-        const done = action.tick(delta);
-        if (done) {
-            action.done = true;
-            // Remove this action.
-            const index = this.actions.indexOf(action);
+        // Tick the action
+        const isDone = action.tick(delta * action.speed);
+        if (isDone) {
+            action.isDone = true;
+            // Remove completed action.
+            const index = Action.actions.indexOf(action);
             if (index > -1) {
-                this.actions.splice(index, 1);
+                Action.actions.splice(index, 1);
             }
-            // Are there any queued events?
-            for (let j = 0; j < action.queued.length; j++) {
-                this.playAction(action.queued[j]);
+            // Check queued actions.
+            for (let j = 0; j < action.queuedActions.length; j++) {
+                this.playAction(action.queuedActions[j]);
             }
-            action.queued = [];
+            action.queuedActions = [];
         }
     }
-    ;
     /** Whether action is in progress */
     get isPlaying() {
-        return !this.done;
+        return !this.isDone;
     }
     get timeDistance() {
         return Math.min(1, this.time / this.duration);
@@ -182,29 +173,35 @@ export class Action {
     get easedTimeDistance() {
         return this.timingMode(this.timeDistance);
     }
-    play() {
+    /** Run an action on this target. */
+    runOn(target) {
+        this.setTarget(target);
         Action.playAction(this);
         return this;
     }
-    pause() {
-        Action.pauseAction(this);
-        return this;
-    }
-    queue(next) {
-        this.queued.push(next);
+    queueAction(next) {
+        this.queuedActions.push(next);
         return this;
     }
     reset() {
-        this.done = false;
+        this.isDone = false;
         this.time = 0;
         return this;
     }
     stop() {
-        this.pause().reset();
+        Action.stopAction(this);
+        this.reset();
         return this;
     }
     setCategory(categoryMask) {
         this.categoryMask = categoryMask;
+        return this;
+    }
+    setTarget(target) {
+        if (this.target && target !== this.target) {
+            console.warn('setTarget() called on Action that already has another target. Recycling actions is currently unsupported. Behavior may be unexpected.');
+        }
+        this.target = target;
         return this;
     }
 }
@@ -213,35 +210,17 @@ export class Action {
 //
 /** All currently running actions. */
 Action.actions = [];
-/** Optionally check a boolean property with this name on display objects. */
-Action.PausedProperty = 'paused';
 /** Set a global default timing mode. */
 Action.DefaultTimingMode = TimingMode.linear;
 /** Set the global default action category. */
 Action.DefaultCategoryMask = 0x1 << 0;
-/** Helper method to check if a target is paused. */
-function isTargetPaused(target) {
-    var _a;
-    let next = target;
-    // Check each parent.
-    while (next) {
-        if (Action.PausedProperty !== undefined && ((_a = next[Action.PausedProperty]) !== null && _a !== void 0 ? _a : false) === true) {
-            return true;
-        }
-        next = next.parent;
-    }
-    return false;
-}
 //
 // ----------------- BUILT-IN ACTION DEFINITIONS -----------------
 //
 /** Infers target from given actions. */
 export class SequenceAction extends Action {
     constructor(actions) {
-        var _a;
         super(
-        // Inferred target:
-        (_a = actions.filter(action => action.target !== undefined)[0]) === null || _a === void 0 ? void 0 : _a.target, 
         // Total duration:
         actions.reduce((total, action) => total + action.duration, 0));
         this.index = 0;
@@ -265,10 +244,14 @@ export class SequenceAction extends Action {
         }
         return this;
     }
+    setTarget(target) {
+        this.actions.forEach(action => action.setTarget(target));
+        return super.setTarget(target);
+    }
 }
 export class ScaleToAction extends Action {
-    constructor(target, x, y, duration, timingMode = Action.DefaultTimingMode) {
-        super(target, duration);
+    constructor(x, y, duration, timingMode = Action.DefaultTimingMode) {
+        super(duration);
         this.timingMode = timingMode;
         this.x = x;
         this.y = y;
@@ -285,8 +268,8 @@ export class ScaleToAction extends Action {
     }
 }
 export class ScaleByAction extends Action {
-    constructor(target, x, y, duration, timingMode = Action.DefaultTimingMode) {
-        super(target, duration);
+    constructor(x, y, duration, timingMode = Action.DefaultTimingMode) {
+        super(duration);
         this.timingMode = timingMode;
         this.x = x;
         this.y = y;
@@ -302,9 +285,21 @@ export class ScaleByAction extends Action {
         return this.timeDistance >= 1;
     }
 }
+export class RemoveFromParentAction extends Action {
+    constructor() {
+        super(0);
+    }
+    tick(delta) {
+        var _a, _b;
+        if ((_a = this.target) === null || _a === void 0 ? void 0 : _a.parent) {
+            (_b = this.target.parent) === null || _b === void 0 ? void 0 : _b.removeChild(this.target);
+        }
+        return true;
+    }
+}
 export class RunBlockAction extends Action {
     constructor(block) {
-        super(undefined, 0);
+        super(0);
         this.block = block;
     }
     tick(delta) {
@@ -313,8 +308,8 @@ export class RunBlockAction extends Action {
     }
 }
 export class RotateToAction extends Action {
-    constructor(target, rotation, duration, timingMode = Action.DefaultTimingMode) {
-        super(target, duration);
+    constructor(rotation, duration, timingMode = Action.DefaultTimingMode) {
+        super(duration);
         this.timingMode = timingMode;
         this.rotation = rotation;
     }
@@ -329,8 +324,8 @@ export class RotateToAction extends Action {
     }
 }
 export class RotateByAction extends Action {
-    constructor(target, rotation, duration, timingMode = Action.DefaultTimingMode) {
-        super(target, duration);
+    constructor(rotation, duration, timingMode = Action.DefaultTimingMode) {
+        super(duration);
         this.timingMode = timingMode;
         this.rotation = rotation;
     }
@@ -350,7 +345,7 @@ export class RepeatAction extends Action {
      * @param repeats A negative value indicates looping forever.
      */
     constructor(action, repeats) {
-        super(action.target, 
+        super(
         // Duration:
         repeats === -1 ? Infinity : action.duration * repeats);
         this.n = 0;
@@ -375,10 +370,14 @@ export class RepeatAction extends Action {
         this.action.reset();
         return this;
     }
+    setTarget(target) {
+        this.action.setTarget(target);
+        return super.setTarget(target);
+    }
 }
 export class MoveToAction extends Action {
-    constructor(target, x, y, duration, timingMode = Action.DefaultTimingMode) {
-        super(target, duration);
+    constructor(x, y, duration, timingMode = Action.DefaultTimingMode) {
+        super(duration);
         this.timingMode = timingMode;
         this.x = x;
         this.y = y;
@@ -395,8 +394,8 @@ export class MoveToAction extends Action {
     }
 }
 export class MoveByAction extends Action {
-    constructor(target, x, y, duration, timingMode = Action.DefaultTimingMode) {
-        super(target, duration);
+    constructor(x, y, duration, timingMode = Action.DefaultTimingMode) {
+        super(duration);
         this.timingMode = timingMode;
         this.x = x;
         this.y = y;
@@ -415,10 +414,7 @@ export class MoveByAction extends Action {
 /** Infers target from given actions. */
 export class GroupAction extends Action {
     constructor(actions) {
-        var _a;
         super(
-        // Inferred target:
-        (_a = actions.filter(action => action.target !== undefined)[0]) === null || _a === void 0 ? void 0 : _a.target, 
         // Max duration:
         Math.max(...actions.map(action => action.duration)));
         this.index = 0;
@@ -428,11 +424,11 @@ export class GroupAction extends Action {
         // Tick all elements!
         let allDone = true;
         for (const action of this.actions) {
-            if (action.done) {
+            if (action.isDone) {
                 continue;
             }
             if (action.tick(delta)) {
-                action.done = true;
+                action.isDone = true;
             }
             else {
                 allDone = false;
@@ -448,10 +444,14 @@ export class GroupAction extends Action {
         }
         return this;
     }
+    setTarget(target) {
+        this.actions.forEach(action => action.setTarget(target));
+        return super.setTarget(target);
+    }
 }
 export class FadeToAction extends Action {
-    constructor(target, alpha, duration, timingMode = Action.DefaultTimingMode) {
-        super(target, duration);
+    constructor(alpha, duration, timingMode = Action.DefaultTimingMode) {
+        super(duration);
         this.timingMode = timingMode;
         this.alpha = alpha;
     }

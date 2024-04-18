@@ -1,68 +1,69 @@
 # pixi-actions
 
-This is a fork of [srpatel/pixi-actions](https://github.com/srpatel/pixi-actions) that is more closely modeled after `SKAction` from `SpriteKit`.
+This is a fork of [srpatel/pixi-actions](https://github.com/srpatel/pixi-actions) that closely mimics `SKAction` from `SpriteKit`.
 
-It is a simple actions library for PixiJS that allows you to apply tweens and animations to display objects very easily. Action are a way to animate nodes without having to write a lot of boilerplate.
+It is a simple actions library for PixiJS that allows you to easily apply complex animations and events to display objects. Action are a way to animate nodes without having to write a lot of boilerplate.
 
 ## Usage
 
 Install via npm:
 
-    npm install pixi-actions
+```
+npm install pixi-actions
+```
 
 TypeScript type information are included, if you are using it. The library exports using ES6 modules.
 
 You can then import the classes you need:
 
-    import { Action, ActionTimingMode } from 'pixi-actions';
+```ts
+import { Action, ActionTimingMode } from 'pixi-actions';
+```
 
 Register a ticker with your PIXI app:
 
-    import { Action } from 'pixi-actions';
+```ts
+import { Action } from 'pixi-actions';
 
-    let app = new PIXI.Application({ ... });
-    app.ticker.add((delta) => Action.tick(delta/60));
+let app = new PIXI.Application({ ... });
+app.ticker.add((delta) => Action.tick(delta / 60));
+```
 
 Note that the delta supplied to the ticker function is in frames. If you want to use duration instead (recommended), you should divide by your frames per second.
 
 Then, you can create and play actions! Remember, creating an action is not enough - you must also call `.play()`, or the action will never start.
 
-| Command                              | Details                                                                                                                                                                                                                       |
-| :----------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `const action = Action.moveTo(...)`  | Create an action. See the table below for full details on how to do this.                                                                                                                                                     |
-| `action.play();`                     | Start the action. It will continue to execute until it finishes or is paused.                                                                                                                                                 |
-| `action.pause();`                    | Pause the action. It can be started again be calling `play()`.                                                                                                                                                                |
-| `action.reset();`                    | Reset the action. It will re-apply its effect from the beginning. If you want to use an action which has completed, you must call `reset()` before calling `play()` again. Usually, it's simpler to just create a new action. |
-| `action.stop();`                     | A shorthand for `action.reset(); action.pause();`.                                                                                                                                                                            |
-| `action.queue(nextAction);`          | Queue another action to be run once this one finishes. It may be simpler to use `Action.sequence` instead (see below) if you know the action you want to queue at the point you create the action.                            |
-| `Action.clearTargetActions(target);` | Remove all actions associated with a given target.                                                                                                                                                                            |
+| Command                                  | Details                                                                                                                                                                                                           |
+| :--------------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `const action = Action.moveTo(...)`      | Create an action. See the table below for full details on how to do this.                                                                                                                                         |
+| `action.runOn(displayObject);`           | Start the action. It will continue to execute until it finishes or is paused.                                                                                                                                     |
+| `action.queueAction(nextAction);`        | Dynamically queue an action to be run once another finishes. It may be simpler to use `Action.sequence([ ... ])` instead (see below) if you know the action you want to queue at the point you create the action. |
+| `Action.removeActionsForTarget(target);` | Remove all actions associated with a given target.                                                                                                                                                                |
 
 See the table below for a full list of all the available actions.
 
 ## Action
 
-| Action                                                    | Details                                                                                                                                                                                                    |
-| :-------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Action.moveTo( target, x, y, time, timingMode ); `       | Animate a node to a specified position.                                                                                                                                                                    |
-| `Action.scaleTo( target, x, y, time, timingMode ); `      | Animate a node's scale to specified values.                                                                                                                                                                |
-| `Action.rotateTo( target, rotation, time, timingMode ); ` | Animate a node's rotation to a specified value. Note that this uses the `rotation` property, which is in _radians_. There is an `angle` property which uses degrees, but there is no Action for it (yet!). |
-| `Action.fadeTo( target, alpha, time, timingMode ); `      | Animate a node's alpha to a specified value.                                                                                                                                                               |
-| `Action.fadeOut( target, time, timingMode ); `            | Animate a node's alpha to 0.                                                                                                                                                                               |
-| `Action.fadeIn( target, time, timingMode ); `             | Animate a node's alpha to 1.                                                                                                                                                                               |
-| `Action.fadeOutAndRemove( target, time, timingMode ); `   | Animate a node's alpha to 0, and remove it from its parent once invisible.                                                                                                                                 |
-| `Action.remove( target ); `                               | Remove a node from its parent.                                                                                                                                                                             |
-| `Action.delay( time ); `                                  | Wait for a specified interval.                                                                                                                                                                             |
-| `Action.runFunc( fn ); `                                  | Run a specified function. It will be called with the action itself as "this", which is probably not what you want. Take care, or use the ES6 "=>" notation to preserve the `this` of the caller.           |
-| `Action.repeat( action , repeats ); `                     | Repeat a specified action a given number of times.                                                                                                                                                         |
-| `Action.repeatForever( action ); `                        | Repeat a specified action forever.                                                                                                                                                                         |
-| `Action.sequence( ...actions ); `                         | Perform the specified actions one after the other.                                                                                                                                                         |
-| `Action.group( ...actions ); `                            | Perform the specified actions in parallel. This action won't finish until _all_ of its child actions have finished.                                                                                        |
+| Action                                              | Details                                                                                                                                                                                                    |
+| :-------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Action.moveTo(x, y, duration, timingMode); `       | Animate a node to a specified position.                                                                                                                                                                    |
+| `Action.scaleTo(x, y, duration, timingMode); `      | Animate a node's scale to specified values.                                                                                                                                                                |
+| `Action.rotateTo(rotation, duration, timingMode); ` | Animate a node's rotation to a specified value. Note that this uses the `rotation` property, which is in _radians_. There is an `angle` property which uses degrees, but there is no Action for it (yet!). |
+| `Action.fadeTo(alpha, duration, timingMode); `      | Animate a node's alpha to a specified value.                                                                                                                                                               |
+| `Action.fadeOut(duration, timingMode); `            | Animate a node's alpha to 0.                                                                                                                                                                               |
+| `Action.fadeIn(duration, timingMode); `             | Animate a node's alpha to 1.                                                                                                                                                                               |
+| `Action.fadeOutAndRemove(duration, timingMode); `   | Animate a node's alpha to 0, and remove it from its parent once invisible.                                                                                                                                 |
+| `Action.removeFromParent(); `                       | Remove a node from its parent.                                                                                                                                                                             |
+| `Action.delay(duration); `                          | Wait for a specified interval.                                                                                                                                                                             |
+| `Action.runFunc(callback); `                        | Run a specified function. It will be called with the action itself as "this", which is probably not what you want. Take care, or use the ES6 "=>" notation to preserve the `this` of the caller.           |
+| `Action.repeat(action, repeats); `                  | Repeat a specified action a given number of times.                                                                                                                                                         |
+| `Action.repeatForever(action); `                    | Repeat a specified action forever.                                                                                                                                                                         |
+| `Action.sequence(actions); `                        | Perform the specified actions one after the other.                                                                                                                                                         |
+| `Action.group(actions); `                           | Perform the specified actions in parallel. This action won't finish until _all_ of its child actions have finished.                                                                                        |
 
 Easing defaults to linear if omitted. Time is in the same units supplied to `Action.tick`.
 
 You can set the default timing mode with `Action.DefaultTimingMode`.
-
-You can also optionally check a display objects paused property on targeted actions.
 
 ## Examples
 
@@ -80,12 +81,12 @@ These examples all assume existence of a node `sprite` which has been added to t
 			<td><pre lang="json">
 Action.repeat(
 	Action.sequence([
-		Action.moveTo(sprite, 100, 0, 1, ActionTimingMode.linear),
-		Action.moveTo(sprite, 100, 100, 1, ActionTimingMode.linear),
-		Action.moveTo(sprite, 0, 100, 1, ActionTimingMode.linear),
-		Action.moveTo(sprite, 0, 0, 1, ActionTimingMode.linear)
+		Action.moveTo(100, 0, 1.0, ActionTimingMode.linear),
+		Action.moveTo(100, 100, 1.0, ActionTimingMode.linear),
+		Action.moveTo(0, 100, 1.0, ActionTimingMode.linear),
+		Action.moveTo(0, 0, 1.0, ActionTimingMode.linear)
 	])
-).play();</pre></td>
+).runOn(sprite);</pre></td>
 			<td><img alt="pixi-actions-example1" src="https://user-images.githubusercontent.com/4903502/111069490-95b8a400-84cd-11eb-86ea-790cd7d8598c.gif"></td>
 		</tr>
 		<tr>
@@ -93,17 +94,17 @@ Action.repeat(
 Action.repeat(
 	Action.sequence([
 		Action.parallel([
-			Action.moveTo(sprite, 100, 0, 1),
-			Action.fadeOut(sprite, 1)
+			Action.moveTo(100, 0, 1.0),
+			Action.fadeOut(1.0)
 		]),
-		Action.moveTo(sprite, 100, 100, 0),
+		Action.moveTo(100, 100, 0.0),
 		Action.parallel([
-			Action.moveTo(sprite, 0, 100, 1),
-			Action.fadeIn(sprite, 1)
+			Action.moveTo(0, 100, 1.0),
+			Action.fadeIn(1.0)
 		]),
-		Action.moveTo(sprite, 0, 0, 0),
+		Action.moveTo(0, 0, 0.0),
 	])
-).play();</pre></td>
+).runOn(sprite);</pre></td>
 			<td><img alt="pixi-actions-example2" src="https://user-images.githubusercontent.com/4903502/111069497-9bae8500-84cd-11eb-944c-d34d27502772.gif"><br><i>Please excuse the poor gif quality!</i></td>
 		</tr>
 	</tbody>

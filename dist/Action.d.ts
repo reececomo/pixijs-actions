@@ -9,14 +9,11 @@ import { TimingModeFn } from './TimingMode';
  * Optionally set Action.categoryMask to allow different action categories to run independently (i.e. UI and Game World).
  */
 export declare abstract class Action {
-    target: PIXI.DisplayObject | undefined;
-    duration: number;
+    readonly duration: number;
     timingMode: TimingModeFn;
     categoryMask: number;
     /** All currently running actions. */
     static readonly actions: Action[];
-    /** Optionally check a boolean property with this name on display objects. */
-    static PausedProperty?: string;
     /** Set a global default timing mode. */
     static DefaultTimingMode: TimingModeFn;
     /** Set the global default action category. */
@@ -29,27 +26,27 @@ export declare abstract class Action {
     static repeat(action: Action, repeats: number): Action;
     /** Infers target from given action. */
     static repeatForever(action: Action): Action;
-    static moveTo(target: PIXI.DisplayObject, x: number, y: number, duration: number, timingMode?: TimingModeFn): Action;
-    static moveBy(target: PIXI.DisplayObject, x: number, y: number, duration: number, timingMode?: TimingModeFn): Action;
-    static fadeTo(target: PIXI.DisplayObject, alpha: number, duration: number, timingMode?: TimingModeFn): Action;
-    static fadeOut(target: PIXI.DisplayObject, duration: number, timingMode?: TimingModeFn): Action;
-    static fadeOutAndRemoveFromParent(target: PIXI.DisplayObject, duration: number, timingMode?: TimingModeFn): Action;
-    static fadeIn(target: PIXI.DisplayObject, duration: number, timingMode?: TimingModeFn): Action;
-    static removeFromParent(target: PIXI.DisplayObject): Action;
+    static moveTo(x: number, y: number, duration: number, timingMode?: TimingModeFn): Action;
+    static moveBy(x: number, y: number, duration: number, timingMode?: TimingModeFn): Action;
+    static fadeTo(alpha: number, duration: number, timingMode?: TimingModeFn): Action;
+    static fadeOut(duration: number, timingMode?: TimingModeFn): Action;
+    static fadeOutAndRemoveFromParent(duration: number, timingMode?: TimingModeFn): Action;
+    static fadeIn(duration: number, timingMode?: TimingModeFn): Action;
+    static removeFromParent(): Action;
     static delay(duration: number): Action;
     static runBlock(fn: () => void): Action;
-    static scaleTo(target: PIXI.DisplayObject, x: number, y: number, duration: number, timingMode?: TimingModeFn): Action;
-    static scaleBy(target: PIXI.DisplayObject, x: number, y: number, duration: number, timingMode?: TimingModeFn): Action;
-    static rotateTo(target: PIXI.DisplayObject, rotation: number, duration: number, timingMode?: TimingModeFn): Action;
-    static rotateBy(target: PIXI.DisplayObject, rotation: number, duration: number, timingMode?: TimingModeFn): Action;
+    static scaleTo(x: number, y: number, duration: number, timingMode?: TimingModeFn): Action;
+    static scaleBy(x: number, y: number, duration: number, timingMode?: TimingModeFn): Action;
+    static rotateTo(rotation: number, duration: number, timingMode?: TimingModeFn): Action;
+    static rotateBy(rotation: number, duration: number, timingMode?: TimingModeFn): Action;
     /** Clear all actions with this target. */
     static removeActionsForTarget(target: PIXI.DisplayObject | undefined): void;
     /** Clears all actions. */
     static removeAllActions(): void;
     /** Play an action. */
     protected static playAction(action: Action): Action;
-    /** Pause an action. */
-    protected static pauseAction(action: Action): Action;
+    /** Stop an action. */
+    protected static stopAction(action: Action): Action;
     /** Tick all actions forward.
      *
      * @param dt Delta time
@@ -58,24 +55,25 @@ export declare abstract class Action {
      */
     static tick(dt: number, categoryMask?: number, onErrorHandler?: (error: any) => void): void;
     private static tickAction;
+    target: PIXI.DisplayObject | undefined;
+    speed: number;
     time: number;
-    done: boolean;
-    protected queued: Action[];
-    /** Whether the action is intended to be targeted. */
-    isTargeted: boolean;
+    isDone: boolean;
+    protected queuedActions: Action[];
     /** Whether action is in progress */
     get isPlaying(): boolean;
     protected get timeDistance(): number;
     protected get easedTimeDistance(): number;
-    constructor(target: PIXI.DisplayObject | undefined, duration: number, timingMode?: TimingModeFn, categoryMask?: number);
+    constructor(duration: number, timingMode?: TimingModeFn, categoryMask?: number);
     /** Must be implmented by each class. */
     abstract tick(progress: number): boolean;
-    play(): this;
-    pause(): this;
-    queue(next: Action): this;
+    /** Run an action on this target. */
+    runOn(target: PIXI.DisplayObject): this;
+    queueAction(next: Action): this;
     reset(): this;
     stop(): this;
     setCategory(categoryMask: number): this;
+    setTarget(target: PIXI.DisplayObject): this;
 }
 /** Infers target from given actions. */
 export declare class SequenceAction extends Action {
@@ -84,13 +82,14 @@ export declare class SequenceAction extends Action {
     constructor(actions: Action[]);
     tick(delta: number): boolean;
     reset(): this;
+    setTarget(target: PIXI.DisplayObject): this;
 }
 export declare class ScaleToAction extends Action {
     protected startX: number;
     protected startY: number;
     protected x: number;
     protected y: number;
-    constructor(target: PIXI.DisplayObject, x: number, y: number, duration: number, timingMode?: TimingModeFn);
+    constructor(x: number, y: number, duration: number, timingMode?: TimingModeFn);
     tick(delta: number): boolean;
 }
 export declare class ScaleByAction extends Action {
@@ -98,7 +97,11 @@ export declare class ScaleByAction extends Action {
     protected startY: number;
     protected x: number;
     protected y: number;
-    constructor(target: PIXI.DisplayObject, x: number, y: number, duration: number, timingMode?: TimingModeFn);
+    constructor(x: number, y: number, duration: number, timingMode?: TimingModeFn);
+    tick(delta: number): boolean;
+}
+export declare class RemoveFromParentAction extends Action {
+    constructor();
     tick(delta: number): boolean;
 }
 export declare class RunBlockAction extends Action {
@@ -109,13 +112,13 @@ export declare class RunBlockAction extends Action {
 export declare class RotateToAction extends Action {
     protected startRotation: number;
     protected rotation: number;
-    constructor(target: PIXI.DisplayObject, rotation: number, duration: number, timingMode?: TimingModeFn);
+    constructor(rotation: number, duration: number, timingMode?: TimingModeFn);
     tick(delta: number): boolean;
 }
 export declare class RotateByAction extends Action {
     protected startRotation: number;
     protected rotation: number;
-    constructor(target: PIXI.DisplayObject, rotation: number, duration: number, timingMode?: TimingModeFn);
+    constructor(rotation: number, duration: number, timingMode?: TimingModeFn);
     tick(delta: number): boolean;
 }
 export declare class RepeatAction extends Action {
@@ -129,13 +132,14 @@ export declare class RepeatAction extends Action {
     constructor(action: Action, repeats: number);
     tick(delta: number): boolean;
     reset(): this;
+    setTarget(target: PIXI.DisplayObject): this;
 }
 export declare class MoveToAction extends Action {
     protected startX: number;
     protected startY: number;
     protected x: number;
     protected y: number;
-    constructor(target: PIXI.DisplayObject, x: number, y: number, duration: number, timingMode?: TimingModeFn);
+    constructor(x: number, y: number, duration: number, timingMode?: TimingModeFn);
     tick(delta: number): boolean;
 }
 export declare class MoveByAction extends Action {
@@ -143,7 +147,7 @@ export declare class MoveByAction extends Action {
     protected startY: number;
     protected x: number;
     protected y: number;
-    constructor(target: PIXI.DisplayObject, x: number, y: number, duration: number, timingMode?: TimingModeFn);
+    constructor(x: number, y: number, duration: number, timingMode?: TimingModeFn);
     tick(delta: number): boolean;
 }
 /** Infers target from given actions. */
@@ -153,11 +157,12 @@ export declare class GroupAction extends Action {
     constructor(actions: Action[]);
     tick(delta: number): boolean;
     reset(): this;
+    setTarget(target: PIXI.DisplayObject): this;
 }
 export declare class FadeToAction extends Action {
     protected startAlpha: number;
     protected alpha: number;
-    constructor(target: PIXI.DisplayObject, alpha: number, duration: number, timingMode?: TimingModeFn);
+    constructor(alpha: number, duration: number, timingMode?: TimingModeFn);
     tick(delta: number): boolean;
 }
 export declare class DelayAction extends Action {
