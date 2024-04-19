@@ -2,6 +2,20 @@ import * as PIXI from 'pixi.js';
 
 import { TimingMode, TimingModeFn } from './TimingMode';
 
+interface VectorLike {
+	x: number;
+	y: number;
+}
+
+/** Path of points. */
+type PathLike = VectorLike[];
+
+/** Time / duration (in seconds) */
+type TimeInterval = number;
+
+/** Targeted display node. */
+type TargetNode = PIXI.DisplayObject;
+
 /**
  * Action is an animation that is executed by a display object in the scene.
  * Actions are used to change a display object in some way (like move its position over time).
@@ -13,11 +27,15 @@ import { TimingMode, TimingModeFn } from './TimingMode';
 export abstract class Action {
 
   //
-  // ----------------- Static -----------------
+  // ----------------- Global Settings: -----------------
   //
 
   /** All currently running actions. */
   public static readonly actions: Action[] = [];
+
+  //
+  // ----------------- Global Settings: -----------------
+  //
 
   /** Set a global default timing mode. */
   public static DefaultTimingMode: TimingModeFn = TimingMode.linear;
@@ -26,134 +44,212 @@ export abstract class Action {
   public static DefaultCategoryMask: number = 0x1 << 0;
 
   //
-  // ----------------- BUILT-INS -----------------
+  // ----------------- Chaining Actions: -----------------
   //
 
-  /** Infers target from given actions. */
+	/** Creates an action that runs a collection of actions sequentially. */
   public static sequence(actions: Action[]): Action {
     return new SequenceAction(actions);
   }
 
-  
-/** Infers target from given actions. */
+	/** Creates an action that runs a collection of actions in parallel. */
   public static group(actions: Action[]): Action {
     return new GroupAction(actions);
   }
   
-/** Infers target from given action. */
+	/** Creates an action that repeats another action a specified number of times. */
   public static repeat(action: Action, repeats: number): Action {
     return new RepeatAction(action, repeats);
   }
 
-  
-  /** Infers target from given action. */
+	/** Creates an action that repeats another action forever. */
   public static repeatForever(action: Action): Action {
     return new RepeatAction(action, -1);
   }
 
-  public static moveTo(
-    x: number,
-    y: number,
-    duration: number,
-    timingMode?: TimingModeFn
-  ): Action {
-    return new MoveToAction(x, y, duration, timingMode);
+  //
+  // ----------------- Delaying Actions: -----------------
+  //
+
+	/** Creates an action that idles for a specified period of time. */
+  public static waitForDuration(duration: TimeInterval): Action {
+    return new DelayAction(duration);
   }
 
-  public static moveBy(
-    x: number,
-    y: number,
-    duration: number,
-    timingMode?: TimingModeFn
-  ): Action {
-    return new MoveByAction(x, y, duration, timingMode);
+	/**
+	 * Creates an action that idles for a randomized period of time.
+	 * The resulting action will wait for averageDuration ± (rangeSize / 2).
+	 *
+	 * @param average The average amount of time to wait.
+	 * @param rangeSize The range of possible values for the duration.
+	 * @param randomSeed (Optional) A scalar between 0 and 1. Defaults to `Math.random()`.
+	 *
+	 * @example Action.waitForDurationWithRange(10.0, 5.0) // duration will be 7.5 -> 12.5
+	 */
+  public static waitForDurationWithRange(average: TimeInterval, rangeSize: TimeInterval, randomSeed?: number): Action {
+		const randomComponent = rangeSize * (randomSeed ?? Math.random()) - rangeSize * 0.5;
+    return new DelayAction(average + randomComponent);
   }
 
-  public static fadeTo(
-    alpha: number,
-    duration: number,
-    timingMode?: TimingModeFn
-  ): Action {
-    return new FadeToAction(alpha, duration, timingMode);
+  //
+  // ----------------- Linear Path Actions: -----------------
+  //
+
+	/** Creates an action that moves a node relative to its current position. */
+  public static moveBy(x: number, y: number, duration: TimeInterval): Action {
+    return new MoveByAction(x, y, duration);
   }
 
-  public static fadeOut(
-    duration: number,
-    timingMode?: TimingModeFn
-  ): Action {
-    return Action.fadeTo(0.0, duration, timingMode);
+	/** Creates an action that moves a node relative to its current position. */
+  public static moveByVector(vec: VectorLike, duration: TimeInterval): Action {
+    return Action.moveBy(vec.x, vec.y, duration);
   }
 
-  public static fadeOutAndRemoveFromParent(
-    duration: number,
-    timingMode?: TimingModeFn
-  ): Action {
-    return Action.sequence([
-      Action.fadeOut(duration, timingMode),
-      Action.removeFromParent(),
-    ]);
+	/** Creates an action that moves a node horizontally relative to its current position. */
+  public static moveByX(x: number, duration: TimeInterval): Action {
+    return Action.moveBy(x, 0, duration);
   }
 
-  public static fadeIn(
-    duration: number,
-    timingMode?: TimingModeFn
-  ): Action {
-    return this.fadeTo(1.0, duration, timingMode);
+	/** Creates an action that moves a node vertically relative to its current position. */
+  public static moveByY(y: number, duration: TimeInterval): Action {
+    return Action.moveBy(0, y, duration);
   }
+
+	/** Creates an action that moves a node to a new position. */
+  public static moveTo(x: number, y: number, duration: TimeInterval): Action {
+    return new MoveToAction(x, y, duration);
+  }
+
+	/** Creates an action that moves a node to a new position. */
+  public static moveToPoint(point: VectorLike, duration: TimeInterval): Action {
+    return Action.moveTo(point.x, point.y, duration);
+  }
+
+	/** Creates an action that moves a node horizontally. */
+  public static moveToX(x: number, duration: TimeInterval): Action {
+    return new MoveToAction(x, undefined, duration);
+  }
+
+	/** Creates an action that moves a node vertically. */
+  public static moveToY(y: number, duration: TimeInterval): Action {
+    return new MoveToAction(undefined, y, duration);
+  }
+
+  //
+  // ----------------- Rotation Actions: -----------------
+  //
+
+	/** Creates an action that rotates the node by a relative value. */
+  public static rotateBy(rotation: number, duration: TimeInterval): Action {
+    return new RotateByAction(rotation, duration);
+  }
+
+	/** Creates an action that rotates the node to an absolute value. */
+  public static rotateTo(rotation: number, duration: TimeInterval): Action {
+    return new RotateToAction(rotation, duration);
+  }
+
+  //
+  // ----------------- Scale Actions: -----------------
+  //
+
+	/** Creates an action that changes the x and y scale values of a node by a relative value. */
+  public static scaleBy(x: number, y: number, duration: TimeInterval): Action {
+    return new ScaleByAction(x, y, duration);
+  }
+
+	/** Creates an action that changes the x and y scale values of a node by a relative value. */
+  public static scaleBySize(size: VectorLike, duration: TimeInterval): Action {
+    return Action.scaleBy(size.x, size.y, duration);
+  }
+
+	/** Creates an action that changes the x scale of a node by a relative value. */
+  public static scaleXBy(x: number, duration: TimeInterval): Action {
+    return Action.scaleBy(x, 0, duration);
+  }
+
+	/** Creates an action that changes the y scale of a node by a relative value. */
+  public static scaleYBy(y: number, duration: TimeInterval): Action {
+    return Action.scaleBy(0, y, duration);
+  }
+
+	/** Creates an action that changes the x and y scale values of a node. */
+  public static scaleTo(x: number, y: number, duration: TimeInterval): Action {
+    return new ScaleToAction(x, y, duration);
+  }
+
+	/** Creates an action that changes the x and y scale values of a node. */
+  public static scaleToSize(size: VectorLike, duration: TimeInterval): Action {
+    return Action.scaleTo(size.x, size.y, duration);
+  }
+
+	/** Creates an action that changes the y scale values of a node. */
+  public static scaleXTo(x: number, duration: TimeInterval): Action {
+    return new ScaleToAction(x, undefined, duration);
+  }
+
+	/** Creates an action that changes the x scale values of a node. */
+  public static scaleYTo(y: number, duration: TimeInterval): Action {
+    return new ScaleToAction(undefined, y, duration);
+  }
+
+  //
+  // ----------------- Transparency Actions: -----------------
+  //
+
+	/** Creates an action that changes the alpha value of the node to 1.0. */
+  public static fadeIn(duration: TimeInterval): Action {
+    return Action.fadeAlphaTo(1, duration);
+  }
+
+	/** Creates an action that changes the alpha value of the node to 0.0. */
+  public static fadeOut(duration: TimeInterval): Action {
+    return Action.fadeAlphaTo(0.0, duration);
+  }
+
+	/** Creates an action that adjusts the alpha value of a node to a new value. */
+  public static fadeAlphaTo(alpha: number, duration: TimeInterval): Action {
+    return new FadeToAction(alpha, duration);
+  }
+
+	/** Creates an action that adjusts the alpha value of a node by a relative value. */
+  public static fadeAlphaBy(alpha: number, duration: TimeInterval): Action {
+    return new FadeByAction(alpha, duration);
+  }
+
+  //
+  // ----------------- Display Object Actions: -----------------
+  //
 
   public static removeFromParent(): Action {
     return new RemoveFromParentAction();
   }
 
-  public static delay(duration: number
-  ): Action {
-    return new DelayAction(duration);
-  }
+  //
+  // ----------------- Transparency Actions: -----------------
+  //
 
-  public static runBlock(fn: () => void): Action {
+	/** Creates an action that executes a block. */
+  public static run(fn: () => void): Action {
     return new RunBlockAction(fn);
   }
 
-  public static scaleTo(
-    x: number,
-    y: number,
-    duration: number,
-    timingMode?: TimingModeFn
-  ): Action {
-    return new ScaleToAction(x, y, duration, timingMode);
-  }
-
-  public static scaleBy(
-    x: number,
-    y: number,
-    duration: number,
-    timingMode?: TimingModeFn
-  ): Action {
-    return new ScaleByAction(x, y, duration, timingMode);
-  }
-
-  public static rotateTo(
-    rotation: number,
-    duration: number,
-    timingMode?: TimingModeFn
-  ): Action {
-    return new RotateToAction(rotation, duration, timingMode);
-  }
-
-  public static rotateBy(
-    rotation: number,
-    duration: number,
-    timingMode?: TimingModeFn
-  ): Action {
-    return new RotateByAction(rotation, duration, timingMode);
-  }
+	/**
+	 * Creates an action that executes a stepping function over its duration.
+	 *
+	 * The function will be triggered on every redraw until the action completes, and is passed
+	 * the target and the elasped time as a scalar between 0 and 1 (which is passed through the timing mode function).
+	 */
+	public static custom(duration: number, stepFn: (target: TargetNode, x: number) => void): Action {
+		return new CustomAction(duration, stepFn);
+	}
 
   //
-  // ----------------- METHODS -----------------
+  // ----------------- Global Methods: -----------------
   //
 
   /** Clear all actions with this target. */
-  public static removeActionsForTarget(target: PIXI.DisplayObject | undefined): void {
+  public static removeActionsForTarget(target: TargetNode | undefined): void {
     for (let i = Action.actions.length - 1; i >= 0; i--) {
       const action: Action = this.actions[i];
 
@@ -209,23 +305,25 @@ export abstract class Action {
     }
   }
 
-  private static tickAction(action: Action, delta: number): void {
-    if (action.target) {
-      // If the action is targeted, but is no longer valid or on the stage
-      // we garbage collect its actions.
-      if (
-        action.target == null
-        || action.target.destroyed
-        || action.target.parent === undefined
-      ) {
-        const index = Action.actions.indexOf(action);
-        if (index > -1) {
-          Action.actions.splice(index, 1);
-        }
+  protected static tickAction(action: Action, delta: number): void {
+    if (!action.target) {
+			console.warn('Action was unexpectedly missing target display object when running!');
+		}
 
-        return;
-      }
-    }
+		// If the action is targeted, but is no longer valid or on the stage
+		// we garbage collect its actions.
+		if (
+			action.target == null
+			|| action.target.destroyed
+			|| action.target.parent === undefined
+		) {
+			const index = Action.actions.indexOf(action);
+			if (index > -1) {
+				Action.actions.splice(index, 1);
+			}
+
+			return;
+		}
 
     // Tick the action
     const isDone = action.tick(delta * action.speed);
@@ -247,34 +345,49 @@ export abstract class Action {
   }
 
   //
-  // ----------------- INSTANCE PROPERTIES -----------------
+  // ----------------- Action Instance Properties: -----------------
   //
 
-  public target: PIXI.DisplayObject | undefined;
+	/** The display object the action is running against. Set during `runOn` and cannot be changed. */
+  public target!: TargetNode;
+
+	/** A speed factor that modifies how fast an action runs. */
   public speed: number = 1.0;
-  public time: number = 0;
+
+	/** Time elapsed in the action. */
+  public elapsed: number = 0.0;
+
+	/** Whether the action has completed. Set by `Action. */
   public isDone: boolean = false;
+
+	/** Actions that will be triggered when this action completes. */
 	protected queuedActions: Action[] = [];
 
-  /** Whether action is in progress */
+  /** Whether action is in progress (or has not yet started). */
   public get isPlaying(): boolean {
-    return !this.isDone;
+    return this.isDone === false;
   }
 
+	/** The relative time elapsed between 0 and 1. */
   protected get timeDistance(): number {
-    return Math.min(1, this.time / this.duration)
+    return Math.min(1, this.elapsed / this.duration)
   }
 
+	/**
+	 * The relative time elapsed between 0 and 1, eased by the timing mode function.
+	 *
+	 * Can be a value beyond 0 or 1 depending on the timing mode function.
+	 */
   protected get easedTimeDistance(): number {
     return this.timingMode(this.timeDistance);
   }
 
   //
-  // ----------------- INSTANCE METHODS -----------------
+  // ----------------- Action Instance Methods: -----------------
   //
 
   constructor(
-    public readonly duration: number,
+    public readonly duration: TimeInterval,
     public timingMode: TimingModeFn = Action.DefaultTimingMode,
     public categoryMask: number = Action.DefaultCategoryMask,
   ) {}
@@ -283,35 +396,46 @@ export abstract class Action {
   public abstract tick(progress: number): boolean;
 
 	/** Run an action on this target. */
-  public runOn(target: PIXI.DisplayObject): this {
+  public runOn(target: TargetNode): this {
 		this.setTarget(target);
     Action.playAction(this);
     return this;
   }
 
+	/** Set an action to run after this action. */
 	public queueAction(next: Action): this {
 		this.queuedActions.push(next);
 		return this;
 	}
 
+	/** Reset an action to the start. */
   public reset(): this {
     this.isDone = false;
-    this.time = 0;
+    this.elapsed = 0;
     return this;
   }
 
+	/** Stop and reset an action. */
   public stop(): this {
     Action.stopAction(this);
 		this.reset();
     return this;
   }
 
+	/** Set a timing mode function for this action. */
+  public withTimingMode(timingMode: TimingModeFn): this {
+		this.timingMode = timingMode;
+    return this;
+  }
+
+	/** Set a category mask for this action. Used to group different actions together. */
   public setCategory(categoryMask: number): this {
     this.categoryMask = categoryMask;
     return this;
   }
 
-  public setTarget(target: PIXI.DisplayObject): this {
+	/** Set which display object should be targeted. Internal use only. */
+  public setTarget(target: TargetNode): this {
 		if (this.target && target !== this.target) {
 			console.warn('setTarget() called on Action that already has another target. Recycling actions is currently unsupported. Behavior may be unexpected.');
 		}
@@ -319,13 +443,27 @@ export abstract class Action {
     this.target = target;
     return this;
   }
+
+	// ----- Implementation: -----
+
+	/**
+	 * For relative actions, increments time by delta, and returns the change in easedTimeDistance.
+	 *
+	 * @param delta change in time to apply
+	 * @returns the relative change in easedTimeDistance.
+	 */
+	protected applyDelta(delta: number): number {
+		const before = this.easedTimeDistance;
+		this.elapsed += delta;
+
+		return this.easedTimeDistance - before;
+	}
 }
 
 //
-// ----------------- BUILT-IN ACTION DEFINITIONS -----------------
+// ----------------- Built-ins: -----------------
 //
 
-/** Infers target from given actions. */
 export class SequenceAction extends Action {
   index: number = 0;
   actions: Action[];
@@ -361,7 +499,7 @@ export class SequenceAction extends Action {
     return this;
   }
 
-  public setTarget(target: PIXI.DisplayObject): this {
+  public setTarget(target: TargetNode): this {
 		this.actions.forEach(action => action.setTarget(target));
 		return super.setTarget(target);
 	}
@@ -370,68 +508,48 @@ export class SequenceAction extends Action {
 export class ScaleToAction extends Action {
   protected startX!: number;
   protected startY!: number;
-  protected x: number;
-  protected y: number;
 
   constructor(
-    x: number,
-    y: number,
-    duration: number,
-    timingMode: TimingModeFn = Action.DefaultTimingMode,
+		protected readonly x: number | undefined,
+		protected readonly y: number | undefined,
+    duration: TimeInterval,
   ) {
     super(duration);
-    this.timingMode = timingMode;
-    this.x = x;
-    this.y = y;
   }
 
   public tick(delta: number): boolean {
-    if (this.time === 0) {
-      this.startX = this.target!.scale.x;
-      this.startY = this.target!.scale.y;
+    if (this.elapsed === 0) {
+      this.startX = this.target.scale.x;
+      this.startY = this.target.scale.y;
     }
 
-    this.time += delta;
+    this.elapsed += delta;
 
     const factor: number = this.easedTimeDistance;
-    this.target!.scale.set(
-      this.startX + (this.x - this.startX) * factor,
-      this.startY + (this.y - this.startY) * factor,
-    );
+
+		const newXScale = this.x === undefined ? this.target.scale.x : this.startX + (this.x - this.startX) * factor;
+		const newYScale = this.y === undefined ? this.target.scale.y : this.startY + (this.y - this.startY) * factor;
+	
+    this.target.scale.set(newXScale, newYScale);
 
     return this.timeDistance >= 1;
   }
 }
 export class ScaleByAction extends Action {
-  protected startX!: number;
-  protected startY!: number;
-  protected x: number;
-  protected y: number;
-
   constructor(
-    x: number,
-    y: number,
-    duration: number,
-    timingMode: TimingModeFn = Action.DefaultTimingMode,
+		protected readonly x: number,
+		protected readonly y: number,
+    duration: TimeInterval,
   ) {
     super(duration);
-    this.timingMode = timingMode;
-    this.x = x;
-    this.y = y;
   }
 
   public tick(delta: number): boolean {
-    if (this.time === 0) {
-      this.startX = this.target!.scale.x;
-      this.startY = this.target!.scale.y;
-    }
-
-    this.time += delta;
-
-    const factor: number = this.easedTimeDistance;
-    this.target!.scale.set(
-      this.startX + this.x * factor,
-      this.startY + this.y * factor,
+		const factorDelta = this.applyDelta(delta);
+	
+    this.target.scale.set(
+      this.target.scale.x + this.x * factorDelta,
+      this.target.scale.y + this.y * factorDelta,
     );
 
     return this.timeDistance >= 1;
@@ -452,6 +570,22 @@ export class RemoveFromParentAction extends Action {
   }
 }
 
+export class CustomAction extends Action {
+  constructor(
+		duration: TimeInterval,
+		protected stepFn: (target: TargetNode, x: number) => void
+	) {
+    super(duration);
+  }
+
+  public tick(delta: number): boolean {
+		this.elapsed += delta;
+    this.stepFn(this.target, this.easedTimeDistance);
+
+    return this.timeDistance >= 1;
+  }
+}
+
 export class RunBlockAction extends Action {
   protected block: () => any;
 
@@ -469,57 +603,43 @@ export class RunBlockAction extends Action {
 
 export class RotateToAction extends Action {
   protected startRotation!: number;
-  protected rotation: number;
 
   constructor(
-    rotation: number,
-    duration: number,
-    timingMode: TimingModeFn = Action.DefaultTimingMode,
+    protected readonly rotation: number,
+    duration: TimeInterval,
   ) {
     super(duration);
-    this.timingMode = timingMode;
-    this.rotation = rotation;
   }
 
   public tick(delta: number): boolean {
-    if (this.time === 0) {
-      this.startRotation = this.target!.rotation;
+    if (this.elapsed === 0) {
+      this.startRotation = this.target.rotation;
     }
 
-    this.time += delta;
+    this.elapsed += delta;
 
     const factor: number = this.easedTimeDistance;
-    this.target!.rotation = this.startRotation + (this.rotation - this.startRotation) * factor;
+    this.target.rotation = this.startRotation + (this.rotation - this.startRotation) * factor;
     return this.timeDistance >= 1;
   }
 }
 
 export class RotateByAction extends Action {
-  protected startRotation!: number;
-  protected rotation: number;
-
   constructor(
-    rotation: number,
-    duration: number,
-    timingMode: TimingModeFn = Action.DefaultTimingMode,
+    protected readonly rotation: number,
+    duration: TimeInterval,
   ) {
     super(duration);
-    this.timingMode = timingMode;
-    this.rotation = rotation;
   }
 
   public tick(delta: number): boolean {
-    if (this.time === 0) {
-      this.startRotation = this.target!.rotation;
-    }
+		const factorDelta = this.applyDelta(delta);
+    this.target.rotation += this.rotation * factorDelta;
 
-    this.time += delta;
-
-    const factor: number = this.easedTimeDistance;
-    this.target!.rotation = this.startRotation + this.rotation * factor;
     return this.timeDistance >= 1;
   }
 }
+
 export class RepeatAction extends Action {
   protected action: Action;
   protected maxRepeats: number;
@@ -558,7 +678,7 @@ export class RepeatAction extends Action {
     return this;
   }
 
-  public setTarget(target: PIXI.DisplayObject): this {
+  public setTarget(target: TargetNode): this {
 		this.action.setTarget(target);
 		return super.setTarget(target);
 	}
@@ -567,77 +687,54 @@ export class RepeatAction extends Action {
 export class MoveToAction extends Action {
   protected startX!: number;
   protected startY!: number;
-  protected x: number;
-  protected y: number;
 
   constructor(
-    x: number,
-    y: number,
-    duration: number,
-    timingMode: TimingModeFn = Action.DefaultTimingMode,
+		protected readonly x: number | undefined,
+		protected readonly y: number | undefined,
+    duration: TimeInterval,
   ) {
     super(duration);
-    this.timingMode = timingMode;
-    this.x = x;
-    this.y = y;
   }
 
   public tick(delta: number): boolean {
-    if (this.time === 0) {
-      this.startX = this.target!.x;
-      this.startY = this.target!.y;
+    if (this.elapsed === 0) {
+      this.startX = this.target.x;
+      this.startY = this.target.y;
     }
 
-    this.time += delta;
+    this.elapsed += delta;
 
     const factor: number = this.easedTimeDistance;
-    this.target!.position.set(
-      this.startX + (this.x - this.startX) * factor,
-      this.startY + (this.y - this.startY) * factor,
-    );
+		const newX = this.x === undefined ? this.target.position.x : this.startX + (this.x - this.startX) * factor;
+		const newY = this.y === undefined ? this.target.position.y : this.startY + (this.y - this.startY) * factor;
+		
+		this.target.position.set(newX, newY);
 
     return this.timeDistance >= 1;
   }
 }
 
-
-export class MoveByAction extends Action {
-  protected startX!: number;
-  protected startY!: number;
-  protected x: number;
-  protected y: number;
-
-  constructor(
-    x: number,
-    y: number,
-    duration: number,
-    timingMode: TimingModeFn = Action.DefaultTimingMode,
-  ) {
+class MoveByAction extends Action {
+  public constructor(
+		protected x: number,
+		protected y: number,
+		duration: number,
+	) {
     super(duration);
-    this.timingMode = timingMode;
-    this.x = x;
-    this.y = y;
   }
 
   public tick(delta: number): boolean {
-    if (this.time === 0) {
-      this.startX = this.target!.x;
-      this.startY = this.target!.y;
+		const factorDelta = this.applyDelta(delta);
+
+    if (this.target) {
+      this.target.position.x += this.x * factorDelta;
+      this.target.position.y += this.y * factorDelta;
     }
-
-    this.time += delta;
-
-    const factor: number = this.easedTimeDistance;
-    this.target!.position.set(
-      this.startX + this.x * factor,
-      this.startY + this.y * factor,
-    );
 
     return this.timeDistance >= 1;
   }
 }
 
-/** Infers target from given actions. */
 export class GroupAction extends Action {
   protected index: number = 0;
   protected actions: Action[];
@@ -680,7 +777,7 @@ export class GroupAction extends Action {
     return this;
   }
 
-  public setTarget(target: PIXI.DisplayObject): this {
+  public setTarget(target: TargetNode): this {
 		this.actions.forEach(action => action.setTarget(target));
 		return super.setTarget(target);
 	}
@@ -690,25 +787,37 @@ export class FadeToAction extends Action {
   protected startAlpha!: number;
   protected alpha: number;
 
-  constructor(
-    alpha: number,
-    duration: number,
-    timingMode: TimingModeFn = Action.DefaultTimingMode,
-  ) {
+  constructor(alpha: number, duration: TimeInterval) {
     super(duration);
-    this.timingMode = timingMode;
     this.alpha = alpha;
   }
 
   public tick(delta: number): boolean {
-    if (this.time === 0) {
-      this.startAlpha = this.target!.alpha;
+    if (this.elapsed === 0) {
+      this.startAlpha = this.target.alpha;
     }
 
-    this.time += delta;
+    this.elapsed += delta;
 
     const factor: number = this.timingMode(this.timeDistance);
-    this.target!.alpha = this.startAlpha + (this.alpha - this.startAlpha) * factor;
+    this.target.alpha = this.startAlpha + (this.alpha - this.startAlpha) * factor;
+
+    return this.timeDistance >= 1;
+  }
+}
+
+export class FadeByAction extends Action {
+  constructor(
+		protected readonly alpha: number,
+		duration: TimeInterval,
+		timingMode: TimingModeFn = Action.DefaultTimingMode
+	) {
+    super(duration);
+  }
+
+  public tick(delta: number): boolean {
+		const factorDelta = this.applyDelta(delta);
+    this.target.alpha += this.alpha * factorDelta;
 
     return this.timeDistance >= 1;
   }
@@ -716,7 +825,7 @@ export class FadeToAction extends Action {
 
 export class DelayAction extends Action {
   public tick(delta: number): boolean {
-    this.time += delta;
-    return this.time >= this.duration;
+    this.elapsed += delta;
+    return this.elapsed >= this.duration;
   }
 }
