@@ -1,40 +1,80 @@
 import * as PIXI from 'pixi.js';
 import { TimingModeFn } from './TimingMode';
+/** Time measured in seconds. */
+type TimeInterval = number;
+/** Targeted display node. */
+type TargetNode = PIXI.DisplayObject;
+/** Any two dimensional vector. */
 interface VectorLike {
     x: number;
     y: number;
 }
-/** Time / duration (in seconds) */
-declare type TimeInterval = number;
-/** Targeted display node. */
-declare type TargetNode = PIXI.DisplayObject;
 /**
  * Action is an animation that is executed by a display object in the scene.
  * Actions are used to change a display object in some way (like move its position over time).
  *
  * Trigger @see {Action.tick(...)} to update actions.
  *
- * Optionally set Action.categoryMask to allow different action categories to run independently (i.e. UI and Game World).
+ * Optionally set Action.categoryMask to allow different action categories to run independently
+ * (i.e. UI and Game World).
  */
 export declare abstract class Action {
     readonly duration: TimeInterval;
+    speed: number;
     timingMode: TimingModeFn;
     categoryMask: number;
     /** All currently running actions. */
-    static readonly actions: Action[];
-    /** Set a global default timing mode. */
-    static DefaultTimingMode: TimingModeFn;
-    /** Set the global default action category. */
-    static DefaultCategoryMask: number;
-    /** Creates an action that runs a collection of actions sequentially. */
-    static sequence(actions: Action[]): Action;
-    /** Creates an action that runs a collection of actions in parallel. */
+    protected static readonly _actions: Action[];
+    /**
+     * Creates an action that runs a collection of actions in parallel.
+     *
+     * When the action executes, the actions that comprise the group all start immediately and run in
+     * parallel. The duration of the group action is the longest duration among the collection of
+     * actions. If an action in the group has a duration less than the group’s duration, the action
+     * completes, then idles until the group completes the remaining actions. This matters most when
+     * creating a repeating action that repeats a group.
+     *
+     * This action is reversible; it creates a new group action that contains the reverse of each
+     * action specified in the group.
+     */
     static group(actions: Action[]): Action;
-    /** Creates an action that repeats another action a specified number of times. */
+    /**
+     * Creates an action that runs a collection of actions sequentially.
+     *
+     * When the action executes, the first action in the sequence starts and runs to completion.
+     * Subsequent actions in the sequence run in a similar fashion until all of the actions in the
+     * sequence have executed. The duration of the sequence action is the sum of the durations of the
+     * actions in the sequence.
+     *
+     * This action is reversible; it creates a new sequence action that reverses the order of the
+     * actions. Each action in the reversed sequence is itself reversed. For example, if an action
+     * sequence is {1,2,3}, the reversed sequence would be {3R,2R,1R}.
+     */
+    static sequence(actions: Action[]): Action;
+    /**
+     * Creates an action that repeats another action a specified number of times.
+     *
+     * When the action executes, the associated action runs to completion and then repeats, until the
+     * count is reached.
+     *
+     * This action is reversible; it creates a new action that is the reverse of the specified action
+     * and then repeats it the same number of times.
+     */
     static repeat(action: Action, repeats: number): Action;
-    /** Creates an action that repeats another action forever. */
+    /**
+     * Creates an action that repeats another action forever.
+     *
+     * When the action executes, the associated action runs to completion and then repeats.
+     *
+     * This action is reversible; it creates a new action that is the reverse of the specified action
+     * and then repeats it forever.
+     */
     static repeatForever(action: Action): Action;
-    /** Creates an action that idles for a specified period of time. */
+    /**
+     * Creates an action that idles for a specified period of time.
+     *
+     * This action is not reversible; the reverse of this action is the same action.
+     */
     static waitForDuration(duration: TimeInterval): Action;
     /**
      * Creates an action that idles for a randomized period of time.
@@ -42,214 +82,335 @@ export declare abstract class Action {
      *
      * @param average The average amount of time to wait.
      * @param rangeSize The range of possible values for the duration.
-     * @param randomSeed (Optional) A scalar between 0 and 1. Defaults to `Math.random()`.
      *
      * @example Action.waitForDurationWithRange(10.0, 5.0) // duration will be 7.5 -> 12.5
+     *
+     * This action is not reversible; the reverse of this action is the same action.
      */
-    static waitForDurationWithRange(average: TimeInterval, rangeSize: TimeInterval, randomSeed?: number): Action;
-    /** Creates an action that moves a node relative to its current position. */
+    static waitForDurationWithRange(average: TimeInterval, rangeSize: TimeInterval): Action;
+    /**
+     * Creates an action that moves a node relative to its current position.
+     *
+     * This action is reversible.
+     */
     static moveBy(x: number, y: number, duration: TimeInterval): Action;
-    /** Creates an action that moves a node relative to its current position. */
+    /**
+     * Creates an action that moves a node relative to its current position.
+     *
+     * This action is reversible.
+     */
     static moveByVector(vec: VectorLike, duration: TimeInterval): Action;
-    /** Creates an action that moves a node horizontally relative to its current position. */
+    /**
+     * Creates an action that moves a node horizontally relative to its current position.
+     *
+     * This action is reversible.
+     */
     static moveByX(x: number, duration: TimeInterval): Action;
-    /** Creates an action that moves a node vertically relative to its current position. */
+    /**
+     * Creates an action that moves a node vertically relative to its current position.
+     *
+     * This action is reversible.
+     */
     static moveByY(y: number, duration: TimeInterval): Action;
-    /** Creates an action that moves a node to a new position. */
+    /**
+     * Creates an action that moves a node to a new position.
+     *
+     * This action is not reversible; the reverse of this action has the same duration but does not
+     * move the node.
+     */
     static moveTo(x: number, y: number, duration: TimeInterval): Action;
-    /** Creates an action that moves a node to a new position. */
+    /**
+     * Creates an action that moves a node to a new position.
+     *
+     * This action is not reversible; the reverse of this action has the same duration but does not
+     * move the node.
+     */
     static moveToPoint(point: VectorLike, duration: TimeInterval): Action;
-    /** Creates an action that moves a node horizontally. */
+    /**
+     * Creates an action that moves a node horizontally.
+     *
+     * This action is not reversible; the reverse of this action has the same duration but does not
+     * move the node.
+     */
     static moveToX(x: number, duration: TimeInterval): Action;
-    /** Creates an action that moves a node vertically. */
+    /**
+     * Creates an action that moves a node vertically.
+     *
+     * This action is not reversible; the reverse of this action has the same duration but does not
+     * move the node.
+     */
     static moveToY(y: number, duration: TimeInterval): Action;
-    /** Creates an action that rotates the node by a relative value. */
+    /**
+     * Creates an action that rotates the node by a relative value (in radians).
+     *
+     * This action is reversible.
+     */
     static rotateBy(rotation: number, duration: TimeInterval): Action;
-    /** Creates an action that rotates the node to an absolute value. */
+    /**
+     * Creates an action that rotates the node by a relative value (in degrees).
+     *
+     * This action is reversible.
+     */
+    static rotateByDegrees(degrees: number, duration: TimeInterval): Action;
+    /**
+     * Creates an action that rotates the node to an absolute value (in radians).
+     *
+     * This action is not reversible; the reverse of this action has the same duration but does not
+     * change anything.
+     */
     static rotateTo(rotation: number, duration: TimeInterval): Action;
-    /** Creates an action that changes the x and y scale values of a node by a relative value. */
+    /**
+     * Creates an action that rotates the node to an absolute value (in degrees).
+     *
+     * This action is not reversible; the reverse of this action has the same duration but does not
+     * change anything.
+     */
+    static rotateToDegrees(degrees: number, duration: TimeInterval): Action;
+    /**
+     * Creates an action that changes how fast the node executes actions by a relative value.
+     *
+     * This action is reversible.
+     */
+    static speedBy(speed: number, duration: TimeInterval): Action;
+    /**
+     * Creates an action that changes how fast the node executes actions.
+     *
+     * This action is not reversible; the reverse of this action has the same duration but does not
+     * change anything.
+     */
+    static speedTo(speed: number, duration: TimeInterval): Action;
+    /**
+     * Creates an action that changes the scale of a node by a relative value.
+     *
+     * This action is reversible.
+     */
+    static scaleBy(value: number, duration: TimeInterval): Action;
     static scaleBy(x: number, y: number, duration: TimeInterval): Action;
-    /** Creates an action that changes the x and y scale values of a node by a relative value. */
-    static scaleBySize(size: VectorLike, duration: TimeInterval): Action;
-    /** Creates an action that changes the x scale of a node by a relative value. */
+    /**
+     * Creates an action that changes the x and y scale values of a node by a relative value.
+     *
+     * This action is reversible.
+     */
+    static scaleByVector(vector: VectorLike, duration: TimeInterval): Action;
+    /**
+     * Creates an action that changes the x scale of a node by a relative value.
+     *
+     * This action is reversible.
+     */
     static scaleXBy(x: number, duration: TimeInterval): Action;
-    /** Creates an action that changes the y scale of a node by a relative value. */
+    /**
+     * Creates an action that changes the y scale of a node by a relative value.
+     *
+     * This action is reversible.
+     */
     static scaleYBy(y: number, duration: TimeInterval): Action;
-    /** Creates an action that changes the x and y scale values of a node. */
+    /**
+     * Creates an action that changes the x and y scale values of a node.
+     *
+     * This action is not reversible; the reverse of this action has the same duration but does not
+     * change anything.
+     */
+    static scaleTo(value: number, duration: TimeInterval): Action;
     static scaleTo(x: number, y: number, duration: TimeInterval): Action;
-    /** Creates an action that changes the x and y scale values of a node. */
+    /**
+     * Creates an action that changes the x and y scale values of a node.
+     *
+     * This action is not reversible; the reverse of this action has the same duration but does not
+     * change anything.
+     */
     static scaleToSize(size: VectorLike, duration: TimeInterval): Action;
-    /** Creates an action that changes the y scale values of a node. */
+    /**
+     * Creates an action that changes the y scale values of a node.
+     *
+     * This action is not reversible; the reverse of this action has the same duration but does not
+     * change anything.
+     */
     static scaleXTo(x: number, duration: TimeInterval): Action;
-    /** Creates an action that changes the x scale values of a node. */
+    /**
+     * Creates an action that changes the x scale values of a node.
+     *
+     * This action is not reversible; the reverse of this action has the same duration but does not
+     * change anything.
+     */
     static scaleYTo(y: number, duration: TimeInterval): Action;
-    /** Creates an action that changes the alpha value of the node to 1.0. */
+    /**
+     * Creates an action that changes the alpha value of the node to 1.0.
+     *
+     * This action is reversible. The reverse is equivalent to fadeOut(duration).
+     */
     static fadeIn(duration: TimeInterval): Action;
-    /** Creates an action that changes the alpha value of the node to 0.0. */
+    /**
+     * Creates an action that changes the alpha value of the node to 0.0.
+     *
+     * This action is reversible. The reverse is equivalent to fadeIn(duration).
+     */
     static fadeOut(duration: TimeInterval): Action;
-    /** Creates an action that adjusts the alpha value of a node to a new value. */
+    /**
+     * Creates an action that adjusts the alpha value of a node to a new value.
+     *
+     * This action is not reversible; the reverse of this action has the same duration but does not
+     * change anything.
+     */
     static fadeAlphaTo(alpha: number, duration: TimeInterval): Action;
-    /** Creates an action that adjusts the alpha value of a node by a relative value. */
+    /**
+     * Creates an action that adjusts the alpha value of a node by a relative value.
+     *
+     * This action is reversible.
+     */
     static fadeAlphaBy(alpha: number, duration: TimeInterval): Action;
+    /**
+     * Creates an action that hides a node.
+     *
+     * This action has an instantaneous duration. When the action executes, the node’s visible
+     * property is set to true.
+     *
+     * This action is reversible. The reversed action is equivalent to show().
+     */
+    static hide(): Action;
+    /**
+     * Creates an action that makes a node visible.
+     *
+     * This action has an instantaneous duration. When the action executes, the node’s visible
+     * property is set to false.
+     *
+     * This action is reversible. The reversed action is equivalent to hide().
+     */
+    static unhide(): Action;
+    /**
+     * Creates an action that removes the node from its parent.
+     *
+     * This action has an instantaneous duration.
+     *
+     * This action is not reversible; the reverse of this action is the same action.
+     */
     static removeFromParent(): Action;
-    /** Creates an action that executes a block. */
+    /**
+     * Creates an action that executes a block.
+     *
+     * This action takes place instantaneously.
+     *
+     * This action is not reversible; the reverse action executes the same block.
+     */
     static run(fn: () => void): Action;
     /**
      * Creates an action that executes a stepping function over its duration.
      *
      * The function will be triggered on every redraw until the action completes, and is passed
-     * the target and the elasped time as a scalar between 0 and 1 (which is passed through the timing mode function).
-     */
-    static custom(duration: number, stepFn: (target: TargetNode, x: number) => void): Action;
-    /** Clear all actions with this target. */
-    static removeActionsForTarget(target: TargetNode | undefined): void;
-    /** Clears all actions. */
-    static removeAllActions(): void;
-    /** Play an action. */
-    protected static playAction(action: Action): Action;
-    /** Stop an action. */
-    protected static stopAction(action: Action): Action;
-    /** Tick all actions forward.
+     * the target and the elasped time as a scalar between 0 and 1 (which is passed through the timing
+     * mode function).
      *
-     * @param dt Delta time
+     * This action is not reversible; the reverse action executes the same block.
+     */
+    static customAction(duration: number, stepFn: (target: TargetNode, x: number) => void): Action;
+    /**
+     * Tick all actions forward.
+     *
+     * @param deltaTimeMs Delta time in milliseconds.
      * @param categoryMask (Optional) Bitmask to filter which categories of actions to update.
      * @param onErrorHandler (Optional) Handler errors from each action's tick.
      */
-    static tick(dt: number, categoryMask?: number, onErrorHandler?: (error: any) => void): void;
-    protected static tickAction(action: Action, delta: number): void;
-    /** The display object the action is running against. Set during `runOn` and cannot be changed. */
+    static tick(deltaTimeMs: number, categoryMask?: number | undefined, onErrorHandler?: (error: any) => void): void;
+    constructor(duration: TimeInterval, speed?: number, timingMode?: TimingModeFn, categoryMask?: number);
+    /**
+     * Update function for the action.
+     *
+     * @param target The affected display object.
+     * @param progress The elapsed progress of the action, with the timing mode function applied. Generally a scalar number between 0.0 and 1.0.
+     * @param progressDelta Relative change in progress since the previous animation change. Use this for relative actions.
+     * @param actionTicker The actual ticker running this update.
+     * @param deltaTime The amount of time elapsed in this tick. This number is scaled by both speed of target and any parent actions.
+     */
+    abstract updateAction(target: TargetNode, progress: number, progressDelta: number, actionTicker: ActionTicker, deltaTime: number): void;
+    /** Duration of the action after the speed scalar is applied. */
+    get scaledDuration(): number;
+    /**
+     * Creates an action that reverses the behavior of another action.
+     *
+     * This method always returns an action object; however, not all actions are reversible.
+     * When reversed, some actions return an object that either does nothing or that performs the same action as the original action.
+     */
+    abstract reversed(): Action;
+    /**
+     * Do first time setup here.
+     *
+     * Anything you return here will be available as `ticker.data`.
+     */
+    protected _setupTicker(target: TargetNode, ticker: ActionTicker): any;
+    /** Set the action's speed scale. Defaults to 1.0. */
+    setSpeed(speed: number): this;
+    /** Set a timing mode function for this action. Defaults to TimingMode.linear. */
+    setTimingMode(timingMode: TimingModeFn): this;
+    /**
+     * Set a category mask for this action.
+     *
+     * Use this to tick different categories of actions separately (e.g. separate different UI).
+     *
+     * @deprecated use speed instead
+     */
+    setCategory(categoryMask: number): this;
+}
+declare class ActionTicker {
+    key: string | undefined;
     target: TargetNode;
-    /** A speed factor that modifies how fast an action runs. */
-    speed: number;
+    action: Action;
+    protected static _running: ActionTicker[];
+    static runAction(key: string | undefined, target: TargetNode, action: Action): void;
+    static removeAction(actionTicker: ActionTicker): ActionTicker;
+    static hasTargetActions(target: TargetNode): boolean;
+    static getTargetActionTickerForKey(target: TargetNode, key: string): ActionTicker | undefined;
+    static getTargetActionForKey(target: TargetNode, key: string): Action | undefined;
+    static removeTargetActionForKey(target: TargetNode, key: string): void;
+    static removeAllTargetActions(target: TargetNode): void;
+    /**
+     * Tick all actions forward.
+     *
+     * @param deltaTimeMs Delta time given in milliseconds.
+     * @param categoryMask (Optional) Bitmask to filter which categories of actions to update.
+     * @param onErrorHandler (Optional) Handler errors from each action's tick.
+     */
+    static stepAllActionsForward(deltaTimeMs: number, categoryMask?: number | undefined, onErrorHandler?: (error: any) => void): void;
+    /** Any instance data that will live for the duration of the ticker. */
+    data: any;
     /** Time elapsed in the action. */
     elapsed: number;
-    /** Whether the action has completed. Set by `Action. */
+    /** Whether the action ticker has been setup. This is triggered on the first iteration. */
+    isSetup: boolean;
+    /** Whether the action has completed. */
     isDone: boolean;
-    /** Actions that will be triggered when this action completes. */
-    protected queuedActions: Action[];
+    /** Whether the action ticker will mark the action as done when time elapsed >= duration. */
+    autoComplete: boolean;
+    /**
+     * Relative speed of the action ticker.
+     *
+     * Defaults to the action's speed and is capture at creation time, and updated on
+     * the setup tick.
+     */
+    speed: number;
+    /**
+     * Expected duration of the action ticker.
+     *
+     * Defaults to the action's scaled duration and is capture at creation time, and updated on
+     * the setup tick.
+     */
+    duration: number;
+    constructor(key: string | undefined, target: TargetNode, action: Action);
     /** Whether action is in progress (or has not yet started). */
     get isPlaying(): boolean;
     /** The relative time elapsed between 0 and 1. */
-    protected get timeDistance(): number;
+    get timeDistance(): number;
     /**
      * The relative time elapsed between 0 and 1, eased by the timing mode function.
      *
      * Can be a value beyond 0 or 1 depending on the timing mode function.
      */
     protected get easedTimeDistance(): number;
-    constructor(duration: TimeInterval, timingMode?: TimingModeFn, categoryMask?: number);
-    /** Must be implmented by each class. */
-    abstract tick(progress: number): boolean;
-    /** Run an action on this target. */
-    runOn(target: TargetNode): this;
-    /** Set an action to run after this action. */
-    queueAction(next: Action): this;
-    /** Reset an action to the start. */
-    reset(): this;
-    /** Stop and reset an action. */
-    stop(): this;
-    /** Set a timing mode function for this action. */
-    withTimingMode(timingMode: TimingModeFn): this;
-    /** Set a category mask for this action. Used to group different actions together. */
-    setCategory(categoryMask: number): this;
-    /** Set which display object should be targeted. Internal use only. */
-    setTarget(target: TargetNode): this;
-    /**
-     * For relative actions, increments time by delta, and returns the change in easedTimeDistance.
-     *
-     * @param delta change in time to apply
-     * @returns the relative change in easedTimeDistance.
-     */
-    protected applyDelta(delta: number): number;
+    /** @returns Any unused time delta. Negative value means action is still in progress. */
+    stepActionForward(timeDelta: number): number;
 }
-export declare class SequenceAction extends Action {
-    index: number;
-    actions: Action[];
-    constructor(actions: Action[]);
-    tick(delta: number): boolean;
-    reset(): this;
-    setTarget(target: TargetNode): this;
-}
-export declare class ScaleToAction extends Action {
-    protected readonly x: number | undefined;
-    protected readonly y: number | undefined;
-    protected startX: number;
-    protected startY: number;
-    constructor(x: number | undefined, y: number | undefined, duration: TimeInterval);
-    tick(delta: number): boolean;
-}
-export declare class ScaleByAction extends Action {
-    protected readonly x: number;
-    protected readonly y: number;
-    constructor(x: number, y: number, duration: TimeInterval);
-    tick(delta: number): boolean;
-}
-export declare class RemoveFromParentAction extends Action {
-    constructor();
-    tick(delta: number): boolean;
-}
-export declare class CustomAction extends Action {
-    protected stepFn: (target: TargetNode, x: number) => void;
-    constructor(duration: TimeInterval, stepFn: (target: TargetNode, x: number) => void);
-    tick(delta: number): boolean;
-}
-export declare class RunBlockAction extends Action {
-    protected block: () => any;
-    constructor(block: () => void);
-    tick(delta: number): boolean;
-}
-export declare class RotateToAction extends Action {
-    protected readonly rotation: number;
-    protected startRotation: number;
-    constructor(rotation: number, duration: TimeInterval);
-    tick(delta: number): boolean;
-}
-export declare class RotateByAction extends Action {
-    protected readonly rotation: number;
-    constructor(rotation: number, duration: TimeInterval);
-    tick(delta: number): boolean;
-}
-export declare class RepeatAction extends Action {
-    protected action: Action;
-    protected maxRepeats: number;
-    protected n: number;
-    /**
-     * @param action Targeted action.
-     * @param repeats A negative value indicates looping forever.
-     */
-    constructor(action: Action, repeats: number);
-    tick(delta: number): boolean;
-    reset(): this;
-    setTarget(target: TargetNode): this;
-}
-export declare class MoveToAction extends Action {
-    protected readonly x: number | undefined;
-    protected readonly y: number | undefined;
-    protected startX: number;
-    protected startY: number;
-    constructor(x: number | undefined, y: number | undefined, duration: TimeInterval);
-    tick(delta: number): boolean;
-}
-export declare class GroupAction extends Action {
-    protected index: number;
-    protected actions: Action[];
-    constructor(actions: Action[]);
-    tick(delta: number): boolean;
-    reset(): this;
-    setTarget(target: TargetNode): this;
-}
-export declare class FadeToAction extends Action {
-    protected startAlpha: number;
-    protected alpha: number;
-    constructor(alpha: number, duration: TimeInterval);
-    tick(delta: number): boolean;
-}
-export declare class FadeByAction extends Action {
-    protected readonly alpha: number;
-    constructor(alpha: number, duration: TimeInterval, timingMode?: TimingModeFn);
-    tick(delta: number): boolean;
-}
-export declare class DelayAction extends Action {
-    tick(delta: number): boolean;
-}
+/**
+ * Register the global mixins for PIXI.DisplayObject.
+ *
+ * @param displayObject A reference to `PIXI.DisplayObject`.
+ */
+export declare function registerGlobalMixin(displayObject: any): void;
 export {};

@@ -1,123 +1,322 @@
-# pixi-actions
+<div align="center">
 
-This is a fork of [srpatel/pixi-actions](https://github.com/srpatel/pixi-actions) that closely mimics `SKAction` from `SpriteKit`.
+# PixiJS Actions
 
-It is a simple actions library for PixiJS that allows you to easily apply complex animations and events to display objects. Action are a way to animate nodes without having to write a lot of boilerplate.
+Powerful, lightweight animations in PixiJS.
 
-## Usage
+[![NPM version](https://img.shields.io/npm/v/pixijs-actions.svg?style=flat-square)](https://www.npmjs.com/package/pixijs-actions)
+[![test](https://github.com/reececomo/pixijs-actions/actions/workflows/test.yml/badge.svg)](https://github.com/reececomo/pixijs-actions/actions/workflows/test.yml)
+[![lint](https://github.com/reececomo/pixijs-actions/actions/workflows/lint.yml/badge.svg)](https://github.com/reececomo/pixijs-actions/actions/workflows/lint.yml)
 
-Install via npm:
+_A [PixiJS](https://pixijs.com/) implementation of [Apple's SKActions](https://developer.apple.com/documentation/spritekit/skaction) (forked from [srpatel/pixi-actions](https://github.com/srpatel/pixi-actions))._
 
+</div>
+
+## Quick start
+
+```sh
+npm install pixijs-actions
 ```
-npm install pixi-actions
+
+```sh
+yarn add pixijs-actions
 ```
 
-TypeScript type information are included, if you are using it. The library exports using ES6 modules.
+## Getting started with Actions
 
-You can then import the classes you need:
+*Create, configure, and run actions in PixiJS.*
+
+You tell nodes to run an instace of `Action` when you want to animate contents of your canvas. When the canvas processes frames of animation, the actions are executed. Some actions are completed in a single frame of animation, while other actions apply changes over multiple frames of animation before completing. The most common use for actions is to animate changes to a node’s properties. For example, you can create actions that move a node, scale or rotate it, or fade its transparency. However, actions can also change the node tree or even execute custom code.
+
+## Basic usage
 
 ```ts
-import { Action, ActionTimingMode } from 'pixi-actions';
+import { Action } from '@pixi/actions';
+
+const fadeOutAndRemove = Action.sequence([
+  Action.fadeOut(1.0),
+  Action.removeFromParent()
+]);
+
+sprite.run(fadeOutAndRemove);
 ```
 
-Register a ticker with your PIXI app:
+## Installation
+
+First install the package.
+
+```sh
+// npm
+npm install pixijs-actions
+
+// yarn
+yarn add pixijs-actions
+```
+
+> The library exports as an ES6 module, and includes TypeScript types.
+>
+> The global mixins and their typings are automatically registered when you import the library.
+
+Register the global actions ticker with your PixiJS app (or other render loop):
 
 ```ts
-import { Action } from 'pixi-actions';
+import { Action } from 'pixijs-actions';
 
-let app = new PIXI.Application({ ... });
-app.ticker.add((delta) => Action.tick(delta / 60));
+const myApp = new PIXI.Application({ ... });
+
+// PixiJS v8:
+myApp.ticker.add(ticker => Action.tick(ticker.deltaTime));
+
+// or PixiJS v6 + v7:
+myApp.ticker.add(dt => Action.tick(dt));
 ```
 
-Note that the delta supplied to the ticker function is in frames. If you want to use duration instead (recommended), you should divide by your frames per second.
+Now you are ready to start using actions.
 
-Then, you can create and play actions! Remember, creating an action is not enough - you must also call `.play()`, or the action will never start.
+## Action Initializers
 
-| Command                                  | Details                                                                                                                                                                                                           |
-| :--------------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `const action = Action.moveTo(...)`      | Create an action. See the table below for full details on how to do this.                                                                                                                                         |
-| `action.runOn(displayObject);`           | Start the action. It will continue to execute until it finishes or is paused.                                                                                                                                     |
-| `action.queueAction(nextAction);`        | Dynamically queue an action to be run once another finishes. It may be simpler to use `Action.sequence([ ... ])` instead (see below) if you know the action you want to queue at the point you create the action. |
-| `Action.removeActionsForTarget(target);` | Remove all actions associated with a given target.                                                                                                                                                                |
+*Use these functions to create actions.*
 
-See the table below for a full list of all the available actions.
+Most actions implement specific predefined animations that are ready to use. If your animation needs fall outside of the suite provided here, then you should implement a custom action.
 
-## Action
+| Action | Description | Reversible? |
+| :----- | :---------- | :---------- |
+| `Action.group(actions)` | Run multiple actions in parallel. | Yes |
+| `Action.sequence(actions)` | Run multiple actions sequentially. | Yes |
+| `Action.repeat(action, count)` | Repeat an action a specified number of times. | Yes |
+| `Action.repeatForever(action)` | Repeat an action indefinitely. | Yes |
+| `Action.moveBy(dx, dy, duration)` | Move a node by a relative amount. | Yes |
+| `Action.moveByVector(vector, duration)` | Move a node by a relative vector (e.g. `PIXI.Point`). | Yes |
+| `Action.moveByX(dx, duration)` | Move a node horizontally by a relative amount. | Yes |
+| `Action.moveByY(dy, duration)` | Move a node vertically by a relative amount. | Yes |
+| `Action.moveTo(x, y, duration)` | Move a node to a specified position. |  _*No_ |
+| `Action.moveToPoint(point, duration)` | Move a node to a specified position (e.g. `PIXI.Point`). |  _*No_ |
+| `Action.moveToX(x, duration)` | Move a node to a specified horizontal position. |  _*No_ |
+| `Action.moveToY(y, duration)` | Move a node to a specified vertical position. |  _*No_ |
+| `Action.scaleBy(delta, duration)` | Scale a node by a relative amount. | Yes |
+| `Action.scaleBy(dx, dy, duration)` | Scale a node by a relative amount. | Yes |
+| `Action.scaleByVector(vector, duration)` | Scale a node by a given vector (e.g. `PIXI.Point`). | Yes |
+| `Action.scaleXBy(dx, duration)` | Scale a node by a relative amount. | Yes |
+| `Action.scaleYBy(dy, duration)` | Scale a node by a relative amount. | Yes |
+| `Action.scaleTo(scale, duration)` | Scale a node to a specified value. |  _*No_ |
+| `Action.scaleTo(x, y, duration)` | Scale a node to a specified value. |  _*No_ |
+| `Action.scaleToSize(vector, duration)` | Scale a node to a specified size (e.g. `PIXI.Point`). |  _*No_ |
+| `Action.scaleXTo(x, duration)` | Scale a node to a specified value in the X-axis. |  _*No_ |
+| `Action.scaleYTo(y, duration)` | Scale a node to a specified value in the Y-axis. |  _*No_ |
+| `Action.fadeIn(duration)` | Fade the alpha to `1.0`. | Yes |
+| `Action.fadeOut(duration)` | Fade the alpha to `0.0`. | Yes |
+| `Action.fadeAlphaBy(delta, duration)` | Fade the alpha by a relative value. | Yes |
+| `Action.fadeAlphaTo(alpha, duration)` | Fade the alpha to a specified value. |  _*No_ |
+| `Action.rotateBy(delta, duration)` | Rotate a node by a relative value (in radians). | Yes |
+| `Action.rotateByDegrees(delta, duration)` | Rotate a node by a relative value (in degrees). | Yes |
+| `Action.rotateTo(radians, duration)` | Rotate a node to a specified value (in radians). |  _*No_ |
+| `Action.rotateToDegrees(degrees, duration)` | Rotate a node to a specified value (in degrees). | _*No_ |
+| `Action.speedBy(delta, duration)` | Change how fast a node executes actions by a relative value. | Yes |
+| `Action.speedTo(speed, duration)` | Set how fast a node executes actions. |  _*No_ |
+| `Action.hide()` | Set a node's `visible` property to `false`. | Yes |
+| `Action.unhide()` | Set a node's `visible` property to `true`. | Yes |
+| `Action.removeFromParent()` | Remove a node from its parent. | _†Identical_ |
+| `Action.waitForDuration(duration)` | Idle for a specified interval. | _†Identical_ |
+| `Action.waitForDurationWithRange(duration, range)` | Idle for a randomized period of time. | _†Identical_ |
+| `Action.run(block)` | Execute a block of code immediately. | _†Identical_ |
+| `Action.customAction(duration, stepHandler)` | Execute a custom stepping function over the duration. | _†Identical_ |
 
-| Action                                              | Details                                                                                                                                                                                                    |
-| :-------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Action.moveTo(x, y, duration, timingMode); `       | Animate a node to a specified position.                                                                                                                                                                    |
-| `Action.scaleTo(x, y, duration, timingMode); `      | Animate a node's scale to specified values.                                                                                                                                                                |
-| `Action.rotateTo(rotation, duration, timingMode); ` | Animate a node's rotation to a specified value. Note that this uses the `rotation` property, which is in _radians_. There is an `angle` property which uses degrees, but there is no Action for it (yet!). |
-| `Action.fadeTo(alpha, duration, timingMode); `      | Animate a node's alpha to a specified value.                                                                                                                                                               |
-| `Action.fadeOut(duration, timingMode); `            | Animate a node's alpha to 0.                                                                                                                                                                               |
-| `Action.fadeIn(duration, timingMode); `             | Animate a node's alpha to 1.                                                                                                                                                                               |
-| `Action.fadeOutAndRemove(duration, timingMode); `   | Animate a node's alpha to 0, and remove it from its parent once invisible.                                                                                                                                 |
-| `Action.removeFromParent(); `                       | Remove a node from its parent.                                                                                                                                                                             |
-| `Action.delay(duration); `                          | Wait for a specified interval.                                                                                                                                                                             |
-| `Action.runFunc(callback); `                        | Run a specified function. It will be called with the action itself as "this", which is probably not what you want. Take care, or use the ES6 "=>" notation to preserve the `this` of the caller.           |
-| `Action.repeat(action, repeats); `                  | Repeat a specified action a given number of times.                                                                                                                                                         |
-| `Action.repeatForever(action); `                    | Repeat a specified action forever.                                                                                                                                                                         |
-| `Action.sequence(actions); `                        | Perform the specified actions one after the other.                                                                                                                                                         |
-| `Action.group(actions); `                           | Perform the specified actions in parallel. This action won't finish until _all_ of its child actions have finished.                                                                                        |
+#### Reversing Actions
+All actions have a `.reversed()` method which will return an action with the reverse action on it. Some actions are **not reversible**, and these cases are noted in the table above:
+- _**†Identical:**_ The reverse action will be identical to the action.
+- _**\*No:**_ The reverse action will idle for the equivalent duration.
 
-Easing defaults to linear if omitted. Time is in the same units supplied to `Action.tick`.
+### TimingMode
 
-You can set the default timing mode with `Action.DefaultTimingMode`.
+The default timing mode for actions is `TimingMode.linear`.
 
-## Examples
+You can set a custom `TimingMode` (see options below), or you can provide a custom timing mode function.
 
-These examples all assume existence of a node `sprite` which has been added to the stage. For example, created by `const sprite = PIXI.Sprite.from(...);`.
+|  | InOut | In | Out | Description |
+| --------------- | ----- | -- | --- | ----------- |
+| **Linear**      | `linear` | - | - | Constant motion with no acceleration or deceleration. |
+| **Sine**        | `easeInOutSine` | `easeInSine` | `easeOutSine` | Gentle start and end, with accelerated motion in the middle. |
+| **Circ**        | `easeInOutCirc` | `easeInCirc` | `easeOutCirc` | Smooth start and end, faster acceleration in the middle, circular motion. |
+| **Cubic**       | `easeInOutCubic` | `easeInCubic` | `easeOutCubic` | Gradual acceleration and deceleration, smooth motion throughout. |
+| **Quad**        | `easeInOutQuad` | `easeInQuad` | `easeOutQuad` | Smooth acceleration and deceleration, starts and ends slowly, faster in the middle. |
+| **Quartic**     | `easeInOutQuart` | `easeInQuart` | `easeOutQuart` | Slower start and end, increased acceleration in the middle. |
+| **Quintic**     | `easeInOutQuint` | `easeInQuint` | `easeOutQuint` | Very gradual start and end, smoother acceleration in the middle. |
+| **Expo**        | `easeInOutExpo` | `easeInExpo` | `easeOutExpo` | Very slow start, exponential acceleration, slow end. |
+| **Back**        | `easeInOutBack` | `easeInBack` | `easeOutBack` | Starts slowly, overshoots slightly, settles into final position. |
+| **Bounce**      | `easeInOutBounce` | `easeInBounce` | `easeOutBounce` | Bouncy effect at the start or end, with multiple rebounds. |
+| **Elastic**     | `easeInOutElastic` | `easeInElastic` | `easeOutElastic` | Stretchy motion with overshoot and multiple oscillations. |
 
-<table>
-	<thead>
-		<tr>
-			<th>Code</th>
-			<th>Animation</th>
-		</tr>
-	</thead>
-	<tbody>
-		<tr>
-			<td><pre lang="json">
-Action.repeat(
-	Action.sequence([
-		Action.moveTo(100, 0, 1.0, ActionTimingMode.linear),
-		Action.moveTo(100, 100, 1.0, ActionTimingMode.linear),
-		Action.moveTo(0, 100, 1.0, ActionTimingMode.linear),
-		Action.moveTo(0, 0, 1.0, ActionTimingMode.linear)
-	])
-).runOn(sprite);</pre></td>
-			<td><img alt="pixi-actions-example1" src="https://user-images.githubusercontent.com/4903502/111069490-95b8a400-84cd-11eb-86ea-790cd7d8598c.gif"></td>
-		</tr>
-		<tr>
-			<td><pre lang="json">
-Action.repeat(
-	Action.sequence([
-		Action.parallel([
-			Action.moveTo(100, 0, 1.0),
-			Action.fadeOut(1.0)
-		]),
-		Action.moveTo(100, 100, 0.0),
-		Action.parallel([
-			Action.moveTo(0, 100, 1.0),
-			Action.fadeIn(1.0)
-		]),
-		Action.moveTo(0, 0, 0.0),
-	])
-).runOn(sprite);</pre></td>
-			<td><img alt="pixi-actions-example2" src="https://user-images.githubusercontent.com/4903502/111069497-9bae8500-84cd-11eb-944c-d34d27502772.gif"><br><i>Please excuse the poor gif quality!</i></td>
-		</tr>
-	</tbody>
-</table>
 
-## Gotchas
+### Custom actions
 
-Actions are automatically stopped if the target node has no parent. However, if you remove a more distant ancestor than the parent from the stage, then the action will not be stopped, and further, that action keeps a reference to the target. That means the target cannot be garbage collected whilst the action runs.
+Actions are reusable, so you can create complex animations once, and then run them on many display objects.
 
-Normally, this is not a problem. Since most actions only last for a specified duration, the action will eventually stop (even though it'll have no visible impact whilst it runs) and both it and the node can then be garbage collected.
+```ts
+/** A nice gentle rock back and forth. */
+const rockBackAndForth = Action.repeatForever(
+  Action.sequence([
+    Action.group([
+      Action.moveXBy(5, 0.33),
+      Action.rotateByDegrees(-2, 0.33),
+    ]).setTimingMode(TimingMode.easeOutQuad),
+    Action.group([
+      Action.moveXBy(-10, 0.34),
+      Action.rotateByDegrees(4, 0.34),
+    ]).setTimingMode(TimingMode.easeInOutQuad),
+    Action.group([
+      Action.moveXBy(5, 0.33),
+      Action.rotateByDegrees(-2, 0.33),
+    ]).setTimingMode(TimingMode.easeInQuad),
+  ])
+);
 
-However, some actions can run indefinitely (e.g. `Action.repeatForever(:)`). In this case, you must either:
+// Run it over here
+someSprite.run(rockBackAndForth);
 
-- Stop those actions whenever you remove the ancestor from the stage (with `action.stop()`).
-- Remove the target node from its parent, even though you are removing an ancestor from the stage as well (`node.parent.removeChild(node);`).
-- Clear all actions associated with the node (`Action.clear(node);`).
+// Run it somewhere else
+someOtherContainer.run(rockBackAndForth);
+```
+
+You can combine these with dynamic actions for more variety:
+
+```ts
+const MyActions = {
+  squash: (amount: number, duration: number = 0.3) => Action.sequence([
+    Action.scaleTo(amount, 1 / amount, duration / 2).setTimingMode(TimingMode.easeOutSine),
+    Action.scaleTo(1, duration / 2).setTimingMode(TimingMode.easeInSine)
+  ]),
+  stretch: (amount: number, duration: number = 0.3) => Action.sequence([
+    Action.scaleTo(1 / amount, amount, duration / 2).setTimingMode(TimingMode.easeOutSine),
+    Action.scaleTo(1, duration / 2).setTimingMode(TimingMode.easeInSine)
+  ]),
+  squashAndStretch: (amount: number, duration: number = 0.3) => Action.sequence([
+    MyActions.squash(amount, duration / 2),
+    MyActions.stretch(amount, duration / 2),
+  ]),
+};
+
+// Small squish!
+mySprite.run(MyActions.squashAndStretch(1.25));
+
+// Big squish!
+mySprite.run(MyActions.squashAndStretch(2.0));
+```
+
+## Using Actions with display objects
+
+Display objects are extended with a few new methods and properties.
+
+| Property | Description |
+| :----- | :------ |
+| `speed` | A speed modifier applied to all actions executed by a node and its descendants. Defaults to `1.0`. |
+| `isPaused` | A boolean value that determines whether actions on the node and its descendants are processed. Defaults to `false`. |
+
+| Method | Description |
+| :----- | :------ |
+| `run(action)` | Runs an action. |
+| `run(action, completion)` | Runs an action with a completion handler. |
+| `runWithKey(action, withKey)` | Runs an action, and store it so it can be retrieved later. |
+| `runAsPromise(action): Promise<void>` | Rus an action as a promise. |
+| `action(forKey): Action \| undefined` | Returns an action associated with a specific key. |
+| `hasActions(): boolean` | Returns a boolean value that indicates whether the node is executing actions. |
+| `removeAllActions(): void` | Ends and removes all actions from the node. |
+| `removeAction(forKey): void` | Removes an action associated with a specific key. |
+
+```ts
+// Repeat an action forever!
+const spin = Action.repeatForever(Action.rotateBy(5, 1.0));
+mySprite.runWithKey(spin, 'spinForever');
+
+// Or remove it later.
+mySprite.removeAction('spinForever');
+```
+
+## Creating Custom Actions
+
+Beyond combining the built-ins with chaining actions like `sequence()`, `group()`, `repeat()` and `repeatForever()`, you can provide code that implements your own action.
+
+### Basic - Custom Action
+
+You can also use the built-in `Action.customAction(duration, stepHandler)` to provide a custom actions:
+
+```ts
+const rainbowColors = Action.customAction(5.0, (target, t, dt) => {
+  // Calculate color based on time "t".
+  const colorR = Math.sin(0.3 * t + 0) * 127 + 128;
+  const colorG = Math.sin(0.3 * t + 2) * 127 + 128;
+  const colorB = Math.sin(0.3 * t + 4) * 127 + 128;
+
+  // Apply random color with time-based variation.
+  target.tint = (colorR << 16) + (colorG << 8) + colorB;
+});
+
+// Start rainbow effect
+mySprite.runWithKey(Action.repeatForever(rainbowColors), 'rainbow');
+
+// Stop rainbow effect
+mySprite.removeAction('rainbow');
+```
+
+> **Step functions:**
+> - `target` = The display object.
+> - `t` = Progress of time from 0 to 1, which has been passed through the `timingMode` function.
+> - `dt` = delta/change in `t` since last step. Use for relative actions.
+>
+> _Note: `t` can be outside of 0 and 1 in timing mode functions which overshoot, such as `TimingMode.easeInOutBack`._
+
+This interpolation function will be called as many times as the renderer asks over the course of its duration.
+
+### Advanced - Custom Subclass Action
+
+For more control, you can provide a custom subclass Action which can capture and manipulate state on the underlying action ticker.
+
+```ts
+class MyTintAction extends Action {
+  constructor(
+    protected readonly color: 'red' | 'blue',
+    duration: number,
+  ) {
+    super(duration);
+    this.timingMode = TimingMode.easeInOutSine;
+  }
+
+  /** (Optional) Setup any initial state here. */
+  _setupTicker(target: PIXI.DisplayObject): any {
+    // If your action has any target-specific state, it should go here.
+    // Anything you return in this function will be availabler as `ticker.data`.
+    return {
+      startColor: new PIXI.Color(target.tint),
+      endColor: new PIXI.Color(this.color === 'red' ? 0xFF0000 : 0x0000FF),
+    };
+  }
+
+  /** Stepping function. Update the target here. */
+  updateAction(
+    target: PIXI.DisplayObject,
+    progress: number,      // Progress from 0 to 1 after timing mode
+    progressDelta: number, // Change in progress
+    ticker: any,           // Use `ticker.data` to access any ticker state.
+    deltaTime: number,     // The amount of time elapsed (scaled by `speed`).
+  ): void {
+    const start = ticker.data.startColor;
+    const end = ticker.data.endColor;
+
+    const color = new PIXI.Color().setValue([
+      start.red + (end.red - start.red) * progress,
+      start.green + (end.green - start.green) * progress,
+      start.blue + (end.blue - start.blue) * progress
+    ]);
+
+    target.tint = color;
+  }
+
+  /** Provide a function that reverses the current action. */
+  reversed(): Action {
+    const oppositeColor = this.color === 'red' ? 'blue' : 'red';
+
+    return new MyTintAction(oppositeColor, this.duration)
+      .setTimingMode(this.timingMode)
+      .setSpeed(this.speed);
+  }
+}
+```

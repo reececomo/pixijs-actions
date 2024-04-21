@@ -1,23 +1,19 @@
 {
-	"compilerOptions": {
-		"outDir": "./dist/",
-		"sourceMap": true,
-		"noImplicitAny": true,
-		"module": "es6",
-		"target": "es6",
-		"allowJs": true,
-		"moduleResolution": "node",
-		"downlevelIteration": true,
-		"declaration": true,
-		"allowSyntheticDefaultImports": true,
-		"esModuleInterop": true,
-		"baseUrl": "./",
-		"paths": {
-		  "mini-signals": [
-			"node_modules/resource-loader/typings/mini-signals.d.ts"
-		  ]
-		},
+  "compilerOptions": {
+    "outDir": "./dist/",
+    "sourceMap": true,
+    "noImplicitAny": true,
+    "module": "es6",
+    "target": "es6",
+    "allowJs": true,
+    "moduleResolution": "node",
+    "downlevelIteration": true,
+    "declaration": true,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "baseUrl": "./",
     "skipLibCheck": true
-	},
-	"include": ["src/**/*"],
+  },
+  "include": ["src/**/*"],
+  "exclude": ["src/test/**/*"]
 }

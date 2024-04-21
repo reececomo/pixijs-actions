@@ -3,9 +3,9 @@
  *
  * @see {TimingMode} for https://easings.net imports
  */
-export declare type TimingModeFn = (progress: number) => number;
+export type TimingModeFn = (progress: number) => number;
 /** A number 0 -> 1 */
-declare type Progress = number;
+type Progress = number;
 /**
  * Timing mode functions
  * https://easings.net/

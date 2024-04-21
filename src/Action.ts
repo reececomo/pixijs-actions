@@ -1,20 +1,27 @@
 import * as PIXI from 'pixi.js';
 
 import { TimingMode, TimingModeFn } from './TimingMode';
+import { getIsPaused, getSpeed } from './util';
 
-interface VectorLike {
-	x: number;
-	y: number;
-}
+const EPSILON = 0.0000000001;
+const EPSILON_ONE = 1 - EPSILON;
+const DEG_TO_RAD = Math.PI / 180;
 
-/** Path of points. */
-type PathLike = VectorLike[];
-
-/** Time / duration (in seconds) */
+/** Time measured in seconds. */
 type TimeInterval = number;
 
 /** Targeted display node. */
 type TargetNode = PIXI.DisplayObject;
+
+/** Any two dimensional vector. */
+interface VectorLike {
+  x: number;
+  y: number;
+}
+
+//
+// ----- Action: -----
+//
 
 /**
  * Action is an animation that is executed by a display object in the scene.
@@ -22,7 +29,8 @@ type TargetNode = PIXI.DisplayObject;
  *
  * Trigger @see {Action.tick(...)} to update actions.
  *
- * Optionally set Action.categoryMask to allow different action categories to run independently (i.e. UI and Game World).
+ * Optionally set Action.categoryMask to allow different action categories to run independently
+ * (i.e. UI and Game World).
  */
 export abstract class Action {
 
@@ -31,106 +39,174 @@ export abstract class Action {
   //
 
   /** All currently running actions. */
-  public static readonly actions: Action[] = [];
-
-  //
-  // ----------------- Global Settings: -----------------
-  //
-
-  /** Set a global default timing mode. */
-  public static DefaultTimingMode: TimingModeFn = TimingMode.linear;
-
-  /** Set the global default action category. */
-  public static DefaultCategoryMask: number = 0x1 << 0;
+  protected static readonly _actions: Action[] = [];
 
   //
   // ----------------- Chaining Actions: -----------------
   //
 
-	/** Creates an action that runs a collection of actions sequentially. */
+  /**
+   * Creates an action that runs a collection of actions in parallel.
+   *
+   * When the action executes, the actions that comprise the group all start immediately and run in
+   * parallel. The duration of the group action is the longest duration among the collection of
+   * actions. If an action in the group has a duration less than the group’s duration, the action
+   * completes, then idles until the group completes the remaining actions. This matters most when
+   * creating a repeating action that repeats a group.
+   *
+   * This action is reversible; it creates a new group action that contains the reverse of each
+   * action specified in the group.
+   */
+  public static group(actions: Action[]): Action {
+    return new GroupAction(actions);
+  }
+
+  /**
+   * Creates an action that runs a collection of actions sequentially.
+   *
+   * When the action executes, the first action in the sequence starts and runs to completion.
+   * Subsequent actions in the sequence run in a similar fashion until all of the actions in the
+   * sequence have executed. The duration of the sequence action is the sum of the durations of the
+   * actions in the sequence.
+   *
+   * This action is reversible; it creates a new sequence action that reverses the order of the
+   * actions. Each action in the reversed sequence is itself reversed. For example, if an action
+   * sequence is {1,2,3}, the reversed sequence would be {3R,2R,1R}.
+   */
   public static sequence(actions: Action[]): Action {
     return new SequenceAction(actions);
   }
 
-	/** Creates an action that runs a collection of actions in parallel. */
-  public static group(actions: Action[]): Action {
-    return new GroupAction(actions);
-  }
-  
-	/** Creates an action that repeats another action a specified number of times. */
+  /**
+   * Creates an action that repeats another action a specified number of times.
+   *
+   * When the action executes, the associated action runs to completion and then repeats, until the
+   * count is reached.
+   *
+   * This action is reversible; it creates a new action that is the reverse of the specified action
+   * and then repeats it the same number of times.
+   */
   public static repeat(action: Action, repeats: number): Action {
-    return new RepeatAction(action, repeats);
+    const length = Math.max(0, Math.round(repeats));
+    return Action.sequence(Array.from({ length }, () => action));
   }
 
-	/** Creates an action that repeats another action forever. */
+  /**
+   * Creates an action that repeats another action forever.
+   *
+   * When the action executes, the associated action runs to completion and then repeats.
+   *
+   * This action is reversible; it creates a new action that is the reverse of the specified action
+   * and then repeats it forever.
+   */
   public static repeatForever(action: Action): Action {
-    return new RepeatAction(action, -1);
+    return new RepeatForeverAction(action);
   }
 
   //
   // ----------------- Delaying Actions: -----------------
   //
 
-	/** Creates an action that idles for a specified period of time. */
+  /**
+   * Creates an action that idles for a specified period of time.
+   *
+   * This action is not reversible; the reverse of this action is the same action.
+   */
   public static waitForDuration(duration: TimeInterval): Action {
     return new DelayAction(duration);
   }
 
-	/**
-	 * Creates an action that idles for a randomized period of time.
-	 * The resulting action will wait for averageDuration ± (rangeSize / 2).
-	 *
-	 * @param average The average amount of time to wait.
-	 * @param rangeSize The range of possible values for the duration.
-	 * @param randomSeed (Optional) A scalar between 0 and 1. Defaults to `Math.random()`.
-	 *
-	 * @example Action.waitForDurationWithRange(10.0, 5.0) // duration will be 7.5 -> 12.5
-	 */
-  public static waitForDurationWithRange(average: TimeInterval, rangeSize: TimeInterval, randomSeed?: number): Action {
-		const randomComponent = rangeSize * (randomSeed ?? Math.random()) - rangeSize * 0.5;
-    return new DelayAction(average + randomComponent);
+  /**
+   * Creates an action that idles for a randomized period of time.
+   * The resulting action will wait for averageDuration ± (rangeSize / 2).
+   *
+   * @param average The average amount of time to wait.
+   * @param rangeSize The range of possible values for the duration.
+   *
+   * @example Action.waitForDurationWithRange(10.0, 5.0) // duration will be 7.5 -> 12.5
+   *
+   * This action is not reversible; the reverse of this action is the same action.
+   */
+  public static waitForDurationWithRange(average: TimeInterval, rangeSize: TimeInterval): Action {
+    return new DelayAction(average + (rangeSize * Math.random() - rangeSize * 0.5));
   }
 
   //
   // ----------------- Linear Path Actions: -----------------
   //
 
-	/** Creates an action that moves a node relative to its current position. */
+  /**
+   * Creates an action that moves a node relative to its current position.
+   *
+   * This action is reversible.
+   */
   public static moveBy(x: number, y: number, duration: TimeInterval): Action {
     return new MoveByAction(x, y, duration);
   }
 
-	/** Creates an action that moves a node relative to its current position. */
+  /**
+   * Creates an action that moves a node relative to its current position.
+   *
+   * This action is reversible.
+   */
   public static moveByVector(vec: VectorLike, duration: TimeInterval): Action {
     return Action.moveBy(vec.x, vec.y, duration);
   }
 
-	/** Creates an action that moves a node horizontally relative to its current position. */
+  /**
+   * Creates an action that moves a node horizontally relative to its current position.
+   *
+   * This action is reversible.
+   */
   public static moveByX(x: number, duration: TimeInterval): Action {
     return Action.moveBy(x, 0, duration);
   }
 
-	/** Creates an action that moves a node vertically relative to its current position. */
+  /**
+   * Creates an action that moves a node vertically relative to its current position.
+   *
+   * This action is reversible.
+   */
   public static moveByY(y: number, duration: TimeInterval): Action {
     return Action.moveBy(0, y, duration);
   }
 
-	/** Creates an action that moves a node to a new position. */
+  /**
+   * Creates an action that moves a node to a new position.
+   *
+   * This action is not reversible; the reverse of this action has the same duration but does not
+   * move the node.
+   */
   public static moveTo(x: number, y: number, duration: TimeInterval): Action {
     return new MoveToAction(x, y, duration);
   }
 
-	/** Creates an action that moves a node to a new position. */
+  /**
+   * Creates an action that moves a node to a new position.
+   *
+   * This action is not reversible; the reverse of this action has the same duration but does not
+   * move the node.
+   */
   public static moveToPoint(point: VectorLike, duration: TimeInterval): Action {
     return Action.moveTo(point.x, point.y, duration);
   }
 
-	/** Creates an action that moves a node horizontally. */
+  /**
+   * Creates an action that moves a node horizontally.
+   *
+   * This action is not reversible; the reverse of this action has the same duration but does not
+   * move the node.
+   */
   public static moveToX(x: number, duration: TimeInterval): Action {
     return new MoveToAction(x, undefined, duration);
   }
 
-	/** Creates an action that moves a node vertically. */
+  /**
+   * Creates an action that moves a node vertically.
+   *
+   * This action is not reversible; the reverse of this action has the same duration but does not
+   * move the node.
+   */
   public static moveToY(y: number, duration: TimeInterval): Action {
     return new MoveToAction(undefined, y, duration);
   }
@@ -139,56 +215,152 @@ export abstract class Action {
   // ----------------- Rotation Actions: -----------------
   //
 
-	/** Creates an action that rotates the node by a relative value. */
+  /**
+   * Creates an action that rotates the node by a relative value (in radians).
+   *
+   * This action is reversible.
+   */
   public static rotateBy(rotation: number, duration: TimeInterval): Action {
     return new RotateByAction(rotation, duration);
   }
 
-	/** Creates an action that rotates the node to an absolute value. */
+  /**
+   * Creates an action that rotates the node by a relative value (in degrees).
+   *
+   * This action is reversible.
+   */
+  public static rotateByDegrees(degrees: number, duration: TimeInterval): Action {
+    return Action.rotateBy(degrees * DEG_TO_RAD, duration);
+  }
+
+  /**
+   * Creates an action that rotates the node to an absolute value (in radians).
+   *
+   * This action is not reversible; the reverse of this action has the same duration but does not
+   * change anything.
+   */
   public static rotateTo(rotation: number, duration: TimeInterval): Action {
     return new RotateToAction(rotation, duration);
+  }
+
+  /**
+   * Creates an action that rotates the node to an absolute value (in degrees).
+   *
+   * This action is not reversible; the reverse of this action has the same duration but does not
+   * change anything.
+   */
+  public static rotateToDegrees(degrees: number, duration: TimeInterval): Action {
+    return Action.rotateTo(degrees * DEG_TO_RAD, duration);
+  }
+
+
+  //
+  // ----------------- Speed Actions: -----------------
+  //
+
+  /**
+   * Creates an action that changes how fast the node executes actions by a relative value.
+   *
+   * This action is reversible.
+   */
+  public static speedBy(speed: number, duration: TimeInterval): Action {
+    return new SpeedByAction(speed, duration);
+  }
+
+  /**
+   * Creates an action that changes how fast the node executes actions.
+   *
+   * This action is not reversible; the reverse of this action has the same duration but does not
+   * change anything.
+   */
+  public static speedTo(speed: number, duration: TimeInterval): Action {
+    return new SpeedToAction(speed, duration);
   }
 
   //
   // ----------------- Scale Actions: -----------------
   //
 
-	/** Creates an action that changes the x and y scale values of a node by a relative value. */
-  public static scaleBy(x: number, y: number, duration: TimeInterval): Action {
-    return new ScaleByAction(x, y, duration);
+  /**
+   * Creates an action that changes the scale of a node by a relative value.
+   *
+   * This action is reversible.
+   */
+  public static scaleBy(value: number, duration: TimeInterval): Action;
+  public static scaleBy(x: number, y: number, duration: TimeInterval): Action;
+  public static scaleBy(x: number, y: number | TimeInterval, duration?: TimeInterval): Action {
+    return duration === undefined
+      ? new ScaleByAction(x, x, y)
+      : new ScaleByAction(x, y, duration);
   }
 
-	/** Creates an action that changes the x and y scale values of a node by a relative value. */
-  public static scaleBySize(size: VectorLike, duration: TimeInterval): Action {
-    return Action.scaleBy(size.x, size.y, duration);
+  /**
+   * Creates an action that changes the x and y scale values of a node by a relative value.
+   *
+   * This action is reversible.
+   */
+  public static scaleByVector(vector: VectorLike, duration: TimeInterval): Action {
+    return Action.scaleBy(vector.x, vector.y, duration);
   }
 
-	/** Creates an action that changes the x scale of a node by a relative value. */
+  /**
+   * Creates an action that changes the x scale of a node by a relative value.
+   *
+   * This action is reversible.
+   */
   public static scaleXBy(x: number, duration: TimeInterval): Action {
-    return Action.scaleBy(x, 0, duration);
+    return Action.scaleBy(x, 0.0, duration);
   }
 
-	/** Creates an action that changes the y scale of a node by a relative value. */
+  /**
+   * Creates an action that changes the y scale of a node by a relative value.
+   *
+   * This action is reversible.
+   */
   public static scaleYBy(y: number, duration: TimeInterval): Action {
-    return Action.scaleBy(0, y, duration);
+    return Action.scaleBy(0.0, y, duration);
   }
 
-	/** Creates an action that changes the x and y scale values of a node. */
-  public static scaleTo(x: number, y: number, duration: TimeInterval): Action {
-    return new ScaleToAction(x, y, duration);
+  /**
+   * Creates an action that changes the x and y scale values of a node.
+   *
+   * This action is not reversible; the reverse of this action has the same duration but does not
+   * change anything.
+   */
+  public static scaleTo(value: number, duration: TimeInterval): Action;
+  public static scaleTo(x: number, y: number, duration: TimeInterval): Action;
+  public static scaleTo(x: number, y: number | TimeInterval, duration?: TimeInterval): Action {
+    return duration === undefined
+      ? new ScaleToAction(x, x, y)
+      : new ScaleToAction(x, y, duration);
   }
 
-	/** Creates an action that changes the x and y scale values of a node. */
+  /**
+   * Creates an action that changes the x and y scale values of a node.
+   *
+   * This action is not reversible; the reverse of this action has the same duration but does not
+   * change anything.
+   */
   public static scaleToSize(size: VectorLike, duration: TimeInterval): Action {
     return Action.scaleTo(size.x, size.y, duration);
   }
 
-	/** Creates an action that changes the y scale values of a node. */
+  /**
+   * Creates an action that changes the y scale values of a node.
+   *
+   * This action is not reversible; the reverse of this action has the same duration but does not
+   * change anything.
+   */
   public static scaleXTo(x: number, duration: TimeInterval): Action {
     return new ScaleToAction(x, undefined, duration);
   }
 
-	/** Creates an action that changes the x scale values of a node. */
+  /**
+   * Creates an action that changes the x scale values of a node.
+   *
+   * This action is not reversible; the reverse of this action has the same duration but does not
+   * change anything.
+   */
   public static scaleYTo(y: number, duration: TimeInterval): Action {
     return new ScaleToAction(undefined, y, duration);
   }
@@ -197,22 +369,39 @@ export abstract class Action {
   // ----------------- Transparency Actions: -----------------
   //
 
-	/** Creates an action that changes the alpha value of the node to 1.0. */
+  /**
+   * Creates an action that changes the alpha value of the node to 1.0.
+   *
+   * This action is reversible. The reverse is equivalent to fadeOut(duration).
+   */
   public static fadeIn(duration: TimeInterval): Action {
-    return Action.fadeAlphaTo(1, duration);
+    return new FadeInAction(duration);
   }
 
-	/** Creates an action that changes the alpha value of the node to 0.0. */
+  /**
+   * Creates an action that changes the alpha value of the node to 0.0.
+   *
+   * This action is reversible. The reverse is equivalent to fadeIn(duration).
+   */
   public static fadeOut(duration: TimeInterval): Action {
-    return Action.fadeAlphaTo(0.0, duration);
+    return new FadeOutAction(duration);
   }
 
-	/** Creates an action that adjusts the alpha value of a node to a new value. */
+  /**
+   * Creates an action that adjusts the alpha value of a node to a new value.
+   *
+   * This action is not reversible; the reverse of this action has the same duration but does not
+   * change anything.
+   */
   public static fadeAlphaTo(alpha: number, duration: TimeInterval): Action {
     return new FadeToAction(alpha, duration);
   }
 
-	/** Creates an action that adjusts the alpha value of a node by a relative value. */
+  /**
+   * Creates an action that adjusts the alpha value of a node by a relative value.
+   *
+   * This action is reversible.
+   */
   public static fadeAlphaBy(alpha: number, duration: TimeInterval): Action {
     return new FadeByAction(alpha, duration);
   }
@@ -221,6 +410,37 @@ export abstract class Action {
   // ----------------- Display Object Actions: -----------------
   //
 
+  /**
+   * Creates an action that hides a node.
+   *
+   * This action has an instantaneous duration. When the action executes, the node’s visible
+   * property is set to true.
+   *
+   * This action is reversible. The reversed action is equivalent to show().
+   */
+  public static hide(): Action {
+    return new SetVisibleAction(false);
+  }
+
+  /**
+   * Creates an action that makes a node visible.
+   *
+   * This action has an instantaneous duration. When the action executes, the node’s visible
+   * property is set to false.
+   *
+   * This action is reversible. The reversed action is equivalent to hide().
+   */
+  public static unhide(): Action {
+    return new SetVisibleAction(true);
+  }
+
+  /**
+   * Creates an action that removes the node from its parent.
+   *
+   * This action has an instantaneous duration.
+   *
+   * This action is not reversible; the reverse of this action is the same action.
+   */
   public static removeFromParent(): Action {
     return new RemoveFromParentAction();
   }
@@ -229,72 +449,699 @@ export abstract class Action {
   // ----------------- Transparency Actions: -----------------
   //
 
-	/** Creates an action that executes a block. */
+  /**
+   * Creates an action that executes a block.
+   *
+   * This action takes place instantaneously.
+   *
+   * This action is not reversible; the reverse action executes the same block.
+   */
   public static run(fn: () => void): Action {
     return new RunBlockAction(fn);
   }
 
-	/**
-	 * Creates an action that executes a stepping function over its duration.
-	 *
-	 * The function will be triggered on every redraw until the action completes, and is passed
-	 * the target and the elasped time as a scalar between 0 and 1 (which is passed through the timing mode function).
-	 */
-	public static custom(duration: number, stepFn: (target: TargetNode, x: number) => void): Action {
-		return new CustomAction(duration, stepFn);
-	}
+  /**
+   * Creates an action that executes a stepping function over its duration.
+   *
+   * The function will be triggered on every redraw until the action completes, and is passed
+   * the target and the elasped time as a scalar between 0 and 1 (which is passed through the timing
+   * mode function).
+   *
+   * This action is not reversible; the reverse action executes the same block.
+   */
+  public static customAction(duration: number, stepFn: (target: TargetNode, x: number) => void): Action {
+    return new CustomAction(duration, stepFn);
+  }
 
   //
   // ----------------- Global Methods: -----------------
   //
 
-  /** Clear all actions with this target. */
-  public static removeActionsForTarget(target: TargetNode | undefined): void {
-    for (let i = Action.actions.length - 1; i >= 0; i--) {
-      const action: Action = this.actions[i];
-
-      if (action.target === target) {
-        Action.actions.splice(i, 1);
-      }
-    }
-  }
-
-  /** Clears all actions. */
-  public static removeAllActions(): void {
-    Action.actions.splice(0, this.actions.length);
-  }
-
-  /** Play an action. */
-  protected static playAction(action: Action): Action {
-    Action.actions.push(action);
-    return action;
-  }
-
-  /** Stop an action. */
-  protected static stopAction(action: Action): Action {
-    const index = Action.actions.indexOf(action);
-    if (index >= 0) {
-      Action.actions.splice(index, 1);
-    }
-    return action;
-  }
-
-  /** Tick all actions forward.
+  /**
+   * Tick all actions forward.
    *
-   * @param dt Delta time
+   * @param deltaTimeMs Delta time in milliseconds.
    * @param categoryMask (Optional) Bitmask to filter which categories of actions to update.
    * @param onErrorHandler (Optional) Handler errors from each action's tick.
    */
-  public static tick(dt: number, categoryMask: number = 0x1, onErrorHandler?: (error: any) => void): void {
-    for (let i = Action.actions.length - 1; i >= 0; i--) {
-      const action: Action = Action.actions[i];
+  public static tick(deltaTimeMs: number, categoryMask: number | undefined = undefined, onErrorHandler?: (error: any) => void): void {
+    ActionTicker.stepAllActionsForward(deltaTimeMs, categoryMask, onErrorHandler);
+  }
 
-      if (categoryMask !== undefined && (categoryMask & action.categoryMask) === 0) {
+  public constructor(
+    public readonly duration: TimeInterval,
+    public speed: number = 1.0,
+    public timingMode: TimingModeFn = TimingMode.linear,
+    public categoryMask: number = 0x1,
+  ) {}
+
+  //
+  // ----------------- Action Instance Methods: -----------------
+  //
+
+  /**
+   * Update function for the action.
+   *
+   * @param target The affected display object.
+   * @param progress The elapsed progress of the action, with the timing mode function applied. Generally a scalar number between 0.0 and 1.0.
+   * @param progressDelta Relative change in progress since the previous animation change. Use this for relative actions.
+   * @param actionTicker The actual ticker running this update.
+   * @param deltaTime The amount of time elapsed in this tick. This number is scaled by both speed of target and any parent actions.
+   */
+  public abstract updateAction(
+    target: TargetNode,
+    progress: number,
+    progressDelta: number,
+    actionTicker: ActionTicker,
+    deltaTime: number
+  ): void;
+
+  /** Duration of the action after the speed scalar is applied. */
+  public get scaledDuration(): number {
+    return this.duration / this.speed;
+  }
+
+  /**
+   * Creates an action that reverses the behavior of another action.
+   *
+   * This method always returns an action object; however, not all actions are reversible.
+   * When reversed, some actions return an object that either does nothing or that performs the same action as the original action.
+   */
+  public abstract reversed(): Action;
+
+  /**
+   * Do first time setup here.
+   *
+   * Anything you return here will be available as `ticker.data`.
+   */
+  protected _setupTicker(target: TargetNode, ticker: ActionTicker): any {
+    return undefined;
+  }
+
+  /** Set the action's speed scale. Defaults to 1.0. */
+  public setSpeed(speed: number): this {
+    this.speed = speed;
+    return this;
+  }
+
+  /** Set a timing mode function for this action. Defaults to TimingMode.linear. */
+  public setTimingMode(timingMode: TimingModeFn): this {
+    this.timingMode = timingMode;
+    return this;
+  }
+
+  /**
+   * Set a category mask for this action.
+   *
+   * Use this to tick different categories of actions separately (e.g. separate different UI).
+   *
+   * @deprecated use speed instead
+   */
+  public setCategory(categoryMask: number): this {
+    this.categoryMask = categoryMask;
+    return this;
+  }
+}
+
+//
+// ----------------- Built-in Actions: -----------------
+//
+
+class GroupAction extends Action {
+  protected index: number = 0;
+  protected actions: Action[];
+
+  public constructor(actions: Action[]) {
+    super(
+      // Max duration:
+      Math.max(...actions.map(action => action.scaledDuration))
+    );
+
+    this.actions = actions;
+  }
+
+  protected _setupTicker(target: TargetNode, ticker: ActionTicker): any {
+    ticker.autoComplete = false;
+
+    return {
+      childTickers: this.actions.map(action => new ActionTicker(undefined, target, action))
+    };
+  }
+
+  public updateAction(
+    target: TargetNode,
+    progress: number,
+    progressDelta: number,
+    ticker: ActionTicker,
+    timeDelta: number,
+  ): void {
+    const relativeTimeDelta = timeDelta * this.speed;
+
+    let allDone = true;
+    for (const childTicker of ticker.data.childTickers as ActionTicker[]) {
+      if (!childTicker.isDone) {
+        allDone = false;
+        childTicker.stepActionForward(relativeTimeDelta);
+      }
+    }
+
+    if (allDone) {
+      ticker.isDone = true;
+    }
+  }
+
+  public reversed(): Action {
+    return new GroupAction(this.actions.map(action => action.reversed()));
+  }
+}
+
+class SequenceAction extends Action {
+  protected actions: Action[];
+
+  public constructor(actions: Action[]) {
+    super(
+      // Total duration:
+      actions.reduce((total, action) => total + action.scaledDuration, 0)
+    );
+    this.actions = actions;
+  }
+
+  protected _setupTicker(target: TargetNode, ticker: ActionTicker): any {
+    ticker.autoComplete = false;
+
+    return {
+      childTickers: this.actions.map(action => new ActionTicker(undefined, target, action))
+    };
+  }
+
+  public updateAction(
+    target: TargetNode,
+    progress: number,
+    progressDelta: number,
+    ticker: ActionTicker,
+    timeDelta: number,
+  ): void {
+    let allDone = true;
+    let remainingTimeDelta = timeDelta * this.speed;
+
+    for (const childTicker of ticker.data.childTickers as ActionTicker[]) {
+      if (!childTicker.isDone) {
+
+        if (remainingTimeDelta > 0 || childTicker.duration === 0) {
+          remainingTimeDelta = childTicker.stepActionForward(remainingTimeDelta);
+        }
+        else {
+          allDone = false;
+          break;
+        }
+
+        if (remainingTimeDelta < 0) {
+          allDone = false;
+          break;
+        }
+      }
+    }
+
+    if (allDone) {
+      ticker.isDone = true;
+    }
+  }
+
+  public reversed(): Action {
+    const reversedSequence = [...this.actions].reverse().map(action => action.reversed());
+    return new SequenceAction(reversedSequence);
+  }
+}
+
+class RepeatForeverAction extends Action {
+  public constructor(
+    protected readonly action: Action
+  ) {
+    super(Infinity);
+
+    if (action.duration <= 0) {
+      throw new Error('The action to be repeated must have a non-instantaneous duration.');
+    }
+  }
+
+  public reversed(): Action {
+    return new RepeatForeverAction(this.action.reversed());
+  }
+
+  protected _setupTicker(target: TargetNode, ticker: ActionTicker): any {
+    return {
+      childTicker: new ActionTicker(undefined, target, this.action)
+    };
+  }
+
+  public updateAction(target: TargetNode, progress: number, progressDelta: number, ticker: ActionTicker, timeDelta: number): void {
+    let childTicker: ActionTicker = ticker.data.childTicker;
+    let remainingTimeDelta = timeDelta * this.speed;
+
+    remainingTimeDelta = childTicker.stepActionForward(remainingTimeDelta);
+
+    if (remainingTimeDelta > 0) {
+      childTicker.elapsed = 0.0; // reset
+      childTicker.stepActionForward(remainingTimeDelta);
+    }
+  }
+}
+
+class ScaleToAction extends Action {
+  public constructor(
+    protected readonly x: number | undefined,
+    protected readonly y: number | undefined,
+    duration: TimeInterval,
+  ) {
+    super(duration);
+  }
+
+  protected _setupTicker(target: TargetNode, ticker: ActionTicker): any {
+    return {
+      startX: target.scale.x,
+      startY: target.scale.y
+    };
+  }
+
+  public updateAction(target: TargetNode, progress: number, progressDelta: number, ticker: ActionTicker): void {
+    target.scale.set(
+      this.x === undefined ? target.scale.x : ticker.data.startX + (this.x - ticker.data.startX) * progress,
+      this.y === undefined ? target.scale.y : ticker.data.startY + (this.y - ticker.data.startY) * progress
+    );
+  }
+
+  public reversed(): Action {
+    return new DelayAction(this.scaledDuration);
+  }
+}
+
+class ScaleByAction extends Action {
+  public constructor(
+    protected readonly x: number,
+    protected readonly y: number,
+    duration: TimeInterval,
+  ) {
+    super(duration);
+  }
+
+  protected _setupTicker(target: TargetNode, ticker: ActionTicker): any {
+    return {
+      dx: target.scale.x * this.x - target.scale.x,
+      dy: target.scale.y * this.y - target.scale.y
+    };
+  }
+
+  public updateAction(target: TargetNode, progress: number, progressDelta: number, ticker: ActionTicker): void {
+    target.scale.set(
+      target.scale.x + ticker.data.dx * progressDelta,
+      target.scale.y + ticker.data.dy * progressDelta,
+    );
+  }
+
+  public reversed(): Action {
+    return new ScaleByAction(-this.x, -this.y, this.duration)
+      .setSpeed(this.speed)
+      .setTimingMode(this.timingMode);
+  }
+}
+
+class SetVisibleAction extends Action {
+  public constructor(
+    protected readonly visible: boolean,
+  ) {
+    super(0);
+  }
+
+  public updateAction(target: TargetNode): void {
+    target.visible = this.visible;
+  }
+
+  public reversed(): Action {
+    return new SetVisibleAction(!this.visible);
+  }
+}
+
+class RemoveFromParentAction extends Action {
+  public constructor() {
+    super(0);
+  }
+
+  public updateAction(target: TargetNode): void {
+    target.parent?.removeChild(target);
+  }
+
+  public reversed(): Action {
+    return this;
+  }
+}
+
+class CustomAction extends Action {
+  public constructor(
+    duration: TimeInterval,
+    protected stepFn: (target: TargetNode, t: number, dt: number) => void
+  ) {
+    super(duration);
+  }
+
+  public updateAction(target: TargetNode, progress: number, progressDelta: number): void {
+    this.stepFn(target, progress, progressDelta);
+  }
+
+  public reversed(): Action {
+    return this;
+  }
+}
+
+class RunBlockAction extends Action {
+  protected block: () => any;
+
+  public constructor(block: () => void) {
+    super(0);
+    this.block = block;
+  }
+
+  public updateAction(target: TargetNode, progress: number, progressDelta: number): void {
+    this.block();
+  }
+
+  public reversed(): Action {
+    return this;
+  }
+}
+
+class SpeedToAction extends Action {
+  public constructor(
+    protected readonly _speed: number,
+    duration: TimeInterval,
+  ) {
+    super(duration);
+  }
+
+  protected _setupTicker(target: TargetNode, ticker: ActionTicker): any {
+    return {
+      startSpeed: target.speed
+    };
+  }
+
+  public updateAction(target: TargetNode, progress: number, progressDelta: number, ticker: ActionTicker): void {
+    target.rotation = ticker.data.startRotation + (this._speed - ticker.data.startSpeed) * progress;
+  }
+
+  public reversed(): Action {
+    return new DelayAction(this.scaledDuration);
+  }
+}
+
+class SpeedByAction extends Action {
+  public constructor(
+    protected readonly _speed: number,
+    duration: TimeInterval,
+  ) {
+    super(duration);
+  }
+
+  public updateAction(target: TargetNode, progress: number, progressDelta: number, ticker: ActionTicker): void {
+    target.rotation += this._speed * progressDelta;
+  }
+
+  public reversed(): Action {
+    return new SpeedByAction(-this._speed, this.duration);
+  }
+}
+
+class RotateToAction extends Action {
+  public constructor(
+    protected readonly rotation: number,
+    duration: TimeInterval,
+  ) {
+    super(duration);
+  }
+
+  protected _setupTicker(target: TargetNode, ticker: ActionTicker): any {
+    return {
+      startRotation: target.rotation
+    };
+  }
+
+  public updateAction(target: TargetNode, progress: number, progressDelta: number, ticker: ActionTicker): void {
+    target.rotation = ticker.data.startRotation + (this.rotation - ticker.data.startRotation) * progress;
+  }
+
+  public reversed(): Action {
+    return new DelayAction(this.scaledDuration);
+  }
+}
+
+class RotateByAction extends Action {
+  public constructor(
+    protected readonly rotation: number,
+    duration: TimeInterval,
+  ) {
+    super(duration);
+  }
+
+  public updateAction(target: TargetNode, progress: number, progressDelta: number): void {
+    target.rotation += this.rotation * progressDelta;
+  }
+
+  public reversed(): Action {
+    return new RotateByAction(-this.rotation, this.duration)
+      .setSpeed(this.speed)
+      .setTimingMode(this.timingMode);
+  }
+}
+
+class MoveToAction extends Action {
+  public constructor(
+    protected readonly x: number | undefined,
+    protected readonly y: number | undefined,
+    duration: TimeInterval,
+  ) {
+    super(duration);
+  }
+
+  protected _setupTicker(target: TargetNode, ticker: ActionTicker): any {
+    return {
+      startX: target.x,
+      startY: target.y
+    };
+  }
+
+  public updateAction(target: TargetNode, progress: number, progressDelta: number, ticker: ActionTicker): void {
+    target.position.set(
+      this.x === undefined ? target.position.x : ticker.data.startX + (this.x - ticker.data.startX) * progress,
+      this.y === undefined ? target.position.y : ticker.data.startY + (this.y - ticker.data.startY) * progress
+    );
+  }
+
+  public reversed(): Action {
+    return new DelayAction(this.scaledDuration);
+  }
+}
+
+class MoveByAction extends Action {
+  public constructor(
+    protected readonly x: number,
+    protected readonly y: number,
+    duration: number,
+  ) {
+    super(duration);
+  }
+
+  public updateAction(target: TargetNode, progress: number, progressDelta: number): void {
+    target.position.x += this.x * progressDelta;
+    target.position.y += this.y * progressDelta;
+  }
+
+  public reversed(): Action {
+    return new MoveByAction(-this.x, -this.y, this.duration)
+      .setSpeed(this.speed)
+      .setTimingMode(this.timingMode);
+  }
+}
+
+class FadeToAction extends Action {
+  public constructor(
+    protected readonly alpha: number,
+    duration: TimeInterval
+  ) {
+    super(duration);
+  }
+
+  protected _setupTicker(target: PIXI.DisplayObject, ticker: ActionTicker): any {
+    return {
+      startAlpha: target.alpha
+    };
+  }
+
+  public updateAction(target: TargetNode, progress: number, progressDelta: number, ticker: ActionTicker): void {
+    target.alpha = ticker.data.startAlpha + (this.alpha - ticker.data.startAlpha) * progress;
+  }
+
+  public reversed(): Action {
+    return new DelayAction(this.scaledDuration);
+  }
+}
+
+class FadeInAction extends Action {
+  protected _setupTicker(target: PIXI.DisplayObject, ticker: ActionTicker): any {
+    return {
+      startAlpha: target.alpha
+    };
+  }
+
+  public updateAction(target: TargetNode, progress: number, progressDelta: number, ticker: ActionTicker): void {
+    target.alpha = ticker.data.startAlpha + (1.0 - ticker.data.startAlpha) * progress;
+  }
+
+  public reversed(): Action {
+    return new FadeOutAction(this.duration)
+      .setSpeed(this.speed)
+      .setTimingMode(this.timingMode);
+  }
+}
+
+class FadeOutAction extends Action {
+  protected _setupTicker(target: PIXI.DisplayObject, ticker: ActionTicker): any {
+    return {
+      startAlpha: target.alpha
+    };
+  }
+
+  public updateAction(target: TargetNode, progress: number, progressDelta: number, ticker: ActionTicker): void {
+    target.alpha = ticker.data.startAlpha + (0.0 - ticker.data.startAlpha) * progress;
+  }
+
+  public reversed(): Action {
+    return new FadeInAction(this.duration)
+      .setSpeed(this.speed)
+      .setTimingMode(this.timingMode);
+  }
+}
+
+class FadeByAction extends Action {
+  public constructor(
+    protected readonly alpha: number,
+    duration: TimeInterval,
+  ) {
+    super(duration);
+  }
+
+  public updateAction(target: TargetNode, progress: number, progressDelta: number): void {
+    target.alpha += this.alpha * progressDelta;
+  }
+
+  public reversed(): Action {
+    return new FadeByAction(-this.alpha, this.duration)
+      .setSpeed(this.speed)
+      .setTimingMode(this.timingMode);
+  }
+}
+
+class DelayAction extends Action {
+  public updateAction(): void {
+    // Idle
+  }
+
+  public reversed(): Action {
+    return this;
+  }
+}
+
+//
+// ----- Action Ticker: -----
+//
+
+class ActionTicker {
+  protected static _running: ActionTicker[] = [];
+
+  public static runAction(
+    key: string | undefined,
+    target: TargetNode,
+    action: Action,
+  ): void {
+    if (key !== undefined) {
+      const existingAction = this._running
+        .find(a => a.target === target && a.key === key);
+
+      if (existingAction !== undefined) {
+        ActionTicker.removeAction(existingAction);
+      }
+    }
+
+    this._running.push(new ActionTicker(key, target, action));
+  }
+
+  public static removeAction(actionTicker: ActionTicker): ActionTicker {
+    const index = ActionTicker._running.indexOf(actionTicker);
+    if (index >= 0) {
+      ActionTicker._running.splice(index, 1);
+    }
+    return actionTicker;
+  }
+
+  public static hasTargetActions(target: TargetNode): boolean {
+    return ActionTicker._running.find(at => at.target === target) !== undefined;
+  }
+
+  public static getTargetActionTickerForKey(
+    target: TargetNode,
+    key: string
+  ): ActionTicker | undefined {
+    return ActionTicker._running.find(at => at.target === target && at.key === key);
+  }
+
+  public static getTargetActionForKey(target: TargetNode, key: string): Action | undefined {
+    return this.getTargetActionTickerForKey(target, key)?.action;
+  }
+
+  public static removeTargetActionForKey(target: TargetNode, key: string): void {
+    const actionTicker = this.getTargetActionTickerForKey(target, key);
+
+    if (!actionTicker) {
+      return;
+    }
+
+    ActionTicker.removeAction(actionTicker);
+  }
+
+  public static removeAllTargetActions(target: TargetNode): void {
+    for (let i = ActionTicker._running.length - 1; i >= 0; i--) {
+      const actionTicker = ActionTicker._running[i];
+
+      if (actionTicker.target === target) {
+        ActionTicker.removeAction(actionTicker);
+      }
+    }
+  }
+
+  /**
+   * Tick all actions forward.
+   *
+   * @param deltaTimeMs Delta time given in milliseconds.
+   * @param categoryMask (Optional) Bitmask to filter which categories of actions to update.
+   * @param onErrorHandler (Optional) Handler errors from each action's tick.
+   */
+  public static stepAllActionsForward(
+    deltaTimeMs: number,
+    categoryMask: number | undefined = undefined,
+    onErrorHandler?: (error: any) => void
+  ): void {
+    const deltaTime = deltaTimeMs * 0.001;
+
+    for (let i = ActionTicker._running.length - 1; i >= 0; i--) {
+      const actionTicker = ActionTicker._running[i];
+
+      if (categoryMask !== undefined && (categoryMask & actionTicker.action.categoryMask) === 0) {
         continue;
       }
-        
+
+      if (getIsPaused(actionTicker.target)) {
+        continue;
+      }
+
       try {
-        Action.tickAction(action, dt);
+        actionTicker.stepActionForward(deltaTime * getSpeed(actionTicker.target));
       }
       catch (error) {
         // Isolate individual action errors.
@@ -305,527 +1152,183 @@ export abstract class Action {
     }
   }
 
-  protected static tickAction(action: Action, delta: number): void {
-    if (!action.target) {
-			console.warn('Action was unexpectedly missing target display object when running!');
-		}
+  /** Any instance data that will live for the duration of the ticker. */
+  public data: any;
 
-		// If the action is targeted, but is no longer valid or on the stage
-		// we garbage collect its actions.
-		if (
-			action.target == null
-			|| action.target.destroyed
-			|| action.target.parent === undefined
-		) {
-			const index = Action.actions.indexOf(action);
-			if (index > -1) {
-				Action.actions.splice(index, 1);
-			}
-
-			return;
-		}
-
-    // Tick the action
-    const isDone = action.tick(delta * action.speed);
-    if (isDone) {
-      action.isDone = true;
-
-      // Remove completed action.
-      const index = Action.actions.indexOf(action);
-      if (index > -1) {
-        Action.actions.splice(index, 1);
-      }
-
-			// Check queued actions.
-			for (let j = 0; j < action.queuedActions.length; j++) {
-				this.playAction(action.queuedActions[j]);
-			}
-			action.queuedActions = [];
-    }
-  }
-
-  //
-  // ----------------- Action Instance Properties: -----------------
-  //
-
-	/** The display object the action is running against. Set during `runOn` and cannot be changed. */
-  public target!: TargetNode;
-
-	/** A speed factor that modifies how fast an action runs. */
-  public speed: number = 1.0;
-
-	/** Time elapsed in the action. */
+  /** Time elapsed in the action. */
   public elapsed: number = 0.0;
 
-	/** Whether the action has completed. Set by `Action. */
+  /** Whether the action ticker has been setup. This is triggered on the first iteration. */
+  public isSetup = false;
+
+  /** Whether the action has completed. */
   public isDone: boolean = false;
 
-	/** Actions that will be triggered when this action completes. */
-	protected queuedActions: Action[] = [];
+  /** Whether the action ticker will mark the action as done when time elapsed >= duration. */
+  public autoComplete: boolean = true;
+
+  /**
+   * Relative speed of the action ticker.
+   *
+   * Defaults to the action's speed and is capture at creation time, and updated on
+   * the setup tick.
+   */
+  public speed: number;
+
+  /**
+   * Expected duration of the action ticker.
+   *
+   * Defaults to the action's scaled duration and is capture at creation time, and updated on
+   * the setup tick.
+   */
+  public duration: number;
+
+  public constructor(
+    public key: string | undefined,
+    public target: TargetNode,
+    public action: Action,
+  ) {
+    this.speed = action.speed;
+    this.duration = action.scaledDuration;
+  }
 
   /** Whether action is in progress (or has not yet started). */
   public get isPlaying(): boolean {
     return this.isDone === false;
   }
 
-	/** The relative time elapsed between 0 and 1. */
-  protected get timeDistance(): number {
-    return Math.min(1, this.elapsed / this.duration)
+  /** The relative time elapsed between 0 and 1. */
+  public get timeDistance(): number {
+    return this.duration === 0 ? 1 : Math.min(1, this.elapsed / this.action.scaledDuration);
   }
-
-	/**
-	 * The relative time elapsed between 0 and 1, eased by the timing mode function.
-	 *
-	 * Can be a value beyond 0 or 1 depending on the timing mode function.
-	 */
-  protected get easedTimeDistance(): number {
-    return this.timingMode(this.timeDistance);
-  }
-
-  //
-  // ----------------- Action Instance Methods: -----------------
-  //
-
-  constructor(
-    public readonly duration: TimeInterval,
-    public timingMode: TimingModeFn = Action.DefaultTimingMode,
-    public categoryMask: number = Action.DefaultCategoryMask,
-  ) {}
-
-  /** Must be implmented by each class. */
-  public abstract tick(progress: number): boolean;
-
-	/** Run an action on this target. */
-  public runOn(target: TargetNode): this {
-		this.setTarget(target);
-    Action.playAction(this);
-    return this;
-  }
-
-	/** Set an action to run after this action. */
-	public queueAction(next: Action): this {
-		this.queuedActions.push(next);
-		return this;
-	}
-
-	/** Reset an action to the start. */
-  public reset(): this {
-    this.isDone = false;
-    this.elapsed = 0;
-    return this;
-  }
-
-	/** Stop and reset an action. */
-  public stop(): this {
-    Action.stopAction(this);
-		this.reset();
-    return this;
-  }
-
-	/** Set a timing mode function for this action. */
-  public withTimingMode(timingMode: TimingModeFn): this {
-		this.timingMode = timingMode;
-    return this;
-  }
-
-	/** Set a category mask for this action. Used to group different actions together. */
-  public setCategory(categoryMask: number): this {
-    this.categoryMask = categoryMask;
-    return this;
-  }
-
-	/** Set which display object should be targeted. Internal use only. */
-  public setTarget(target: TargetNode): this {
-		if (this.target && target !== this.target) {
-			console.warn('setTarget() called on Action that already has another target. Recycling actions is currently unsupported. Behavior may be unexpected.');
-		}
-
-    this.target = target;
-    return this;
-  }
-
-	// ----- Implementation: -----
-
-	/**
-	 * For relative actions, increments time by delta, and returns the change in easedTimeDistance.
-	 *
-	 * @param delta change in time to apply
-	 * @returns the relative change in easedTimeDistance.
-	 */
-	protected applyDelta(delta: number): number {
-		const before = this.easedTimeDistance;
-		this.elapsed += delta;
-
-		return this.easedTimeDistance - before;
-	}
-}
-
-//
-// ----------------- Built-ins: -----------------
-//
-
-export class SequenceAction extends Action {
-  index: number = 0;
-  actions: Action[];
-
-  constructor(actions: Action[]) {
-    super(
-      // Total duration:
-      actions.reduce((total, action) => total + action.duration, 0)
-    );
-    this.actions = actions;
-  }
-
-  public tick(delta: number): boolean {
-    // If empty, we are done!
-    if (this.index == this.actions.length)
-      return true;
-
-    // Otherwise, tick the first element
-    if (this.actions[this.index].tick(delta)) {
-      this.index++;
-    }
-
-    return false;
-  }
-
-  public reset() {
-    super.reset();
-
-    this.index = 0;
-    for (const i in this.actions) {
-      this.actions[i].reset();
-    }
-    return this;
-  }
-
-  public setTarget(target: TargetNode): this {
-		this.actions.forEach(action => action.setTarget(target));
-		return super.setTarget(target);
-	}
-}
-
-export class ScaleToAction extends Action {
-  protected startX!: number;
-  protected startY!: number;
-
-  constructor(
-		protected readonly x: number | undefined,
-		protected readonly y: number | undefined,
-    duration: TimeInterval,
-  ) {
-    super(duration);
-  }
-
-  public tick(delta: number): boolean {
-    if (this.elapsed === 0) {
-      this.startX = this.target.scale.x;
-      this.startY = this.target.scale.y;
-    }
-
-    this.elapsed += delta;
-
-    const factor: number = this.easedTimeDistance;
-
-		const newXScale = this.x === undefined ? this.target.scale.x : this.startX + (this.x - this.startX) * factor;
-		const newYScale = this.y === undefined ? this.target.scale.y : this.startY + (this.y - this.startY) * factor;
-	
-    this.target.scale.set(newXScale, newYScale);
-
-    return this.timeDistance >= 1;
-  }
-}
-export class ScaleByAction extends Action {
-  constructor(
-		protected readonly x: number,
-		protected readonly y: number,
-    duration: TimeInterval,
-  ) {
-    super(duration);
-  }
-
-  public tick(delta: number): boolean {
-		const factorDelta = this.applyDelta(delta);
-	
-    this.target.scale.set(
-      this.target.scale.x + this.x * factorDelta,
-      this.target.scale.y + this.y * factorDelta,
-    );
-
-    return this.timeDistance >= 1;
-  }
-}
-
-export class RemoveFromParentAction extends Action {
-  constructor() {
-    super(0);
-  }
-
-  public tick(delta: number): boolean {
-		if (this.target?.parent) {
-			this.target.parent?.removeChild(this.target);
-		}
-
-    return true;
-  }
-}
-
-export class CustomAction extends Action {
-  constructor(
-		duration: TimeInterval,
-		protected stepFn: (target: TargetNode, x: number) => void
-	) {
-    super(duration);
-  }
-
-  public tick(delta: number): boolean {
-		this.elapsed += delta;
-    this.stepFn(this.target, this.easedTimeDistance);
-
-    return this.timeDistance >= 1;
-  }
-}
-
-export class RunBlockAction extends Action {
-  protected block: () => any;
-
-  constructor(block: () => void) {
-    super(0);
-    this.block = block;
-  }
-
-  public tick(delta: number): boolean {
-    this.block.call(this);
-
-    return true;
-  }
-}
-
-export class RotateToAction extends Action {
-  protected startRotation!: number;
-
-  constructor(
-    protected readonly rotation: number,
-    duration: TimeInterval,
-  ) {
-    super(duration);
-  }
-
-  public tick(delta: number): boolean {
-    if (this.elapsed === 0) {
-      this.startRotation = this.target.rotation;
-    }
-
-    this.elapsed += delta;
-
-    const factor: number = this.easedTimeDistance;
-    this.target.rotation = this.startRotation + (this.rotation - this.startRotation) * factor;
-    return this.timeDistance >= 1;
-  }
-}
-
-export class RotateByAction extends Action {
-  constructor(
-    protected readonly rotation: number,
-    duration: TimeInterval,
-  ) {
-    super(duration);
-  }
-
-  public tick(delta: number): boolean {
-		const factorDelta = this.applyDelta(delta);
-    this.target.rotation += this.rotation * factorDelta;
-
-    return this.timeDistance >= 1;
-  }
-}
-
-export class RepeatAction extends Action {
-  protected action: Action;
-  protected maxRepeats: number;
-  protected n: number = 0;
 
   /**
-   * @param action Targeted action.
-   * @param repeats A negative value indicates looping forever.
+   * The relative time elapsed between 0 and 1, eased by the timing mode function.
+   *
+   * Can be a value beyond 0 or 1 depending on the timing mode function.
    */
-  constructor(action: Action, repeats: number) {
-    super(
-      // Duration:
-      repeats === -1 ? Infinity : action.duration * repeats
-    );
-
-    this.action = action;
-    this.maxRepeats = repeats;
+  protected get easedTimeDistance(): number {
+    return this.action.timingMode(this.timeDistance);
   }
 
-  public tick(delta: number): boolean {
-    if (this.action.tick(delta)) {
-      this.n += 1;
-      if (this.maxRepeats >= 0 && this.n >= this.maxRepeats) {
-        return true;
-      } else {
-        // Reset delta.
-        this.reset();
-      }
-    }
-    return false;
-  }
-
-  public reset() {
-    super.reset();
-    this.action.reset();
-    return this;
-  }
-
-  public setTarget(target: TargetNode): this {
-		this.action.setTarget(target);
-		return super.setTarget(target);
-	}
-}
-
-export class MoveToAction extends Action {
-  protected startX!: number;
-  protected startY!: number;
-
-  constructor(
-		protected readonly x: number | undefined,
-		protected readonly y: number | undefined,
-    duration: TimeInterval,
-  ) {
-    super(duration);
-  }
-
-  public tick(delta: number): boolean {
-    if (this.elapsed === 0) {
-      this.startX = this.target.x;
-      this.startY = this.target.y;
+  /** @returns Any unused time delta. Negative value means action is still in progress. */
+  public stepActionForward(timeDelta: number): number {
+    if (!this.isSetup) {
+      this.speed = this.action.speed;
+      this.duration = this.action.duration;
+      this.data = (this.action as any)._setupTicker(this.target, this);
+      this.isSetup = true;
     }
 
-    this.elapsed += delta;
+    const target = this.target;
+    const action = this.action;
 
-    const factor: number = this.easedTimeDistance;
-		const newX = this.x === undefined ? this.target.position.x : this.startX + (this.x - this.startX) * factor;
-		const newY = this.y === undefined ? this.target.position.y : this.startY + (this.y - this.startY) * factor;
-		
-		this.target.position.set(newX, newY);
+    // If action no longer valid, or target not on the stage
+    // we garbage collect its actions.
+    if (
+      target == null
+      || target.destroyed
+      || target.parent === undefined
+    ) {
+      ActionTicker.removeAction(this);
 
-    return this.timeDistance >= 1;
-  }
-}
-
-class MoveByAction extends Action {
-  public constructor(
-		protected x: number,
-		protected y: number,
-		duration: number,
-	) {
-    super(duration);
-  }
-
-  public tick(delta: number): boolean {
-		const factorDelta = this.applyDelta(delta);
-
-    if (this.target) {
-      this.target.position.x += this.x * factorDelta;
-      this.target.position.y += this.y * factorDelta;
+      return;
     }
 
-    return this.timeDistance >= 1;
+    const scaledTimeDelta = timeDelta * this.speed /* target speed is applied at the root */;
+
+    if (this.duration === 0) {
+      // Instantaneous action.
+      action.updateAction(this.target, 1.0, 1.0, this, scaledTimeDelta);
+      this.isDone = true;
+
+      // Remove completed action.
+      ActionTicker.removeAction(this);
+
+      return timeDelta; // relinquish the full time.
+    }
+
+    if (timeDelta === 0) {
+      return -1; // Early exit, no progress.
+    }
+
+    const beforeProgress = this.easedTimeDistance;
+    this.elapsed += scaledTimeDelta;
+    const progress = this.easedTimeDistance;
+    const progressDelta = progress - beforeProgress;
+
+    action.updateAction(this.target, progress, progressDelta, this, scaledTimeDelta);
+
+    if (this.isDone || (this.autoComplete && this.timeDistance >= EPSILON_ONE)) {
+      this.isDone = true;
+
+      // Remove completed action.
+      ActionTicker.removeAction(this);
+
+      return this.elapsed > this.duration ? this.elapsed - this.duration : 0;
+    }
+
+    return -1; // relinquish no time
   }
 }
 
-export class GroupAction extends Action {
-  protected index: number = 0;
-  protected actions: Action[];
+//
+// ----- Global Mixin: -----
+//
 
-  constructor(actions: Action[]) {
-    super(
-      // Max duration:
-      Math.max(...actions.map(action => action.duration))
-    );
+/**
+ * Register the global mixins for PIXI.DisplayObject.
+ *
+ * @param displayObject A reference to `PIXI.DisplayObject`.
+ */
+export function registerGlobalMixin(displayObject: any): void {
+  const _prototype = displayObject.prototype;
 
-    this.actions = actions;
-  }
+  // - Properties:
 
-  public tick(delta: number): boolean {
-    // Tick all elements!
-    let allDone = true;
+  _prototype.speed = 1.0;
+  _prototype.isPaused = false;
 
-    for (const action of this.actions) {
-      if (action.isDone) {
-        continue;
-      }
+  // - Methods:
 
-      if (action.tick(delta)) {
-        action.isDone = true;
-      } else {
-        allDone = false;
-      }
-    }
+  _prototype.run = function (_action: Action, completion?: () => void): void {
+    const action = completion ? Action.sequence([_action, Action.run(completion)]) : _action;
+    ActionTicker.runAction(undefined, this, action);
+  };
 
-    return allDone;
-  }
+  _prototype.runWithKey = function (action: Action, key: string): void {
+    ActionTicker.runAction(key, this, action);
+  };
 
-  public reset() {
-    super.reset();
+  _prototype.runAsPromise = function (
+    action: Action,
+    timeoutBufferMs: number = 100
+  ): Promise<void> {
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
+    const node = this;
+    return new Promise(function (resolve, reject) {
+      const timeLimitMs = timeoutBufferMs + (node.speed * action.duration * 1_000);
+      const timeoutCheck = setTimeout(() => reject('Took too long to complete.'), timeLimitMs);
+      node.run(action, () => {
+        clearTimeout(timeoutCheck);
+        resolve();
+      });
+    });
+  };
 
-    this.index = 0;
-    for (const i in this.actions) {
-      this.actions[i].reset();
-    }
-    return this;
-  }
+  _prototype.action = function (forKey: string): Action | undefined {
+    return ActionTicker.getTargetActionForKey(this, forKey);
+  };
 
-  public setTarget(target: TargetNode): this {
-		this.actions.forEach(action => action.setTarget(target));
-		return super.setTarget(target);
-	}
-}
+  _prototype.hasActions = function (): boolean {
+    return ActionTicker.hasTargetActions(this);
+  };
 
-export class FadeToAction extends Action {
-  protected startAlpha!: number;
-  protected alpha: number;
+  _prototype.removeAllActions = function (): void {
+    ActionTicker.removeAllTargetActions(this);
+  };
 
-  constructor(alpha: number, duration: TimeInterval) {
-    super(duration);
-    this.alpha = alpha;
-  }
-
-  public tick(delta: number): boolean {
-    if (this.elapsed === 0) {
-      this.startAlpha = this.target.alpha;
-    }
-
-    this.elapsed += delta;
-
-    const factor: number = this.timingMode(this.timeDistance);
-    this.target.alpha = this.startAlpha + (this.alpha - this.startAlpha) * factor;
-
-    return this.timeDistance >= 1;
-  }
-}
-
-export class FadeByAction extends Action {
-  constructor(
-		protected readonly alpha: number,
-		duration: TimeInterval,
-		timingMode: TimingModeFn = Action.DefaultTimingMode
-	) {
-    super(duration);
-  }
-
-  public tick(delta: number): boolean {
-		const factorDelta = this.applyDelta(delta);
-    this.target.alpha += this.alpha * factorDelta;
-
-    return this.timeDistance >= 1;
-  }
-}
-
-export class DelayAction extends Action {
-  public tick(delta: number): boolean {
-    this.elapsed += delta;
-    return this.elapsed >= this.duration;
-  }
+  _prototype.removeAction = function (forKey: string): void {
+    ActionTicker.removeTargetActionForKey(this, forKey);
+  };
 }
