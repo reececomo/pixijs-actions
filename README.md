@@ -75,6 +75,18 @@ Now you are ready to start using actions!
 
 Most actions implement specific predefined animations that are ready to use. If your animation needs fall outside of the suite provided here, then you should implement a custom action. See **Creating Custom Actions** below.
 
+```ts
+const razzleDazzle = Action.sequence([
+  Action.unhide(),
+  Action.fadeIn(0.3),
+  Action.scaleTo(2, 0.3).withTimingMode(TimingMode.easeInSine),
+  Action.scaleTo(1, 0.3).withTimingMode(TimingMode.easeOutSine),
+]);
+
+// ✨ Show mySprite with some flair!
+mySprite.run(razzleDazzle);
+```
+
 | Action | Description | Reversible? |
 | :----- | :---------- | :---------- |
 | `Action.group(actions)` | Run multiple actions in parallel. | Yes |
