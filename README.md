@@ -2,25 +2,21 @@
 
 # PixiJS Actions
 
-Powerful, lightweight animations in PixiJS.
+Powerful, lightweight animations in [PixiJS](https://pixijs.com/).
 
 [![NPM version](https://img.shields.io/npm/v/pixijs-actions.svg?style=flat-square)](https://www.npmjs.com/package/pixijs-actions)
 [![test](https://github.com/reececomo/pixijs-actions/actions/workflows/test.yml/badge.svg)](https://github.com/reececomo/pixijs-actions/actions/workflows/test.yml)
 [![lint](https://github.com/reececomo/pixijs-actions/actions/workflows/lint.yml/badge.svg)](https://github.com/reececomo/pixijs-actions/actions/workflows/lint.yml)
 
-_A [PixiJS](https://pixijs.com/) implementation of [Apple's SKActions](https://developer.apple.com/documentation/spritekit/skaction) (forked from [srpatel/pixi-actions](https://github.com/srpatel/pixi-actions))._
+A PixiJS implementation of [Apple's SKActions](https://developer.apple.com/documentation/spritekit/skaction) (forked from [srpatel/pixi-actions](https://github.com/srpatel/pixi-actions)).
 
 </div>
 
-## Quick start
+## Installation
 
-```sh
-npm install pixijs-actions
-```
+`npm install pixijs-actions`
 
-```sh
-yarn add pixijs-actions
-```
+`yarn add pixijs-actions`
 
 ## Getting started with Actions
 
@@ -31,7 +27,7 @@ You tell nodes to run an instace of `Action` when you want to animate contents o
 ## Basic usage
 
 ```ts
-import { Action } from '@pixi/actions';
+import { Action } from 'pixijs-actions';
 
 const fadeOutAndRemove = Action.sequence([
   Action.fadeOut(1.0),
@@ -41,23 +37,23 @@ const fadeOutAndRemove = Action.sequence([
 sprite.run(fadeOutAndRemove);
 ```
 
-## Installation
+## Setup
 
-First install the package.
+*Quick start guide for first time setup.*
+
+1. First install the package. The library imports as an ES6 module, and includes TypeScript types.
 
 ```sh
-// npm
+# npm
 npm install pixijs-actions
 
-// yarn
+# yarn
 yarn add pixijs-actions
 ```
 
-> The library exports as an ES6 module, and includes TypeScript types.
->
-> The global mixins and their typings are automatically registered when you import the library.
+2. Import `pixijs-actions` somewhere in your application. The global mixins and their types are automatically registered when you import the library.
 
-Register the global actions ticker with your PixiJS app (or other render loop):
+3. Register the global ticker with your PixiJS app (or other render loop):
 
 ```ts
 import { Action } from 'pixijs-actions';
@@ -71,13 +67,13 @@ myApp.ticker.add(ticker => Action.tick(ticker.deltaTime));
 myApp.ticker.add(dt => Action.tick(dt));
 ```
 
-Now you are ready to start using actions.
+Now you are ready to start using actions!
 
 ## Action Initializers
 
 *Use these functions to create actions.*
 
-Most actions implement specific predefined animations that are ready to use. If your animation needs fall outside of the suite provided here, then you should implement a custom action.
+Most actions implement specific predefined animations that are ready to use. If your animation needs fall outside of the suite provided here, then you should implement a custom action. See **Creating Custom Actions** below.
 
 | Action | Description | Reversible? |
 | :----- | :---------- | :---------- |
@@ -204,11 +200,20 @@ mySprite.run(MyActions.squashAndStretch(2.0));
 
 ## Using Actions with display objects
 
+*Running actions in your canvas.*
+
+```ts
+// Hide me instantly.
+mySprite.run(Action.hide(), () => {
+  console.log('where did I go?');
+});
+```
+
 Display objects are extended with a few new methods and properties.
 
 | Property | Description |
 | :----- | :------ |
-| `speed` | A speed modifier applied to all actions executed by a node and its descendants. Defaults to `1.0`. |
+| `speed` | A speed modifier applied to all actions executed by the node and its descendants. Defaults to `1.0`. |
 | `isPaused` | A boolean value that determines whether actions on the node and its descendants are processed. Defaults to `false`. |
 
 | Method | Description |
@@ -222,6 +227,8 @@ Display objects are extended with a few new methods and properties.
 | `removeAllActions(): void` | Ends and removes all actions from the node. |
 | `removeAction(forKey): void` | Removes an action associated with a specific key. |
 
+### Running actions
+
 ```ts
 // Repeat an action forever!
 const spin = Action.repeatForever(Action.rotateBy(5, 1.0));
@@ -230,6 +237,38 @@ mySprite.runWithKey(spin, 'spinForever');
 // Or remove it later.
 mySprite.removeAction('spinForever');
 ```
+
+### Pausing
+
+```ts
+mySprite.isPaused = true;
+// All actions will stop running.
+```
+
+### Manipulating speed
+
+Speed can be manipulated on both display objects, and actions themselves.
+
+```ts
+const moveAction = Action.moveByX(10, 4.0);
+moveAction.speed = 2.0;
+// moveAction will now take only 2 seconds instead of 4.
+
+const repeatAction = Action.repeat(moveAction, 5);
+repeatAction.speed = 2.0;
+// Each moveAction will only take 1 second, for a total of 5 seconds.
+
+mySprite.run(moveAction);
+mySprite.speed = 2.0;
+// mySprite is running at 2x speed!
+// The entire action should now take 2.5 seconds.
+
+mySprite.parent.speed = 1 / 4;
+// Now we've slowed down mySprite's parent.
+// The entire action should now take 10 seconds.
+```
+
+> Note: Since actions are designed to be mostly immutable, the `speed` property is captured when the action runs for the first time.
 
 ## Creating Custom Actions
 
@@ -264,7 +303,7 @@ mySprite.removeAction('rainbow');
 >
 > _Note: `t` can be outside of 0 and 1 in timing mode functions which overshoot, such as `TimingMode.easeInOutBack`._
 
-This interpolation function will be called as many times as the renderer asks over the course of its duration.
+This function will be called as many times as the renderer asks over the course of its duration.
 
 ### Advanced - Custom Subclass Action
 
