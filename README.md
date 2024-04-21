@@ -1,6 +1,6 @@
 <div align="center">
 
-# PixiJS Actions
+# 🎬 PixiJS Actions
 
 Powerful, lightweight animations in [PixiJS](https://pixijs.com/).
 
