@@ -218,14 +218,14 @@ Display objects are extended with a few new methods and properties.
 
 | Method | Description |
 | :----- | :------ |
-| `run(action)` | Runs an action. |
-| `run(action, completion)` | Runs an action with a completion handler. |
-| `runWithKey(action, withKey)` | Runs an action, and store it so it can be retrieved later. |
-| `runAsPromise(action): Promise<void>` | Rus an action as a promise. |
-| `action(forKey): Action \| undefined` | Returns an action associated with a specific key. |
-| `hasActions(): boolean` | Returns a boolean value that indicates whether the node is executing actions. |
-| `removeAllActions(): void` | Ends and removes all actions from the node. |
-| `removeAction(forKey): void` | Removes an action associated with a specific key. |
+| `run(action)` | Run an action. |
+| `run(action, completion)` | Run an action with a completion handler. |
+| `runWithKey(action, withKey)` | Run an action, and store it so it can be retrieved later. |
+| `runAsPromise(action): Promise<void>` | Run an action as a promise. |
+| `action(forKey): Action \| undefined` | Return an action associated with a specific key. |
+| `hasActions(): boolean` | Return a boolean indicating whether the node is executing actions. |
+| `removeAllActions(): void` | End and removes all actions from the node. |
+| `removeAction(forKey): void` | Remove an action associated with a specific key. |
 
 ### Running actions
 
