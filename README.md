@@ -101,6 +101,8 @@ mySprite.run(razzleDazzle);
 | `Action.moveToPoint(point, duration)` | Move a node to a specified position (e.g. `PIXI.Point`). |  _*No_ |
 | `Action.moveToX(x, duration)` | Move a node to a specified horizontal position. |  _*No_ |
 | `Action.moveToY(y, duration)` | Move a node to a specified vertical position. |  _*No_ |
+| `Action.follow(path, duration, asOffset?, orientToPath?, fixedSpeed?)` | Move a node along a path. |  Yes |
+| `Action.followAtSpeed(path, speed, asOffset?, orientToPath?)` | Move a node along a path at a specified speed. |  Yes |
 | `Action.scaleBy(delta, duration)` | Scale a node by a relative amount. | Yes |
 | `Action.scaleBy(dx, dy, duration)` | Scale a node by a relative amount. | Yes |
 | `Action.scaleByVector(vector, duration)` | Scale a node by a given vector (e.g. `PIXI.Point`). | Yes |

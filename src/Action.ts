@@ -19,6 +19,11 @@ interface VectorLike {
   y: number;
 }
 
+/** Any object containing an array of points. */
+interface PathLike {
+  points: VectorLike[];
+}
+
 //
 // ----- Action: -----
 //
@@ -209,6 +214,51 @@ export abstract class Action {
    */
   public static moveToY(y: number, duration: TimeInterval): Action {
     return new MoveToAction(undefined, y, duration);
+  }
+
+  //
+  // ----------------- Custom Path Actions: -----------------
+  //
+
+  /**
+   * Creates an action that moves the node along a path, optionally orienting the node to the path.
+   *
+   * @param path A path to follow, or an object containing an array of points called `points`.
+   * @param duration The duration of the animation.
+   * @param asOffset When true, the path is relative to the node's current position.
+   * @param orientToPath When true, the node’s rotation turns to follow the path.
+   * @param fixedSpeed When true, the node will move at equal speed on each segment.
+   */
+  public static follow(
+    path: VectorLike[] | PathLike,
+    duration: number,
+    asOffset: boolean = true,
+    orientToPath: boolean = true,
+    fixedSpeed: boolean = true,
+  ): Action {
+    const _path = FollowPathAction.getPath(path);
+    return new FollowPathAction(_path, duration, asOffset, orientToPath, fixedSpeed);
+  }
+
+  /**
+   * Creates an action that moves the node along a path at a specified speed, optionally orienting
+   * the node to the path.
+   *
+   * @param path A path to follow, or an object containing an array of points called `points`.
+   * @param speed The velocity at which the node should move.
+   * @param asOffset When true, the path is relative to the node's current position.
+   * @param orientToPath If true, the node’s rotation turns to follow the path.
+   */
+  public static followAtSpeed(
+    path: VectorLike[] | PathLike,
+    speed: number,
+    asOffset: boolean = true,
+    orientToPath: boolean = true,
+  ): Action {
+    const _path = FollowPathAction.getPath(path);
+    const _length = FollowPathAction.getLength(_path);
+
+    return new FollowPathAction(_path, _length[0] / speed, asOffset, orientToPath, true);
   }
 
   //
@@ -869,6 +919,133 @@ class SpeedByAction extends Action {
   }
 }
 
+export class FollowPathAction extends Action {
+  protected readonly path: VectorLike[];
+  protected readonly segmentLengths!: number[];
+  protected readonly segmentWeights!: number[];
+  protected lastIndex: number;
+
+  public static getPath(path: VectorLike[] | PathLike): VectorLike[] {
+    return Array.isArray(path) ? [...path] : [...path.points];
+  }
+
+  public static getLength(path: VectorLike[]): [length: number, segmentLengths: number[]] {
+    let totalLength = 0;
+    const segmentLengths = [];
+
+    for (let i = 0; i < path.length - 1; i++) {
+      const directionX = path[i + 1]!.x - path[i]!.x;
+      const directionY = path[i + 1]!.y - path[i]!.y;
+      const length = Math.sqrt(directionX * directionX + directionY * directionY);
+
+      segmentLengths.push(length);
+      totalLength += length;
+    }
+
+    return [totalLength, segmentLengths];
+  }
+
+  public constructor(
+    path: VectorLike[],
+    duration: number,
+		protected readonly asOffset: boolean,
+		protected readonly orientToPath: boolean,
+    protected readonly fixedSpeed: boolean,
+  ) {
+    super(duration);
+    this.path = path;
+    this.lastIndex = path.length - 1;
+
+    // Precalculate segment lengths, if needed.
+    if (orientToPath || fixedSpeed) {
+      const [totalDist, segmentLengths] = FollowPathAction.getLength(path);
+      this.segmentLengths = segmentLengths;
+      if (fixedSpeed) {
+        this.segmentWeights = segmentLengths.map(v => v / (totalDist || 1));
+      }
+    }
+  }
+
+  public updateAction(target: any, progress: number, progressDelta: number, ticker: any): void {
+    if (this.lastIndex < 0) {
+      return; // Empty path.
+    }
+
+    const [index, t] = this.fixedSpeed
+      ? this._getFixedSpeedProgress(progress)
+      : this._getProportionalProgress(progress);
+
+    const startPoint = this.path[index]!;
+    const endPoint = this.path[index + 1] ?? startPoint;
+
+    const offsetX = this.asOffset ? ticker.data.startX : 0;
+    const offsetY = this.asOffset ? ticker.data.startY : 0;
+
+    target.position.set(
+      offsetX + startPoint.x + (endPoint.x - startPoint.x) * t,
+      offsetY + startPoint.y + (endPoint.y - startPoint.y) * t
+    );
+
+    if (this.orientToPath) {
+      const directionX = endPoint.x - startPoint.x;
+      const directionY = endPoint.y - startPoint.y;
+      const length = this.segmentLengths[index]! || 1;
+      const normalizedDirectionX = directionX / length;
+      const normalizedDirectionY = directionY / length;
+      const rotation = Math.atan2(normalizedDirectionY, normalizedDirectionX);
+
+      target.rotation = rotation;
+    }
+  }
+
+  public reversed(): Action {
+    return new FollowPathAction(
+      [...this.path].reverse(),
+      this.duration,
+      this.asOffset,
+      this.orientToPath,
+      this.fixedSpeed,
+    )
+      .setTimingMode(this.timingMode)
+      .setSpeed(this.speed);
+  }
+
+  protected _setupTicker(target: any): any {
+    return {
+      startX: target.x,
+      startY: target.y
+    };
+  }
+
+  protected _getProportionalProgress(progress: number): [index: number, t: number] {
+    const index = Math.max(Math.min(Math.floor(progress * this.lastIndex), this.lastIndex - 1), 0);
+    const lastIndexNonZero = this.lastIndex || 1;
+    const t = (progress - index / lastIndexNonZero) * lastIndexNonZero;
+
+    return [index, t];
+  }
+
+  protected _getFixedSpeedProgress(progress: number): [index: number, t: number] {
+    let remainingProgress = progress;
+    let index = 0;
+    let t = 0;
+
+    for (let i = 0; i < this.lastIndex; i++) {
+      const segmentWeight = this.segmentWeights[i]!;
+
+      if (segmentWeight! > remainingProgress || i === this.lastIndex - 1) {
+        t = remainingProgress / segmentWeight || 1;
+        break;
+      }
+
+      remainingProgress -= segmentWeight;
+      index++;
+    }
+
+    return [index, t];
+  }
+}
+
 class RotateToAction extends Action {
   public constructor(
     protected readonly rotation: number,
@@ -1145,9 +1322,15 @@ class ActionTicker {
       }
       catch (error) {
         // Isolate individual action errors.
-        if (onErrorHandler !== undefined) {
+        if (onErrorHandler === undefined) {
+          console.error('Action failed with error: ', error);
+        }
+        else {
           onErrorHandler(error);
         }
+
+        // Remove offending ticker.
+        ActionTicker.removeAction(actionTicker);
       }
     }
   }
