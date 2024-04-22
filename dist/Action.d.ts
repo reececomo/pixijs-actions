@@ -9,6 +9,10 @@ interface VectorLike {
     x: number;
     y: number;
 }
+/** Any object containing an array of points. */
+interface PathLike {
+    points: VectorLike[];
+}
 /**
  * Action is an animation that is executed by a display object in the scene.
  * Actions are used to change a display object in some way (like move its position over time).
@@ -140,6 +144,26 @@ export declare abstract class Action {
      * move the node.
      */
     static moveToY(y: number, duration: TimeInterval): Action;
+    /**
+     * Creates an action that moves the node along a path, optionally orienting the node to the path.
+     *
+     * @param path A path to follow, or an object containing an array of points called `points`.
+     * @param duration The duration of the animation.
+     * @param asOffset When true, the path is relative to the node's current position.
+     * @param orientToPath When true, the node’s rotation turns to follow the path.
+     * @param fixedSpeed When true, the node will move at equal speed on each segment.
+     */
+    static follow(path: VectorLike[] | PathLike, duration: number, asOffset?: boolean, orientToPath?: boolean, fixedSpeed?: boolean): Action;
+    /**
+     * Creates an action that moves the node along a path at a specified speed, optionally orienting
+     * the node to the path.
+     *
+     * @param path A path to follow, or an object containing an array of points called `points`.
+     * @param speed The velocity at which the node should move.
+     * @param asOffset When true, the path is relative to the node's current position.
+     * @param orientToPath If true, the node’s rotation turns to follow the path.
+     */
+    static followAtSpeed(path: VectorLike[] | PathLike, speed: number, asOffset?: boolean, orientToPath?: boolean): Action;
     /**
      * Creates an action that rotates the node by a relative value (in radians).
      *
@@ -348,6 +372,23 @@ export declare abstract class Action {
      * @deprecated use speed instead
      */
     setCategory(categoryMask: number): this;
+}
+export declare class FollowPathAction extends Action {
+    protected readonly asOffset: boolean;
+    protected readonly orientToPath: boolean;
+    protected readonly fixedSpeed: boolean;
+    protected readonly path: VectorLike[];
+    protected readonly segmentLengths: number[];
+    protected readonly segmentWeights: number[];
+    protected lastIndex: number;
+    static getPath(path: VectorLike[] | PathLike): VectorLike[];
+    static getLength(path: VectorLike[]): [length: number, segmentLengths: number[]];
+    constructor(path: VectorLike[], duration: number, asOffset: boolean, orientToPath: boolean, fixedSpeed: boolean);
+    updateAction(target: any, progress: number, progressDelta: number, ticker: any): void;
+    reversed(): Action;
+    protected _setupTicker(target: any): any;
+    protected _getProportionalProgress(progress: number): [index: number, t: number];
+    protected _getFixedSpeedProgress(progress: number): [index: number, t: number];
 }
 declare class ActionTicker {
     key: string | undefined;
