@@ -175,11 +175,14 @@ export class Action {
     /**
      * Creates an action that moves the node along a path, optionally orienting the node to the path.
      *
+     * This action is reversible; the resulting action creates a reversed path and then follows it,
+     * with the same duration.
+     *
      * @param path A path to follow, or an object containing an array of points called `points`.
      * @param duration The duration of the animation.
      * @param asOffset When true, the path is relative to the node's current position.
      * @param orientToPath When true, the node’s rotation turns to follow the path.
-     * @param fixedSpeed When true, the node will move at equal speed on each segment.
+     * @param fixedSpeed When true, the node's speed is consistent across different length segments.
      */
     static follow(path, duration, asOffset = true, orientToPath = true, fixedSpeed = true) {
         const _path = FollowPathAction.getPath(path);
@@ -188,6 +191,9 @@ export class Action {
     /**
      * Creates an action that moves the node along a path at a specified speed, optionally orienting
      * the node to the path.
+     *
+     * This action is reversible; the resulting action creates a reversed path and then follows it,
+     * with the same speed.
      *
      * @param path A path to follow, or an object containing an array of points called `points`.
      * @param speed The velocity at which the node should move.
@@ -727,7 +733,7 @@ export class FollowPathAction extends Action {
         }
         const [index, t] = this.fixedSpeed
             ? this._getFixedSpeedProgress(progress)
-            : this._getProportionalProgress(progress);
+            : this._getDynamicSpeedProgress(progress);
         const startPoint = this.path[index];
         const endPoint = (_a = this.path[index + 1]) !== null && _a !== void 0 ? _a : startPoint;
         const offsetX = this.asOffset ? ticker.data.startX : 0;
@@ -754,7 +760,7 @@ export class FollowPathAction extends Action {
             startY: target.y
         };
     }
-    _getProportionalProgress(progress) {
+    _getDynamicSpeedProgress(progress) {
         const index = Math.max(Math.min(Math.floor(progress * this.lastIndex), this.lastIndex - 1), 0);
         const lastIndexNonZero = this.lastIndex || 1;
         const t = (progress - index / lastIndexNonZero) * lastIndexNonZero;

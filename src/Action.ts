@@ -223,11 +223,14 @@ export abstract class Action {
   /**
    * Creates an action that moves the node along a path, optionally orienting the node to the path.
    *
+   * This action is reversible; the resulting action creates a reversed path and then follows it,
+   * with the same duration.
+   *
    * @param path A path to follow, or an object containing an array of points called `points`.
    * @param duration The duration of the animation.
    * @param asOffset When true, the path is relative to the node's current position.
    * @param orientToPath When true, the node’s rotation turns to follow the path.
-   * @param fixedSpeed When true, the node will move at equal speed on each segment.
+   * @param fixedSpeed When true, the node's speed is consistent across different length segments.
    */
   public static follow(
     path: VectorLike[] | PathLike,
@@ -243,6 +246,9 @@ export abstract class Action {
   /**
    * Creates an action that moves the node along a path at a specified speed, optionally orienting
    * the node to the path.
+   *
+   * This action is reversible; the resulting action creates a reversed path and then follows it,
+   * with the same speed.
    *
    * @param path A path to follow, or an object containing an array of points called `points`.
    * @param speed The velocity at which the node should move.
@@ -973,7 +979,7 @@ export class FollowPathAction extends Action {
 
     const [index, t] = this.fixedSpeed
       ? this._getFixedSpeedProgress(progress)
-      : this._getProportionalProgress(progress);
+      : this._getDynamicSpeedProgress(progress);
 
     const startPoint = this.path[index]!;
     const endPoint = this.path[index + 1] ?? startPoint;
@@ -1017,7 +1023,7 @@ export class FollowPathAction extends Action {
     };
   }
 
-  protected _getProportionalProgress(progress: number): [index: number, t: number] {
+  protected _getDynamicSpeedProgress(progress: number): [index: number, t: number] {
     const index = Math.max(Math.min(Math.floor(progress * this.lastIndex), this.lastIndex - 1), 0);
     const lastIndexNonZero = this.lastIndex || 1;
     const t = (progress - index / lastIndexNonZero) * lastIndexNonZero;
