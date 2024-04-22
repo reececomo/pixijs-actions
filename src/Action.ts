@@ -997,7 +997,7 @@ class FollowPathAction extends Action {
       const length = this.segmentLengths[index]! || 1;
       const ndx = (endPoint.x - startPoint.x) / length;
       const ndy = (endPoint.y - startPoint.y) / length;
-      const rotation = Math.atan2(ndx, ndy);
+      const rotation = Math.atan2(ndy, ndx);
 
       target.rotation = rotation;
     }
