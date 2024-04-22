@@ -379,24 +379,6 @@ export declare abstract class Action {
      */
     setCategory(categoryMask: number): this;
 }
-export declare class FollowPathAction extends Action {
-    protected readonly asOffset: boolean;
-    protected readonly orientToPath: boolean;
-    protected readonly fixedSpeed: boolean;
-    protected readonly path: VectorLike[];
-    protected readonly segmentLengths: number[];
-    protected readonly segmentWeights: number[];
-    protected lastIndex: number;
-    static getPath(path: VectorLike[] | PathLike): VectorLike[];
-    static getLength(path: VectorLike[]): [length: number, segmentLengths: number[]];
-    constructor(path: VectorLike[], duration: number, asOffset: boolean, orientToPath: boolean, fixedSpeed: boolean);
-    updateAction(target: any, progress: number, progressDelta: number, ticker: any): void;
-    reversed(): Action;
-    protected _setupTicker(target: TargetNode): any;
-    protected _reversePath(): VectorLike[];
-    protected _getDynamicSpeedProgress(progress: number): [index: number, t: number];
-    protected _getFixedSpeedProgress(progress: number): [index: number, t: number];
-}
 declare class ActionTicker {
     key: string | undefined;
     target: TargetNode;

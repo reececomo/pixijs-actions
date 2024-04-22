@@ -925,31 +925,11 @@ class SpeedByAction extends Action {
   }
 }
 
-export class FollowPathAction extends Action {
+class FollowPathAction extends Action {
   protected readonly path: VectorLike[];
+  protected readonly lastIndex: number;
   protected readonly segmentLengths!: number[];
   protected readonly segmentWeights!: number[];
-  protected lastIndex: number;
-
-  public static getPath(path: VectorLike[] | PathLike): VectorLike[] {
-    return Array.isArray(path) ? [...path] : [...path.points];
-  }
-
-  public static getLength(path: VectorLike[]): [length: number, segmentLengths: number[]] {
-    let totalLength = 0;
-    const segmentLengths = [];
-
-    for (let i = 0; i < path.length - 1; i++) {
-      const directionX = path[i + 1]!.x - path[i]!.x;
-      const directionY = path[i + 1]!.y - path[i]!.y;
-      const length = Math.sqrt(directionX * directionX + directionY * directionY);
-
-      segmentLengths.push(length);
-      totalLength += length;
-    }
-
-    return [totalLength, segmentLengths];
-  }
 
   public constructor(
     path: VectorLike[],
@@ -972,6 +952,30 @@ export class FollowPathAction extends Action {
     }
   }
 
+  // ----- Static helpers: -----
+
+  public static getPath(path: VectorLike[] | { points: VectorLike[] }): VectorLike[] {
+    return Array.isArray(path) ? [...path] : [...path.points];
+  }
+
+  public static getLength(path: VectorLike[]): [length: number, segmentLengths: number[]] {
+    let totalLength = 0;
+    const segmentLengths: number[] = [];
+
+    for (let i = 0; i < path.length - 1; i++) {
+      const directionX = path[i + 1]!.x - path[i]!.x;
+      const directionY = path[i + 1]!.y - path[i]!.y;
+      const length = Math.sqrt(directionX * directionX + directionY * directionY);
+
+      segmentLengths.push(length);
+      totalLength += length;
+    }
+
+    return [totalLength, segmentLengths];
+  }
+
+  // ----- Methods: -----
+
   public updateAction(target: any, progress: number, progressDelta: number, ticker: any): void {
     if (this.lastIndex < 0) {
       return; // Empty path.
@@ -985,17 +989,15 @@ export class FollowPathAction extends Action {
     const endPoint = this.path[index + 1] ?? startPoint;
 
     target.position.set(
-      ticker.data.offsetX + startPoint.x + (endPoint.x - startPoint.x) * t,
-      ticker.data.offsetY + startPoint.y + (endPoint.y - startPoint.y) * t
+      ticker.data.x + startPoint.x + (endPoint.x - startPoint.x) * t,
+      ticker.data.y + startPoint.y + (endPoint.y - startPoint.y) * t
     );
 
     if (this.orientToPath) {
-      const directionX = endPoint.x - startPoint.x;
-      const directionY = endPoint.y - startPoint.y;
       const length = this.segmentLengths[index]! || 1;
-      const normalizedDirectionX = directionX / length;
-      const normalizedDirectionY = directionY / length;
-      const rotation = Math.atan2(normalizedDirectionY, normalizedDirectionX);
+      const ndx = (endPoint.x - startPoint.x) / length;
+      const ndy = (endPoint.y - startPoint.y) / length;
+      const rotation = Math.PI - Math.atan2(ndx, ndy);
 
       target.rotation = rotation;
     }
@@ -1013,20 +1015,20 @@ export class FollowPathAction extends Action {
       .setSpeed(this.speed);
   }
 
-  protected _setupTicker(target: TargetNode): any {
+  protected _setupTicker(target: any): any {
     return {
-      offsetX: this.asOffset ? target.x : 0,
-      offsetY: this.asOffset ? target.y : 0
+      x: this.asOffset ? target.x : 0,
+      y: this.asOffset ? target.y : 0,
     };
   }
 
   protected _reversePath(): VectorLike[] {
-    if (this.asOffset) {
-      // Reversed offset path is inverted offsets.
-      return this.path.map(({x, y}, index, array) => ({
-        x: array[array.length - index - 1].x - x,
-        y: array[array.length - index - 1].y - y
-      }));
+    if (this.asOffset && this.path.length > 0) {
+      // Calculate the relative delta offset when first and last are flipped.
+      const first = this.path[0]!, last = this.path[this.path.length - 1]!;
+      const dx = last.x + first.x, dy = last.y + first.y;
+
+      return this.path.map(({x, y}) => ({ x: x - dx, y: y - dy })).reverse();
     }
 
     // Absolute path is the path backwards.
