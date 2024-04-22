@@ -31,11 +31,29 @@ export declare abstract class Action {
     timingMode: TimingModeFn;
     /** @deprecated A global category bitmask which can be used to group actions. */
     categoryMask: number;
-    /** Default timing mode used for ease-in pacing. @see {Action.easeIn()} */
+    /**
+     * Default timing mode used for ease-in pacing.
+     *
+     * Set this to update the default `easeIn()` timing mode.
+     *
+     * @see TimingMode.easeInSine - Default value.
+     */
     static DefaultTimingModeEaseIn: (x: number) => number;
-    /** Default timing mode used for ease-out pacing. @see {Action.easeOut()} */
+    /**
+     * Default timing mode used for ease-out pacing.
+     *
+     * Set this to update the default `easeOut()` timing mode.
+     *
+     * @see TimingMode.easeOutSine - Default value.
+     */
     static DefaultTimingModeEaseOut: (x: number) => number;
-    /** Default timing mode used for ease-in, ease-out pacing. @see {Action.easeInOut()} */
+    /**
+     * Default timing mode used for ease-in, ease-out pacing.
+     *
+     * Set this to update the default `easeInOut()` timing mode.
+     *
+     * @see TimingMode.easeInOutSine - Default value.
+     */
     static DefaultTimingModeEaseInOut: (x: number) => number;
     /** All currently running actions. */
     protected static readonly _actions: Action[];

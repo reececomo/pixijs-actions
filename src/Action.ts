@@ -44,13 +44,31 @@ export abstract class Action {
   // ----------------- Global Settings: -----------------
   //
 
-  /** Default timing mode used for ease-in pacing. @see {Action.easeIn()} */
+  /**
+   * Default timing mode used for ease-in pacing.
+   *
+   * Set this to update the default `easeIn()` timing mode.
+   *
+   * @see TimingMode.easeInSine - Default value.
+   */
   public static DefaultTimingModeEaseIn = TimingMode.easeInSine;
 
-  /** Default timing mode used for ease-out pacing. @see {Action.easeOut()} */
+  /**
+   * Default timing mode used for ease-out pacing.
+   *
+   * Set this to update the default `easeOut()` timing mode.
+   *
+   * @see TimingMode.easeOutSine - Default value.
+   */
   public static DefaultTimingModeEaseOut = TimingMode.easeOutSine;
 
-  /** Default timing mode used for ease-in, ease-out pacing. @see {Action.easeInOut()} */
+  /**
+   * Default timing mode used for ease-in, ease-out pacing.
+   *
+   * Set this to update the default `easeInOut()` timing mode.
+   *
+   * @see TimingMode.easeInOutSine - Default value.
+   */
   public static DefaultTimingModeEaseInOut = TimingMode.easeInOutSine;
 
   /** All currently running actions. */
