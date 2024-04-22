@@ -8,7 +8,7 @@ Powerful, lightweight animations in [PixiJS](https://pixijs.com/).
 [![test](https://github.com/reececomo/pixijs-actions/actions/workflows/test.yml/badge.svg)](https://github.com/reececomo/pixijs-actions/actions/workflows/test.yml)
 [![lint](https://github.com/reececomo/pixijs-actions/actions/workflows/lint.yml/badge.svg)](https://github.com/reececomo/pixijs-actions/actions/workflows/lint.yml)
 
-A PixiJS implementation of [Apple's SKActions](https://developer.apple.com/documentation/spritekit/skaction) (forked from [srpatel/pixi-actions](https://github.com/srpatel/pixi-actions)).
+A PixiJS implementation of [Apple's SKActions](https://developer.apple.com/documentation/spritekit#2242743) (forked from [srpatel/pixi-actions](https://github.com/srpatel/pixi-actions)).
 
 </div>
 
