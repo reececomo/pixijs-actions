@@ -115,13 +115,13 @@ mySprite.run(razzleDazzle);
 | `Action.scaleBy(delta, duration)` | Scale a node by a relative value. | Yes |
 | `Action.scaleBy(dx, dy, duration)` | Scale a node by a relative value. | Yes |
 | `Action.scaleByVector(vector, duration)` | Scale a node by a given vector (e.g. `PIXI.Point`). | Yes |
-| `Action.scaleByX(dx, duration)` | Scale a node by a relative value. | Yes |
-| `Action.scaleByY(dy, duration)` | Scale a node by a relative value. | Yes |
+| `Action.scaleByX(dx, duration)` | Scale a node horizontally by a relative value. | Yes |
+| `Action.scaleByY(dy, duration)` | Scale a node vertically by a relative value. | Yes |
 | `Action.scaleTo(scale, duration)` | Scale a node to a specified value. |  _*No_ |
 | `Action.scaleTo(x, y, duration)` | Scale a node to a specified value. |  _*No_ |
 | `Action.scaleToSize(vector, duration)` | Scale a node to a specified size (e.g. `PIXI.Point`). |  _*No_ |
-| `Action.scaleToX(x, duration)` | Scale a node to a specified value in the X-axis. |  _*No_ |
-| `Action.scaleToY(y, duration)` | Scale a node to a specified value in the Y-axis. |  _*No_ |
+| `Action.scaleToX(x, duration)` | Scale a node horizontally to a specified value. |  _*No_ |
+| `Action.scaleToY(y, duration)` | Scale a node vertically to a specified value. |  _*No_ |
 |***Animating the Transparency of a Node***|||
 | `Action.fadeIn(duration)` | Fade the alpha to `1.0`. | Yes |
 | `Action.fadeOut(duration)` | Fade the alpha to `0.0`. | Yes |
@@ -203,15 +203,15 @@ Actions are reusable, so you can create complex animations once, and then run th
 const rockBackAndForth = Action.repeatForever(
   Action.sequence([
     Action.group([
-      Action.moveXBy(5, 0.33).easeOut(),
+      Action.moveByX(5, 0.33).easeOut(),
       Action.rotateByDegrees(-2, 0.33).easeOut(),
     ]),
     Action.group([
-      Action.moveXBy(-10, 0.34).easeInOut(),
+      Action.moveByX(-10, 0.34).easeInOut(),
       Action.rotateByDegrees(4, 0.34).easeInOut(),
     ]),
     Action.group([
-      Action.moveXBy(5, 0.33).easeIn(),
+      Action.moveByX(5, 0.33).easeIn(),
       Action.rotateByDegrees(-2, 0.33).easeIn(),
     ]),
   ])
