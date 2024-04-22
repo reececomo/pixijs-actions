@@ -79,8 +79,8 @@ Most actions implement specific predefined animations that are ready to use. If 
 const razzleDazzle = Action.sequence([
   Action.unhide(),
   Action.fadeIn(0.3),
-  Action.scaleTo(2, 0.3).withTimingMode(TimingMode.easeInSine),
-  Action.scaleTo(1, 0.3).withTimingMode(TimingMode.easeOutSine),
+  Action.scaleTo(2, 0.3).easeIn(),
+  Action.scaleTo(1, 0.3).easeOut(),
 ]);
 
 // ✨ Show mySprite with some flair!
