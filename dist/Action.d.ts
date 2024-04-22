@@ -9,6 +9,10 @@ interface VectorLike {
     x: number;
     y: number;
 }
+/** Any object containing an array of points. */
+interface PathLike {
+    points: VectorLike[];
+}
 /**
  * Action is an animation that is executed by a display object in the scene.
  * Actions are used to change a display object in some way (like move its position over time).
@@ -19,10 +23,38 @@ interface VectorLike {
  * (i.e. UI and Game World).
  */
 export declare abstract class Action {
+    /** The duration required to complete an action. */
     readonly duration: TimeInterval;
+    /** A speed factor that modifies how fast an action runs. */
     speed: number;
+    /** A setting that controls the speed curve of an animation. */
     timingMode: TimingModeFn;
+    /** @deprecated A global category bitmask which can be used to group actions. */
     categoryMask: number;
+    /**
+     * Default timing mode used for ease-in pacing.
+     *
+     * Set this to update the default `easeIn()` timing mode.
+     *
+     * @see TimingMode.easeInSine - Default value.
+     */
+    static DefaultTimingModeEaseIn: (x: number) => number;
+    /**
+     * Default timing mode used for ease-out pacing.
+     *
+     * Set this to update the default `easeOut()` timing mode.
+     *
+     * @see TimingMode.easeOutSine - Default value.
+     */
+    static DefaultTimingModeEaseOut: (x: number) => number;
+    /**
+     * Default timing mode used for ease-in, ease-out pacing.
+     *
+     * Set this to update the default `easeInOut()` timing mode.
+     *
+     * @see TimingMode.easeInOutSine - Default value.
+     */
+    static DefaultTimingModeEaseInOut: (x: number) => number;
     /** All currently running actions. */
     protected static readonly _actions: Action[];
     /**
@@ -141,6 +173,32 @@ export declare abstract class Action {
      */
     static moveToY(y: number, duration: TimeInterval): Action;
     /**
+     * Creates an action that moves the node along a path, optionally orienting the node to the path.
+     *
+     * This action is reversible; the resulting action creates a reversed path and then follows it,
+     * with the same duration.
+     *
+     * @param path A path to follow, or an object containing an array of points called `points`.
+     * @param duration The duration of the animation.
+     * @param asOffset When true, the path is relative to the node's current position.
+     * @param orientToPath When true, the node’s rotation turns to follow the path.
+     * @param fixedSpeed When true, the node's speed is consistent across different length segments.
+     */
+    static follow(path: VectorLike[] | PathLike, duration: number, asOffset?: boolean, orientToPath?: boolean, fixedSpeed?: boolean): Action;
+    /**
+     * Creates an action that moves the node along a path at a specified speed, optionally orienting
+     * the node to the path.
+     *
+     * This action is reversible; the resulting action creates a reversed path and then follows it,
+     * with the same speed.
+     *
+     * @param path A path to follow.
+     * @param speed The velocity at which the node should move in world units per second.
+     * @param asOffset When true, the path is relative to the node's current position.
+     * @param orientToPath If true, the node’s rotation turns to follow the path.
+     */
+    static followAtSpeed(path: VectorLike[] | PathLike, speed: number, asOffset?: boolean, orientToPath?: boolean): Action;
+    /**
      * Creates an action that rotates the node by a relative value (in radians).
      *
      * This action is reversible.
@@ -197,13 +255,13 @@ export declare abstract class Action {
      *
      * This action is reversible.
      */
-    static scaleXBy(x: number, duration: TimeInterval): Action;
+    static scaleByX(x: number, duration: TimeInterval): Action;
     /**
      * Creates an action that changes the y scale of a node by a relative value.
      *
      * This action is reversible.
      */
-    static scaleYBy(y: number, duration: TimeInterval): Action;
+    static scaleByY(y: number, duration: TimeInterval): Action;
     /**
      * Creates an action that changes the x and y scale values of a node.
      *
@@ -225,14 +283,14 @@ export declare abstract class Action {
      * This action is not reversible; the reverse of this action has the same duration but does not
      * change anything.
      */
-    static scaleXTo(x: number, duration: TimeInterval): Action;
+    static scaleToX(x: number, duration: TimeInterval): Action;
     /**
      * Creates an action that changes the x scale values of a node.
      *
      * This action is not reversible; the reverse of this action has the same duration but does not
      * change anything.
      */
-    static scaleYTo(y: number, duration: TimeInterval): Action;
+    static scaleToY(y: number, duration: TimeInterval): Action;
     /**
      * Creates an action that changes the alpha value of the node to 1.0.
      *
@@ -301,7 +359,7 @@ export declare abstract class Action {
      *
      * This action is not reversible; the reverse action executes the same block.
      */
-    static customAction(duration: number, stepFn: (target: TargetNode, x: number) => void): Action;
+    static customAction(duration: number, stepFn: (target: TargetNode, t: number, dt: number) => void): Action;
     /**
      * Tick all actions forward.
      *
@@ -310,7 +368,15 @@ export declare abstract class Action {
      * @param onErrorHandler (Optional) Handler errors from each action's tick.
      */
     static tick(deltaTimeMs: number, categoryMask?: number | undefined, onErrorHandler?: (error: any) => void): void;
-    constructor(duration: TimeInterval, speed?: number, timingMode?: TimingModeFn, categoryMask?: number);
+    constructor(
+    /** The duration required to complete an action. */
+    duration: TimeInterval, 
+    /** A speed factor that modifies how fast an action runs. */
+    speed?: number, 
+    /** A setting that controls the speed curve of an animation. */
+    timingMode?: TimingModeFn, 
+    /** @deprecated A global category bitmask which can be used to group actions. */
+    categoryMask?: number);
     /**
      * Update function for the action.
      *
@@ -331,23 +397,57 @@ export declare abstract class Action {
      */
     abstract reversed(): Action;
     /**
+     * @deprecated To be removed soon. Modify node and action speed directly instead.
+     *
+     * Set a category mask for this action.
+     * Use this to tick different categories of actions separately (e.g. separate different UI).
+     */
+    setCategory(categoryMask: number): this;
+    /**
+     * Set the action's speed scale. Default: `1.0`.
+     */
+    setSpeed(speed: number): this;
+    /**
+     * Adjust the speed curve of an animation. Default: `TimingMode.linear`.
+     *
+     * @see {TimingMode}
+     */
+    setTimingMode(timingMode: TimingModeFn): this;
+    /**
+     * Sets the speed curve of the action to linear pacing (the default). Linear pacing causes an
+     * animation to occur evenly over its duration.
+     *
+     * @see {TimingMode.linear}
+     */
+    linear(): this;
+    /**
+     * Sets the speed curve of the action to the default ease-in pacing. Ease-in pacing causes the
+     * animation to begin slowly and then speed up as it progresses.
+     *
+     * @see {Action.DefaultTimingModeEaseIn}
+     */
+    easeIn(): this;
+    /**
+     * Sets the speed curve of the action to the default ease-out pacing. Ease-out pacing causes the
+     * animation to begin quickly and then slow as it completes.
+     *
+     * @see {Action.DefaultTimingModeEaseOut}
+     */
+    easeOut(): this;
+    /**
+     * Sets the speed curve of the action to the default ease-in, ease-out pacing. Ease-in, ease-out
+     * pacing causes the animation to begin slowly, accelerate through the middle of its duration,
+     * and then slow again before completing.
+     *
+     * @see {Action.DefaultTimingModeEaseInOut}
+     */
+    easeInOut(): this;
+    /**
      * Do first time setup here.
      *
      * Anything you return here will be available as `ticker.data`.
      */
     protected _setupTicker(target: TargetNode, ticker: ActionTicker): any;
-    /** Set the action's speed scale. Defaults to 1.0. */
-    setSpeed(speed: number): this;
-    /** Set a timing mode function for this action. Defaults to TimingMode.linear. */
-    setTimingMode(timingMode: TimingModeFn): this;
-    /**
-     * Set a category mask for this action.
-     *
-     * Use this to tick different categories of actions separately (e.g. separate different UI).
-     *
-     * @deprecated use speed instead
-     */
-    setCategory(categoryMask: number): this;
 }
 declare class ActionTicker {
     key: string | undefined;

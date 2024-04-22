@@ -3,6 +3,7 @@ import { getIsPaused, getSpeed } from './util';
 const EPSILON = 0.0000000001;
 const EPSILON_ONE = 1 - EPSILON;
 const DEG_TO_RAD = Math.PI / 180;
+const HALF_PI = Math.PI / 2;
 //
 // ----- Action: -----
 //
@@ -170,6 +171,42 @@ export class Action {
         return new MoveToAction(undefined, y, duration);
     }
     //
+    // ----------------- Custom Path Actions: -----------------
+    //
+    /**
+     * Creates an action that moves the node along a path, optionally orienting the node to the path.
+     *
+     * This action is reversible; the resulting action creates a reversed path and then follows it,
+     * with the same duration.
+     *
+     * @param path A path to follow, or an object containing an array of points called `points`.
+     * @param duration The duration of the animation.
+     * @param asOffset When true, the path is relative to the node's current position.
+     * @param orientToPath When true, the node’s rotation turns to follow the path.
+     * @param fixedSpeed When true, the node's speed is consistent across different length segments.
+     */
+    static follow(path, duration, asOffset = true, orientToPath = true, fixedSpeed = true) {
+        const _path = FollowPathAction.getPath(path);
+        return new FollowPathAction(_path, duration, asOffset, orientToPath, fixedSpeed);
+    }
+    /**
+     * Creates an action that moves the node along a path at a specified speed, optionally orienting
+     * the node to the path.
+     *
+     * This action is reversible; the resulting action creates a reversed path and then follows it,
+     * with the same speed.
+     *
+     * @param path A path to follow.
+     * @param speed The velocity at which the node should move in world units per second.
+     * @param asOffset When true, the path is relative to the node's current position.
+     * @param orientToPath If true, the node’s rotation turns to follow the path.
+     */
+    static followAtSpeed(path, speed, asOffset = true, orientToPath = true) {
+        const _path = FollowPathAction.getPath(path);
+        const _length = FollowPathAction.getLength(_path);
+        return new FollowPathAction(_path, _length[0] / speed, asOffset, orientToPath, true);
+    }
+    //
     // ----------------- Rotation Actions: -----------------
     //
     /**
@@ -244,7 +281,7 @@ export class Action {
      *
      * This action is reversible.
      */
-    static scaleXBy(x, duration) {
+    static scaleByX(x, duration) {
         return Action.scaleBy(x, 0.0, duration);
     }
     /**
@@ -252,7 +289,7 @@ export class Action {
      *
      * This action is reversible.
      */
-    static scaleYBy(y, duration) {
+    static scaleByY(y, duration) {
         return Action.scaleBy(0.0, y, duration);
     }
     static scaleTo(x, y, duration) {
@@ -275,7 +312,7 @@ export class Action {
      * This action is not reversible; the reverse of this action has the same duration but does not
      * change anything.
      */
-    static scaleXTo(x, duration) {
+    static scaleToX(x, duration) {
         return new ScaleToAction(x, undefined, duration);
     }
     /**
@@ -284,7 +321,7 @@ export class Action {
      * This action is not reversible; the reverse of this action has the same duration but does not
      * change anything.
      */
-    static scaleYTo(y, duration) {
+    static scaleToY(y, duration) {
         return new ScaleToAction(undefined, y, duration);
     }
     //
@@ -396,7 +433,15 @@ export class Action {
     static tick(deltaTimeMs, categoryMask = undefined, onErrorHandler) {
         ActionTicker.stepAllActionsForward(deltaTimeMs, categoryMask, onErrorHandler);
     }
-    constructor(duration, speed = 1.0, timingMode = TimingMode.linear, categoryMask = 0x1) {
+    constructor(
+    /** The duration required to complete an action. */
+    duration, 
+    /** A speed factor that modifies how fast an action runs. */
+    speed = 1.0, 
+    /** A setting that controls the speed curve of an animation. */
+    timingMode = TimingMode.linear, 
+    /** @deprecated A global category bitmask which can be used to group actions. */
+    categoryMask = 0x1) {
         this.duration = duration;
         this.speed = speed;
         this.timingMode = timingMode;
@@ -407,6 +452,69 @@ export class Action {
         return this.duration / this.speed;
     }
     /**
+     * @deprecated To be removed soon. Modify node and action speed directly instead.
+     *
+     * Set a category mask for this action.
+     * Use this to tick different categories of actions separately (e.g. separate different UI).
+     */
+    setCategory(categoryMask) {
+        this.categoryMask = categoryMask;
+        return this;
+    }
+    /**
+     * Set the action's speed scale. Default: `1.0`.
+     */
+    setSpeed(speed) {
+        this.speed = speed;
+        return this;
+    }
+    /**
+     * Adjust the speed curve of an animation. Default: `TimingMode.linear`.
+     *
+     * @see {TimingMode}
+     */
+    setTimingMode(timingMode) {
+        this.timingMode = timingMode;
+        return this;
+    }
+    /**
+     * Sets the speed curve of the action to linear pacing (the default). Linear pacing causes an
+     * animation to occur evenly over its duration.
+     *
+     * @see {TimingMode.linear}
+     */
+    linear() {
+        return this.setTimingMode(TimingMode.linear);
+    }
+    /**
+     * Sets the speed curve of the action to the default ease-in pacing. Ease-in pacing causes the
+     * animation to begin slowly and then speed up as it progresses.
+     *
+     * @see {Action.DefaultTimingModeEaseIn}
+     */
+    easeIn() {
+        return this.setTimingMode(Action.DefaultTimingModeEaseIn);
+    }
+    /**
+     * Sets the speed curve of the action to the default ease-out pacing. Ease-out pacing causes the
+     * animation to begin quickly and then slow as it completes.
+     *
+     * @see {Action.DefaultTimingModeEaseOut}
+     */
+    easeOut() {
+        return this.setTimingMode(Action.DefaultTimingModeEaseOut);
+    }
+    /**
+     * Sets the speed curve of the action to the default ease-in, ease-out pacing. Ease-in, ease-out
+     * pacing causes the animation to begin slowly, accelerate through the middle of its duration,
+     * and then slow again before completing.
+     *
+     * @see {Action.DefaultTimingModeEaseInOut}
+     */
+    easeInOut() {
+        return this.setTimingMode(Action.DefaultTimingModeEaseInOut);
+    }
+    /**
      * Do first time setup here.
      *
      * Anything you return here will be available as `ticker.data`.
@@ -414,31 +522,34 @@ export class Action {
     _setupTicker(target, ticker) {
         return undefined;
     }
-    /** Set the action's speed scale. Defaults to 1.0. */
-    setSpeed(speed) {
-        this.speed = speed;
-        return this;
-    }
-    /** Set a timing mode function for this action. Defaults to TimingMode.linear. */
-    setTimingMode(timingMode) {
-        this.timingMode = timingMode;
-        return this;
-    }
-    /**
-     * Set a category mask for this action.
-     *
-     * Use this to tick different categories of actions separately (e.g. separate different UI).
-     *
-     * @deprecated use speed instead
-     */
-    setCategory(categoryMask) {
-        this.categoryMask = categoryMask;
-        return this;
-    }
 }
 //
 // ----------------- Global Settings: -----------------
 //
+/**
+ * Default timing mode used for ease-in pacing.
+ *
+ * Set this to update the default `easeIn()` timing mode.
+ *
+ * @see TimingMode.easeInSine - Default value.
+ */
+Action.DefaultTimingModeEaseIn = TimingMode.easeInSine;
+/**
+ * Default timing mode used for ease-out pacing.
+ *
+ * Set this to update the default `easeOut()` timing mode.
+ *
+ * @see TimingMode.easeOutSine - Default value.
+ */
+Action.DefaultTimingModeEaseOut = TimingMode.easeOutSine;
+/**
+ * Default timing mode used for ease-in, ease-out pacing.
+ *
+ * Set this to update the default `easeInOut()` timing mode.
+ *
+ * @see TimingMode.easeInOutSine - Default value.
+ */
+Action.DefaultTimingModeEaseInOut = TimingMode.easeInOutSine;
 /** All currently running actions. */
 Action._actions = [];
 //
@@ -658,6 +769,102 @@ class SpeedByAction extends Action {
         return new SpeedByAction(-this._speed, this.duration);
     }
 }
+class FollowPathAction extends Action {
+    constructor(path, duration, asOffset, orientToPath, fixedSpeed) {
+        super(duration);
+        this.asOffset = asOffset;
+        this.orientToPath = orientToPath;
+        this.fixedSpeed = fixedSpeed;
+        this.path = path;
+        this.lastIndex = path.length - 1;
+        // Precalculate segment lengths, if needed.
+        if (orientToPath || fixedSpeed) {
+            const [totalDist, segmentLengths] = FollowPathAction.getLength(path);
+            this.segmentLengths = segmentLengths;
+            if (fixedSpeed) {
+                this.segmentWeights = segmentLengths.map(v => v / (totalDist || 1));
+            }
+        }
+    }
+    // ----- Static helpers: -----
+    static getPath(path) {
+        return Array.isArray(path) ? [...path] : [...path.points];
+    }
+    static getLength(path) {
+        let totalLength = 0;
+        const segmentLengths = [];
+        for (let i = 0; i < path.length - 1; i++) {
+            const directionX = path[i + 1].x - path[i].x;
+            const directionY = path[i + 1].y - path[i].y;
+            const length = Math.sqrt(directionX * directionX + directionY * directionY);
+            segmentLengths.push(length);
+            totalLength += length;
+        }
+        return [totalLength, segmentLengths];
+    }
+    // ----- Methods: -----
+    updateAction(target, progress, progressDelta, ticker) {
+        var _a;
+        if (this.lastIndex < 0) {
+            return; // Empty path.
+        }
+        const [index, t] = this.fixedSpeed
+            ? this._getFixedSpeedProgress(progress)
+            : this._getDynamicSpeedProgress(progress);
+        const startPoint = this.path[index];
+        const endPoint = (_a = this.path[index + 1]) !== null && _a !== void 0 ? _a : startPoint;
+        target.position.set(ticker.data.x + startPoint.x + (endPoint.x - startPoint.x) * t, ticker.data.y + startPoint.y + (endPoint.y - startPoint.y) * t);
+        if (this.orientToPath) {
+            const length = this.segmentLengths[index] || 1;
+            const ndx = (endPoint.x - startPoint.x) / length;
+            const ndy = (endPoint.y - startPoint.y) / length;
+            const rotation = HALF_PI + Math.atan2(ndy, ndx);
+            target.rotation = rotation;
+        }
+    }
+    reversed() {
+        return new FollowPathAction(this._reversePath(), this.duration, this.asOffset, this.orientToPath, this.fixedSpeed)
+            .setTimingMode(this.timingMode)
+            .setSpeed(this.speed);
+    }
+    _setupTicker(target) {
+        return {
+            x: this.asOffset ? target.x : 0,
+            y: this.asOffset ? target.y : 0,
+        };
+    }
+    _reversePath() {
+        if (this.asOffset && this.path.length > 0) {
+            // Calculate the relative delta offset when first and last are flipped.
+            const first = this.path[0], last = this.path[this.path.length - 1];
+            const dx = last.x + first.x, dy = last.y + first.y;
+            return this.path.map(({ x, y }) => ({ x: x - dx, y: y - dy })).reverse();
+        }
+        // Absolute path is the path backwards.
+        return [...this.path].reverse();
+    }
+    _getDynamicSpeedProgress(progress) {
+        const index = Math.max(Math.min(Math.floor(progress * this.lastIndex), this.lastIndex - 1), 0);
+        const lastIndexNonZero = this.lastIndex || 1;
+        const t = (progress - index / lastIndexNonZero) * lastIndexNonZero;
+        return [index, t];
+    }
+    _getFixedSpeedProgress(progress) {
+        let remainingProgress = progress;
+        let index = 0;
+        let t = 0;
+        for (let i = 0; i < this.lastIndex; i++) {
+            const segmentWeight = this.segmentWeights[i];
+            if (segmentWeight > remainingProgress || i === this.lastIndex - 1) {
+                t = remainingProgress / segmentWeight || 1;
+                break;
+            }
+            remainingProgress -= segmentWeight;
+            index++;
+        }
+        return [index, t];
+    }
+}
 class RotateToAction extends Action {
     constructor(rotation, duration) {
         super(duration);
@@ -861,9 +1068,14 @@ class ActionTicker {
             }
             catch (error) {
                 // Isolate individual action errors.
-                if (onErrorHandler !== undefined) {
+                if (onErrorHandler === undefined) {
+                    console.error('Action failed with error: ', error);
+                }
+                else {
                     onErrorHandler(error);
                 }
+                // Remove offending ticker.
+                ActionTicker.removeAction(actionTicker);
             }
         }
     }

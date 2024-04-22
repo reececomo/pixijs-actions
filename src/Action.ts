@@ -6,6 +6,7 @@ import { getIsPaused, getSpeed } from './util';
 const EPSILON = 0.0000000001;
 const EPSILON_ONE = 1 - EPSILON;
 const DEG_TO_RAD = Math.PI / 180;
+const HALF_PI = Math.PI / 2;
 
 /** Time measured in seconds. */
 type TimeInterval = number;
@@ -17,6 +18,11 @@ type TargetNode = PIXI.DisplayObject;
 interface VectorLike {
   x: number;
   y: number;
+}
+
+/** Any object containing an array of points. */
+interface PathLike {
+  points: VectorLike[];
 }
 
 //
@@ -37,6 +43,33 @@ export abstract class Action {
   //
   // ----------------- Global Settings: -----------------
   //
+
+  /**
+   * Default timing mode used for ease-in pacing.
+   *
+   * Set this to update the default `easeIn()` timing mode.
+   *
+   * @see TimingMode.easeInSine - Default value.
+   */
+  public static DefaultTimingModeEaseIn = TimingMode.easeInSine;
+
+  /**
+   * Default timing mode used for ease-out pacing.
+   *
+   * Set this to update the default `easeOut()` timing mode.
+   *
+   * @see TimingMode.easeOutSine - Default value.
+   */
+  public static DefaultTimingModeEaseOut = TimingMode.easeOutSine;
+
+  /**
+   * Default timing mode used for ease-in, ease-out pacing.
+   *
+   * Set this to update the default `easeInOut()` timing mode.
+   *
+   * @see TimingMode.easeInOutSine - Default value.
+   */
+  public static DefaultTimingModeEaseInOut = TimingMode.easeInOutSine;
 
   /** All currently running actions. */
   protected static readonly _actions: Action[] = [];
@@ -212,6 +245,57 @@ export abstract class Action {
   }
 
   //
+  // ----------------- Custom Path Actions: -----------------
+  //
+
+  /**
+   * Creates an action that moves the node along a path, optionally orienting the node to the path.
+   *
+   * This action is reversible; the resulting action creates a reversed path and then follows it,
+   * with the same duration.
+   *
+   * @param path A path to follow, or an object containing an array of points called `points`.
+   * @param duration The duration of the animation.
+   * @param asOffset When true, the path is relative to the node's current position.
+   * @param orientToPath When true, the node’s rotation turns to follow the path.
+   * @param fixedSpeed When true, the node's speed is consistent across different length segments.
+   */
+  public static follow(
+    path: VectorLike[] | PathLike,
+    duration: number,
+    asOffset: boolean = true,
+    orientToPath: boolean = true,
+    fixedSpeed: boolean = true,
+  ): Action {
+    const _path = FollowPathAction.getPath(path);
+    return new FollowPathAction(_path, duration, asOffset, orientToPath, fixedSpeed);
+  }
+
+  /**
+   * Creates an action that moves the node along a path at a specified speed, optionally orienting
+   * the node to the path.
+   *
+   * This action is reversible; the resulting action creates a reversed path and then follows it,
+   * with the same speed.
+   *
+   * @param path A path to follow.
+   * @param speed The velocity at which the node should move in world units per second.
+   * @param asOffset When true, the path is relative to the node's current position.
+   * @param orientToPath If true, the node’s rotation turns to follow the path.
+   */
+  public static followAtSpeed(
+    path: VectorLike[] | PathLike,
+    speed: number,
+    asOffset: boolean = true,
+    orientToPath: boolean = true,
+  ): Action {
+    const _path = FollowPathAction.getPath(path);
+    const _length = FollowPathAction.getLength(_path);
+
+    return new FollowPathAction(_path, _length[0] / speed, asOffset, orientToPath, true);
+  }
+
+  //
   // ----------------- Rotation Actions: -----------------
   //
 
@@ -308,7 +392,7 @@ export abstract class Action {
    *
    * This action is reversible.
    */
-  public static scaleXBy(x: number, duration: TimeInterval): Action {
+  public static scaleByX(x: number, duration: TimeInterval): Action {
     return Action.scaleBy(x, 0.0, duration);
   }
 
@@ -317,7 +401,7 @@ export abstract class Action {
    *
    * This action is reversible.
    */
-  public static scaleYBy(y: number, duration: TimeInterval): Action {
+  public static scaleByY(y: number, duration: TimeInterval): Action {
     return Action.scaleBy(0.0, y, duration);
   }
 
@@ -351,7 +435,7 @@ export abstract class Action {
    * This action is not reversible; the reverse of this action has the same duration but does not
    * change anything.
    */
-  public static scaleXTo(x: number, duration: TimeInterval): Action {
+  public static scaleToX(x: number, duration: TimeInterval): Action {
     return new ScaleToAction(x, undefined, duration);
   }
 
@@ -361,7 +445,7 @@ export abstract class Action {
    * This action is not reversible; the reverse of this action has the same duration but does not
    * change anything.
    */
-  public static scaleYTo(y: number, duration: TimeInterval): Action {
+  public static scaleToY(y: number, duration: TimeInterval): Action {
     return new ScaleToAction(undefined, y, duration);
   }
 
@@ -469,7 +553,7 @@ export abstract class Action {
    *
    * This action is not reversible; the reverse action executes the same block.
    */
-  public static customAction(duration: number, stepFn: (target: TargetNode, x: number) => void): Action {
+  public static customAction(duration: number, stepFn: (target: TargetNode, t: number, dt: number) => void): Action {
     return new CustomAction(duration, stepFn);
   }
 
@@ -489,9 +573,13 @@ export abstract class Action {
   }
 
   public constructor(
+    /** The duration required to complete an action. */
     public readonly duration: TimeInterval,
+    /** A speed factor that modifies how fast an action runs. */
     public speed: number = 1.0,
+    /** A setting that controls the speed curve of an animation. */
     public timingMode: TimingModeFn = TimingMode.linear,
+    /** @deprecated A global category bitmask which can be used to group actions. */
     public categoryMask: number = 0x1,
   ) {}
 
@@ -530,36 +618,82 @@ export abstract class Action {
   public abstract reversed(): Action;
 
   /**
-   * Do first time setup here.
+   * @deprecated To be removed soon. Modify node and action speed directly instead.
    *
-   * Anything you return here will be available as `ticker.data`.
+   * Set a category mask for this action.
+   * Use this to tick different categories of actions separately (e.g. separate different UI).
    */
-  protected _setupTicker(target: TargetNode, ticker: ActionTicker): any {
-    return undefined;
+  public setCategory(categoryMask: number): this {
+    this.categoryMask = categoryMask;
+    return this;
   }
 
-  /** Set the action's speed scale. Defaults to 1.0. */
+  /**
+   * Set the action's speed scale. Default: `1.0`.
+   */
   public setSpeed(speed: number): this {
     this.speed = speed;
     return this;
   }
 
-  /** Set a timing mode function for this action. Defaults to TimingMode.linear. */
+  /**
+   * Adjust the speed curve of an animation. Default: `TimingMode.linear`.
+   *
+   * @see {TimingMode}
+   */
   public setTimingMode(timingMode: TimingModeFn): this {
     this.timingMode = timingMode;
     return this;
   }
 
   /**
-   * Set a category mask for this action.
+   * Sets the speed curve of the action to linear pacing (the default). Linear pacing causes an
+   * animation to occur evenly over its duration.
    *
-   * Use this to tick different categories of actions separately (e.g. separate different UI).
-   *
-   * @deprecated use speed instead
+   * @see {TimingMode.linear}
    */
-  public setCategory(categoryMask: number): this {
-    this.categoryMask = categoryMask;
-    return this;
+  public linear(): this {
+    return this.setTimingMode(TimingMode.linear);
+  }
+
+  /**
+   * Sets the speed curve of the action to the default ease-in pacing. Ease-in pacing causes the
+   * animation to begin slowly and then speed up as it progresses.
+   *
+   * @see {Action.DefaultTimingModeEaseIn}
+   */
+  public easeIn(): this {
+    return this.setTimingMode(Action.DefaultTimingModeEaseIn);
+  }
+
+  /**
+   * Sets the speed curve of the action to the default ease-out pacing. Ease-out pacing causes the
+   * animation to begin quickly and then slow as it completes.
+   *
+   * @see {Action.DefaultTimingModeEaseOut}
+   */
+  public easeOut(): this {
+    return this.setTimingMode(Action.DefaultTimingModeEaseOut);
+  }
+
+  /**
+   * Sets the speed curve of the action to the default ease-in, ease-out pacing. Ease-in, ease-out
+   * pacing causes the animation to begin slowly, accelerate through the middle of its duration,
+   * and then slow again before completing.
+   *
+   * @see {Action.DefaultTimingModeEaseInOut}
+   */
+  public easeInOut(): this {
+    return this.setTimingMode(Action.DefaultTimingModeEaseInOut);
+  }
+
+  /**
+   * Do first time setup here.
+   *
+   * Anything you return here will be available as `ticker.data`.
+   */
+  protected _setupTicker(target: TargetNode, ticker: ActionTicker): any {
+    return undefined;
   }
 }
 
@@ -869,6 +1003,145 @@ class SpeedByAction extends Action {
   }
 }
 
+class FollowPathAction extends Action {
+  protected readonly path: VectorLike[];
+  protected readonly lastIndex: number;
+  protected readonly segmentLengths!: number[];
+  protected readonly segmentWeights!: number[];
+
+  public constructor(
+    path: VectorLike[],
+    duration: number,
+		protected readonly asOffset: boolean,
+		protected readonly orientToPath: boolean,
+    protected readonly fixedSpeed: boolean,
+  ) {
+    super(duration);
+    this.path = path;
+    this.lastIndex = path.length - 1;
+
+    // Precalculate segment lengths, if needed.
+    if (orientToPath || fixedSpeed) {
+      const [totalDist, segmentLengths] = FollowPathAction.getLength(path);
+      this.segmentLengths = segmentLengths;
+      if (fixedSpeed) {
+        this.segmentWeights = segmentLengths.map(v => v / (totalDist || 1));
+      }
+    }
+  }
+
+  // ----- Static helpers: -----
+
+  public static getPath(path: VectorLike[] | { points: VectorLike[] }): VectorLike[] {
+    return Array.isArray(path) ? [...path] : [...path.points];
+  }
+
+  public static getLength(path: VectorLike[]): [length: number, segmentLengths: number[]] {
+    let totalLength = 0;
+    const segmentLengths: number[] = [];
+
+    for (let i = 0; i < path.length - 1; i++) {
+      const directionX = path[i + 1]!.x - path[i]!.x;
+      const directionY = path[i + 1]!.y - path[i]!.y;
+      const length = Math.sqrt(directionX * directionX + directionY * directionY);
+
+      segmentLengths.push(length);
+      totalLength += length;
+    }
+
+    return [totalLength, segmentLengths];
+  }
+
+  // ----- Methods: -----
+
+  public updateAction(target: any, progress: number, progressDelta: number, ticker: any): void {
+    if (this.lastIndex < 0) {
+      return; // Empty path.
+    }
+
+    const [index, t] = this.fixedSpeed
+      ? this._getFixedSpeedProgress(progress)
+      : this._getDynamicSpeedProgress(progress);
+
+    const startPoint = this.path[index]!;
+    const endPoint = this.path[index + 1] ?? startPoint;
+
+    target.position.set(
+      ticker.data.x + startPoint.x + (endPoint.x - startPoint.x) * t,
+      ticker.data.y + startPoint.y + (endPoint.y - startPoint.y) * t
+    );
+
+    if (this.orientToPath) {
+      const length = this.segmentLengths[index]! || 1;
+      const ndx = (endPoint.x - startPoint.x) / length;
+      const ndy = (endPoint.y - startPoint.y) / length;
+      const rotation = HALF_PI + Math.atan2(ndy, ndx);
+
+      target.rotation = rotation;
+    }
+  }
+
+  public reversed(): Action {
+    return new FollowPathAction(
+      this._reversePath(),
+      this.duration,
+      this.asOffset,
+      this.orientToPath,
+      this.fixedSpeed,
+    )
+      .setTimingMode(this.timingMode)
+      .setSpeed(this.speed);
+  }
+
+  protected _setupTicker(target: any): any {
+    return {
+      x: this.asOffset ? target.x : 0,
+      y: this.asOffset ? target.y : 0,
+    };
+  }
+
+  protected _reversePath(): VectorLike[] {
+    if (this.asOffset && this.path.length > 0) {
+      // Calculate the relative delta offset when first and last are flipped.
+      const first = this.path[0]!, last = this.path[this.path.length - 1]!;
+      const dx = last.x + first.x, dy = last.y + first.y;
+
+      return this.path.map(({x, y}) => ({ x: x - dx, y: y - dy })).reverse();
+    }
+
+    // Absolute path is the path backwards.
+    return [...this.path].reverse();
+  }
+
+  protected _getDynamicSpeedProgress(progress: number): [index: number, t: number] {
+    const index = Math.max(Math.min(Math.floor(progress * this.lastIndex), this.lastIndex - 1), 0);
+    const lastIndexNonZero = this.lastIndex || 1;
+    const t = (progress - index / lastIndexNonZero) * lastIndexNonZero;
+
+    return [index, t];
+  }
+
+  protected _getFixedSpeedProgress(progress: number): [index: number, t: number] {
+    let remainingProgress = progress;
+    let index = 0;
+    let t = 0;
+
+    for (let i = 0; i < this.lastIndex; i++) {
+      const segmentWeight = this.segmentWeights[i]!;
+
+      if (segmentWeight! > remainingProgress || i === this.lastIndex - 1) {
+        t = remainingProgress / segmentWeight || 1;
+        break;
+      }
+
+      remainingProgress -= segmentWeight;
+      index++;
+    }
+
+    return [index, t];
+  }
+}
+
 class RotateToAction extends Action {
   public constructor(
     protected readonly rotation: number,
@@ -1145,9 +1418,15 @@ class ActionTicker {
       }
       catch (error) {
         // Isolate individual action errors.
-        if (onErrorHandler !== undefined) {
+        if (onErrorHandler === undefined) {
+          console.error('Action failed with error: ', error);
+        }
+        else {
           onErrorHandler(error);
         }
+
+        // Remove offending ticker.
+        ActionTicker.removeAction(actionTicker);
       }
     }
   }
