@@ -184,7 +184,7 @@ export class Action {
      * @param orientToPath When true, the node’s rotation turns to follow the path.
      * @param fixedSpeed When true, the node's speed is consistent across different length segments.
      */
-    static follow(path, duration, asOffset = true, orientToPath = true, fixedSpeed = true) {
+    static followPath(path, duration, asOffset = true, orientToPath = true, fixedSpeed = true) {
         const _path = FollowPathAction.getPath(path);
         return new FollowPathAction(_path, duration, asOffset, orientToPath, fixedSpeed);
     }
@@ -195,12 +195,12 @@ export class Action {
      * This action is reversible; the resulting action creates a reversed path and then follows it,
      * with the same speed.
      *
-     * @param path A path to follow, or an object containing an array of points called `points`.
-     * @param speed The velocity at which the node should move.
+     * @param path A path to follow.
+     * @param speed The velocity at which the node should move in world units per second.
      * @param asOffset When true, the path is relative to the node's current position.
      * @param orientToPath If true, the node’s rotation turns to follow the path.
      */
-    static followAtSpeed(path, speed, asOffset = true, orientToPath = true) {
+    static followPathAtSpeed(path, speed, asOffset = true, orientToPath = true) {
         const _path = FollowPathAction.getPath(path);
         const _length = FollowPathAction.getLength(_path);
         return new FollowPathAction(_path, _length[0] / speed, asOffset, orientToPath, true);
@@ -736,9 +736,7 @@ export class FollowPathAction extends Action {
             : this._getDynamicSpeedProgress(progress);
         const startPoint = this.path[index];
         const endPoint = (_a = this.path[index + 1]) !== null && _a !== void 0 ? _a : startPoint;
-        const offsetX = this.asOffset ? ticker.data.startX : 0;
-        const offsetY = this.asOffset ? ticker.data.startY : 0;
-        target.position.set(offsetX + startPoint.x + (endPoint.x - startPoint.x) * t, offsetY + startPoint.y + (endPoint.y - startPoint.y) * t);
+        target.position.set(ticker.data.offsetX + startPoint.x + (endPoint.x - startPoint.x) * t, ticker.data.offsetY + startPoint.y + (endPoint.y - startPoint.y) * t);
         if (this.orientToPath) {
             const directionX = endPoint.x - startPoint.x;
             const directionY = endPoint.y - startPoint.y;
@@ -750,15 +748,26 @@ export class FollowPathAction extends Action {
         }
     }
     reversed() {
-        return new FollowPathAction([...this.path].reverse(), this.duration, this.asOffset, this.orientToPath, this.fixedSpeed)
+        return new FollowPathAction(this._reversePath(), this.duration, this.asOffset, this.orientToPath, this.fixedSpeed)
             .setTimingMode(this.timingMode)
             .setSpeed(this.speed);
     }
     _setupTicker(target) {
         return {
-            startX: target.x,
-            startY: target.y
+            offsetX: this.asOffset ? target.x : 0,
+            offsetY: this.asOffset ? target.y : 0
         };
+    }
+    _reversePath() {
+        if (this.asOffset) {
+            // Reversed offset path is inverted offsets.
+            return this.path.map(({ x, y }, index, array) => ({
+                x: array[array.length - index - 1].x - x,
+                y: array[array.length - index - 1].y - y
+            }));
+        }
+        // Absolute path is the path backwards.
+        return [...this.path].reverse();
     }
     _getDynamicSpeedProgress(progress) {
         const index = Math.max(Math.min(Math.floor(progress * this.lastIndex), this.lastIndex - 1), 0);

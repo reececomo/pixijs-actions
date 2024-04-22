@@ -232,7 +232,7 @@ export abstract class Action {
    * @param orientToPath When true, the node’s rotation turns to follow the path.
    * @param fixedSpeed When true, the node's speed is consistent across different length segments.
    */
-  public static follow(
+  public static followPath(
     path: VectorLike[] | PathLike,
     duration: number,
     asOffset: boolean = true,
@@ -250,12 +250,12 @@ export abstract class Action {
    * This action is reversible; the resulting action creates a reversed path and then follows it,
    * with the same speed.
    *
-   * @param path A path to follow, or an object containing an array of points called `points`.
-   * @param speed The velocity at which the node should move.
+   * @param path A path to follow.
+   * @param speed The velocity at which the node should move in world units per second.
    * @param asOffset When true, the path is relative to the node's current position.
    * @param orientToPath If true, the node’s rotation turns to follow the path.
    */
-  public static followAtSpeed(
+  public static followPathAtSpeed(
     path: VectorLike[] | PathLike,
     speed: number,
     asOffset: boolean = true,
@@ -984,12 +984,9 @@ export class FollowPathAction extends Action {
     const startPoint = this.path[index]!;
     const endPoint = this.path[index + 1] ?? startPoint;
 
-    const offsetX = this.asOffset ? ticker.data.startX : 0;
-    const offsetY = this.asOffset ? ticker.data.startY : 0;
-
     target.position.set(
-      offsetX + startPoint.x + (endPoint.x - startPoint.x) * t,
-      offsetY + startPoint.y + (endPoint.y - startPoint.y) * t
+      ticker.data.offsetX + startPoint.x + (endPoint.x - startPoint.x) * t,
+      ticker.data.offsetY + startPoint.y + (endPoint.y - startPoint.y) * t
     );
 
     if (this.orientToPath) {
@@ -1006,7 +1003,7 @@ export class FollowPathAction extends Action {
 
   public reversed(): Action {
     return new FollowPathAction(
-      [...this.path].reverse(),
+      this._reversePath(),
       this.duration,
       this.asOffset,
       this.orientToPath,
@@ -1016,11 +1013,24 @@ export class FollowPathAction extends Action {
       .setSpeed(this.speed);
   }
 
-  protected _setupTicker(target: any): any {
+  protected _setupTicker(target: TargetNode): any {
     return {
-      startX: target.x,
-      startY: target.y
+      offsetX: this.asOffset ? target.x : 0,
+      offsetY: this.asOffset ? target.y : 0
     };
+  }
+
+  protected _reversePath(): VectorLike[] {
+    if (this.asOffset) {
+      // Reversed offset path is inverted offsets.
+      return this.path.map(({x, y}, index, array) => ({
+        x: array[array.length - index - 1].x - x,
+        y: array[array.length - index - 1].y - y
+      }));
+    }
+
+    // Absolute path is the path backwards.
+    return [...this.path].reverse();
   }
 
   protected _getDynamicSpeedProgress(progress: number): [index: number, t: number] {
