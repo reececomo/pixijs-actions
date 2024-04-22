@@ -3,6 +3,7 @@ import { getIsPaused, getSpeed } from './util';
 const EPSILON = 0.0000000001;
 const EPSILON_ONE = 1 - EPSILON;
 const DEG_TO_RAD = Math.PI / 180;
+const HALF_PI = Math.PI / 2;
 //
 // ----- Action: -----
 //
@@ -743,7 +744,7 @@ class FollowPathAction extends Action {
             const length = this.segmentLengths[index] || 1;
             const ndx = (endPoint.x - startPoint.x) / length;
             const ndy = (endPoint.y - startPoint.y) / length;
-            const rotation = Math.atan2(ndy, ndx);
+            const rotation = HALF_PI + Math.atan2(ndy, ndx);
             target.rotation = rotation;
         }
     }
