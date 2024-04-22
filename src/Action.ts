@@ -44,6 +44,15 @@ export abstract class Action {
   // ----------------- Global Settings: -----------------
   //
 
+  /** Default timing mode used for ease-in pacing. @see {Action.easeIn()} */
+  public static DefaultTimingModeEaseIn = TimingMode.easeInSine;
+
+  /** Default timing mode used for ease-out pacing. @see {Action.easeOut()} */
+  public static DefaultTimingModeEaseOut = TimingMode.easeOutSine;
+
+  /** Default timing mode used for ease-in, ease-out pacing. @see {Action.easeInOut()} */
+  public static DefaultTimingModeEaseInOut = TimingMode.easeInOutSine;
+
   /** All currently running actions. */
   protected static readonly _actions: Action[] = [];
 
@@ -233,7 +242,7 @@ export abstract class Action {
    * @param orientToPath When true, the node’s rotation turns to follow the path.
    * @param fixedSpeed When true, the node's speed is consistent across different length segments.
    */
-  public static followPath(
+  public static follow(
     path: VectorLike[] | PathLike,
     duration: number,
     asOffset: boolean = true,
@@ -256,7 +265,7 @@ export abstract class Action {
    * @param asOffset When true, the path is relative to the node's current position.
    * @param orientToPath If true, the node’s rotation turns to follow the path.
    */
-  public static followPathAtSpeed(
+  public static followAtSpeed(
     path: VectorLike[] | PathLike,
     speed: number,
     asOffset: boolean = true,
@@ -365,7 +374,7 @@ export abstract class Action {
    *
    * This action is reversible.
    */
-  public static scaleXBy(x: number, duration: TimeInterval): Action {
+  public static scaleByX(x: number, duration: TimeInterval): Action {
     return Action.scaleBy(x, 0.0, duration);
   }
 
@@ -374,7 +383,7 @@ export abstract class Action {
    *
    * This action is reversible.
    */
-  public static scaleYBy(y: number, duration: TimeInterval): Action {
+  public static scaleByY(y: number, duration: TimeInterval): Action {
     return Action.scaleBy(0.0, y, duration);
   }
 
@@ -408,7 +417,7 @@ export abstract class Action {
    * This action is not reversible; the reverse of this action has the same duration but does not
    * change anything.
    */
-  public static scaleXTo(x: number, duration: TimeInterval): Action {
+  public static scaleToX(x: number, duration: TimeInterval): Action {
     return new ScaleToAction(x, undefined, duration);
   }
 
@@ -418,7 +427,7 @@ export abstract class Action {
    * This action is not reversible; the reverse of this action has the same duration but does not
    * change anything.
    */
-  public static scaleYTo(y: number, duration: TimeInterval): Action {
+  public static scaleToY(y: number, duration: TimeInterval): Action {
     return new ScaleToAction(undefined, y, duration);
   }
 
@@ -526,7 +535,7 @@ export abstract class Action {
    *
    * This action is not reversible; the reverse action executes the same block.
    */
-  public static customAction(duration: number, stepFn: (target: TargetNode, x: number) => void): Action {
+  public static customAction(duration: number, stepFn: (target: TargetNode, t: number, dt: number) => void): Action {
     return new CustomAction(duration, stepFn);
   }
 
@@ -546,9 +555,13 @@ export abstract class Action {
   }
 
   public constructor(
+    /** The duration required to complete an action. */
     public readonly duration: TimeInterval,
+    /** A speed factor that modifies how fast an action runs. */
     public speed: number = 1.0,
+    /** A setting that controls the speed curve of an animation. */
     public timingMode: TimingModeFn = TimingMode.linear,
+    /** @deprecated A global category bitmask which can be used to group actions. */
     public categoryMask: number = 0x1,
   ) {}
 
@@ -587,36 +600,82 @@ export abstract class Action {
   public abstract reversed(): Action;
 
   /**
-   * Do first time setup here.
+   * @deprecated To be removed soon. Modify node and action speed directly instead.
    *
-   * Anything you return here will be available as `ticker.data`.
+   * Set a category mask for this action.
+   * Use this to tick different categories of actions separately (e.g. separate different UI).
    */
-  protected _setupTicker(target: TargetNode, ticker: ActionTicker): any {
-    return undefined;
+  public setCategory(categoryMask: number): this {
+    this.categoryMask = categoryMask;
+    return this;
   }
 
-  /** Set the action's speed scale. Defaults to 1.0. */
+  /**
+   * Set the action's speed scale. Default: `1.0`.
+   */
   public setSpeed(speed: number): this {
     this.speed = speed;
     return this;
   }
 
-  /** Set a timing mode function for this action. Defaults to TimingMode.linear. */
+  /**
+   * Adjust the speed curve of an animation. Default: `TimingMode.linear`.
+   *
+   * @see {TimingMode}
+   */
   public setTimingMode(timingMode: TimingModeFn): this {
     this.timingMode = timingMode;
     return this;
   }
 
   /**
-   * Set a category mask for this action.
+   * Sets the speed curve of the action to linear pacing (the default). Linear pacing causes an
+   * animation to occur evenly over its duration.
    *
-   * Use this to tick different categories of actions separately (e.g. separate different UI).
-   *
-   * @deprecated use speed instead
+   * @see {TimingMode.linear}
    */
-  public setCategory(categoryMask: number): this {
-    this.categoryMask = categoryMask;
-    return this;
+  public linear(): this {
+    return this.setTimingMode(TimingMode.linear);
+  }
+
+  /**
+   * Sets the speed curve of the action to the default ease-in pacing. Ease-in pacing causes the
+   * animation to begin slowly and then speed up as it progresses.
+   *
+   * @see {Action.DefaultTimingModeEaseIn}
+   */
+  public easeIn(): this {
+    return this.setTimingMode(Action.DefaultTimingModeEaseIn);
+  }
+
+  /**
+   * Sets the speed curve of the action to the default ease-out pacing. Ease-out pacing causes the
+   * animation to begin quickly and then slow as it completes.
+   *
+   * @see {Action.DefaultTimingModeEaseOut}
+   */
+  public easeOut(): this {
+    return this.setTimingMode(Action.DefaultTimingModeEaseOut);
+  }
+
+  /**
+   * Sets the speed curve of the action to the default ease-in, ease-out pacing. Ease-in, ease-out
+   * pacing causes the animation to begin slowly, accelerate through the middle of its duration,
+   * and then slow again before completing.
+   *
+   * @see {Action.DefaultTimingModeEaseInOut}
+   */
+  public easeInOut(): this {
+    return this.setTimingMode(Action.DefaultTimingModeEaseInOut);
+  }
+
+  /**
+   * Do first time setup here.
+   *
+   * Anything you return here will be available as `ticker.data`.
+   */
+  protected _setupTicker(target: TargetNode, ticker: ActionTicker): any {
+    return undefined;
   }
 }
 

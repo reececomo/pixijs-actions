@@ -89,10 +89,12 @@ mySprite.run(razzleDazzle);
 
 | Action | Description | Reversible? |
 | :----- | :---------- | :---------- |
+|***Chaining Actions***|||
 | `Action.group(actions)` | Run multiple actions in parallel. | Yes |
 | `Action.sequence(actions)` | Run multiple actions sequentially. | Yes |
 | `Action.repeat(action, count)` | Repeat an action a specified number of times. | Yes |
 | `Action.repeatForever(action)` | Repeat an action indefinitely. | Yes |
+|***Animating a Node's Position in a Linear Path***|||
 | `Action.moveBy(dx, dy, duration)` | Move a node by a relative amount. | Yes |
 | `Action.moveByVector(vector, duration)` | Move a node by a relative vector (e.g. `PIXI.Point`). | Yes |
 | `Action.moveByX(dx, duration)` | Move a node horizontally by a relative amount. | Yes |
@@ -101,61 +103,96 @@ mySprite.run(razzleDazzle);
 | `Action.moveToPoint(point, duration)` | Move a node to a specified position (e.g. `PIXI.Point`). |  _*No_ |
 | `Action.moveToX(x, duration)` | Move a node to a specified horizontal position. |  _*No_ |
 | `Action.moveToY(y, duration)` | Move a node to a specified vertical position. |  _*No_ |
-| `Action.follow(path, duration, asOffset?, orientToPath?, fixedSpeed?)` | Move a node along a path. |  Yes |
-| `Action.followAtSpeed(path, speed, asOffset?, orientToPath?)` | Move a node along a path at a specified speed. |  Yes |
-| `Action.scaleBy(delta, duration)` | Scale a node by a relative amount. | Yes |
-| `Action.scaleBy(dx, dy, duration)` | Scale a node by a relative amount. | Yes |
-| `Action.scaleByVector(vector, duration)` | Scale a node by a given vector (e.g. `PIXI.Point`). | Yes |
-| `Action.scaleXBy(dx, duration)` | Scale a node by a relative amount. | Yes |
-| `Action.scaleYBy(dy, duration)` | Scale a node by a relative amount. | Yes |
-| `Action.scaleTo(scale, duration)` | Scale a node to a specified value. |  _*No_ |
-| `Action.scaleTo(x, y, duration)` | Scale a node to a specified value. |  _*No_ |
-| `Action.scaleToSize(vector, duration)` | Scale a node to a specified size (e.g. `PIXI.Point`). |  _*No_ |
-| `Action.scaleXTo(x, duration)` | Scale a node to a specified value in the X-axis. |  _*No_ |
-| `Action.scaleYTo(y, duration)` | Scale a node to a specified value in the Y-axis. |  _*No_ |
-| `Action.fadeIn(duration)` | Fade the alpha to `1.0`. | Yes |
-| `Action.fadeOut(duration)` | Fade the alpha to `0.0`. | Yes |
-| `Action.fadeAlphaBy(delta, duration)` | Fade the alpha by a relative value. | Yes |
-| `Action.fadeAlphaTo(alpha, duration)` | Fade the alpha to a specified value. |  _*No_ |
+|***Animating a Node's Position Along a Custom Path***|||
+| `Action.follow(path, duration)` | Move a node along a path, optionally orienting the node to the path. |  Yes | Yes |
+| `Action.followAtSpeed(path, speed)` | Move a node along a path at a specified speed, optionally orienting the node to the path. |  Yes |
+|***Animating the Rotation of a Node***|||
 | `Action.rotateBy(delta, duration)` | Rotate a node by a relative value (in radians). | Yes |
 | `Action.rotateByDegrees(delta, duration)` | Rotate a node by a relative value (in degrees). | Yes |
 | `Action.rotateTo(radians, duration)` | Rotate a node to a specified value (in radians). |  _*No_ |
 | `Action.rotateToDegrees(degrees, duration)` | Rotate a node to a specified value (in degrees). | _*No_ |
-| `Action.speedBy(delta, duration)` | Change how fast a node executes actions by a relative value. | Yes |
-| `Action.speedTo(speed, duration)` | Set how fast a node executes actions. |  _*No_ |
-| `Action.hide()` | Set a node's `visible` property to `false`. | Yes |
-| `Action.unhide()` | Set a node's `visible` property to `true`. | Yes |
-| `Action.removeFromParent()` | Remove a node from its parent. | _†Identical_ |
-| `Action.waitForDuration(duration)` | Idle for a specified interval. | _†Identical_ |
+|***Animating the Scaling of a Node***|||
+| `Action.scaleBy(delta, duration)` | Scale a node by a relative value. | Yes |
+| `Action.scaleBy(dx, dy, duration)` | Scale a node by a relative value. | Yes |
+| `Action.scaleByVector(vector, duration)` | Scale a node by a given vector (e.g. `PIXI.Point`). | Yes |
+| `Action.scaleByX(dx, duration)` | Scale a node by a relative value. | Yes |
+| `Action.scaleByY(dy, duration)` | Scale a node by a relative value. | Yes |
+| `Action.scaleTo(scale, duration)` | Scale a node to a specified value. |  _*No_ |
+| `Action.scaleTo(x, y, duration)` | Scale a node to a specified value. |  _*No_ |
+| `Action.scaleToSize(vector, duration)` | Scale a node to a specified size (e.g. `PIXI.Point`). |  _*No_ |
+| `Action.scaleToX(x, duration)` | Scale a node to a specified value in the X-axis. |  _*No_ |
+| `Action.scaleToY(y, duration)` | Scale a node to a specified value in the Y-axis. |  _*No_ |
+|***Animating the Transparency of a Node***|||
+| `Action.fadeIn(duration)` | Fade the alpha to `1.0`. | Yes |
+| `Action.fadeOut(duration)` | Fade the alpha to `0.0`. | Yes |
+| `Action.fadeAlphaBy(delta, duration)` | Fade the alpha by a relative value. | Yes |
+| `Action.fadeAlphaTo(alpha, duration)` | Fade the alpha to a specified value. |  _*No_ |
+|***Controlling Node Visibility***|||
+| `Action.unhide()` | Instant. Set a node's `visible` property to `true`. | Yes |
+| `Action.hide()` | Instant. Set a node's `visible` property to `false`. | Yes |
+|***Removing a Node from the Canvas***|||
+| `Action.removeFromParent()` | Instant. Remove a node from its parent. | _†Identical_ |
+|***Delaying Actions***|||
+| `Action.waitForDuration(duration)` | Idle for a specified period of time. | _†Identical_ |
 | `Action.waitForDurationWithRange(duration, range)` | Idle for a randomized period of time. | _†Identical_ |
-| `Action.run(block)` | Execute a block of code immediately. | _†Identical_ |
-| `Action.customAction(duration, stepHandler)` | Execute a custom stepping function over the duration. | _†Identical_ |
+|***Triggers and Custom Actions***|||
+| `Action.run(callback)` | Instant. Execute a block. | _†Identical_ |
+| `Action.customAction(duration, stepHandler)` | Execute a custom stepping function over the action duration. | _†Identical_ |
+|***Controlling the Node's Action Speed***|||
+| `Action.speedBy(delta, duration)` | Change how fast a node executes its actions by a relative value. | Yes |
+| `Action.speedTo(speed, duration)` | Set how fast a node executes actions to a specified value. |  _*No_ |
 
-#### Reversing Actions
+### About Reversing Actions
 All actions have a `.reversed()` method which will return an action with the reverse action on it. Some actions are **not reversible**, and these cases are noted in the table above:
-- _**†Identical:**_ The reverse action will be identical to the action.
-- _**\*No:**_ The reverse action will idle for the equivalent duration.
+- _**†Identical:**_ The reversed action will be identical to the original action.
+- _**\*No:**_ The reversed action will only idle for the equivalent duration.
 
-### TimingMode
+## Timing Modes
 
-The default timing mode for actions is `TimingMode.linear`.
+All actions have a `timingMode` which controls the speed curve of its execution.
 
-You can set a custom `TimingMode` (see options below), or you can provide a custom timing mode function.
+The default timingMode for all actions is `TimingMode.linear`, which causes an animation to occur evenly over its duration.
 
-|  | InOut | In | Out | Description |
+> Note: The `timingMode` property of `.group()`, `.sequence()`, `.repeat()`, and `.repeatForever()` has no effect on the underlying action(s).
+
+You can customize the speed curve of actions like so:
+
+```ts
+// Use the defaults
+Action.fadeIn(0.3).easeInOut();
+Action.fadeIn(0.3).easeIn();
+Action.fadeIn(0.3).easeOut();
+
+// Set a TimingMode
+Action.fadeIn(0.3).setTimingMode(TimingMode.easeInOutCubic);
+
+// Provide a custom function
+Action.fadeIn(0.3).setTimingMode(x => x * x);
+```
+
+### Global Defaults
+
+The `.easeInOut()`, `.easeIn()`, and `.easeOut()` methods set the timing mode of the action to the global default timing for that curve type.
+
+You can set any global defaults for these by updating `Action.DefaultTimingModeEaseInOut`, `Action.DefaultTimingModeEaseIn`, and `Action.DefaultTimingModeEaseOut`. The default timing modes for these easings are `TimingMode.easeInOutSine`, `TimingMode.easeInSine`, and `TimingMode.easeOutSine` respectively.
+
+### Built-in TimingMode Options
+
+See the following table for default `TimingMode` options.
+
+| Pattern | Ease In, Ease Out | Ease In | Ease Out | Description |
 | --------------- | ----- | -- | --- | ----------- |
 | **Linear**      | `linear` | - | - | Constant motion with no acceleration or deceleration. |
 | **Sine**        | `easeInOutSine` | `easeInSine` | `easeOutSine` | Gentle start and end, with accelerated motion in the middle. |
-| **Circ**        | `easeInOutCirc` | `easeInCirc` | `easeOutCirc` | Smooth start and end, faster acceleration in the middle, circular motion. |
+| **Circular**        | `easeInOutCirc` | `easeInCirc` | `easeOutCirc` | Smooth start and end, faster acceleration in the middle, circular motion. |
 | **Cubic**       | `easeInOutCubic` | `easeInCubic` | `easeOutCubic` | Gradual acceleration and deceleration, smooth motion throughout. |
-| **Quad**        | `easeInOutQuad` | `easeInQuad` | `easeOutQuad` | Smooth acceleration and deceleration, starts and ends slowly, faster in the middle. |
+| **Quadratic**        | `easeInOutQuad` | `easeInQuad` | `easeOutQuad` | Smooth acceleration and deceleration, starts and ends slowly, faster in the middle. |
 | **Quartic**     | `easeInOutQuart` | `easeInQuart` | `easeOutQuart` | Slower start and end, increased acceleration in the middle. |
 | **Quintic**     | `easeInOutQuint` | `easeInQuint` | `easeOutQuint` | Very gradual start and end, smoother acceleration in the middle. |
-| **Expo**        | `easeInOutExpo` | `easeInExpo` | `easeOutExpo` | Very slow start, exponential acceleration, slow end. |
+| **Exponential**        | `easeInOutExpo` | `easeInExpo` | `easeOutExpo` | Very slow start, exponential acceleration, slow end. |
 | **Back**        | `easeInOutBack` | `easeInBack` | `easeOutBack` | Starts slowly, overshoots slightly, settles into final position. |
 | **Bounce**      | `easeInOutBounce` | `easeInBounce` | `easeOutBounce` | Bouncy effect at the start or end, with multiple rebounds. |
 | **Elastic**     | `easeInOutElastic` | `easeInElastic` | `easeOutElastic` | Stretchy motion with overshoot and multiple oscillations. |
-
 
 ### Custom actions
 
@@ -166,17 +203,17 @@ Actions are reusable, so you can create complex animations once, and then run th
 const rockBackAndForth = Action.repeatForever(
   Action.sequence([
     Action.group([
-      Action.moveXBy(5, 0.33),
-      Action.rotateByDegrees(-2, 0.33),
-    ]).setTimingMode(TimingMode.easeOutQuad),
+      Action.moveXBy(5, 0.33).easeOut(),
+      Action.rotateByDegrees(-2, 0.33).easeOut(),
+    ]),
     Action.group([
-      Action.moveXBy(-10, 0.34),
-      Action.rotateByDegrees(4, 0.34),
-    ]).setTimingMode(TimingMode.easeInOutQuad),
+      Action.moveXBy(-10, 0.34).easeInOut(),
+      Action.rotateByDegrees(4, 0.34).easeInOut(),
+    ]),
     Action.group([
-      Action.moveXBy(5, 0.33),
-      Action.rotateByDegrees(-2, 0.33),
-    ]).setTimingMode(TimingMode.easeInQuad),
+      Action.moveXBy(5, 0.33).easeIn(),
+      Action.rotateByDegrees(-2, 0.33).easeIn(),
+    ]),
   ])
 );
 
@@ -192,12 +229,12 @@ You can combine these with dynamic actions for more variety:
 ```ts
 const MyActions = {
   squash: (amount: number, duration: number = 0.3) => Action.sequence([
-    Action.scaleTo(amount, 1 / amount, duration / 2).setTimingMode(TimingMode.easeOutSine),
-    Action.scaleTo(1, duration / 2).setTimingMode(TimingMode.easeInSine)
+    Action.scaleTo(amount, 1 / amount, duration / 2).easeOut(),
+    Action.scaleTo(1, duration / 2).easeIn()
   ]),
   stretch: (amount: number, duration: number = 0.3) => Action.sequence([
-    Action.scaleTo(1 / amount, amount, duration / 2).setTimingMode(TimingMode.easeOutSine),
-    Action.scaleTo(1, duration / 2).setTimingMode(TimingMode.easeInSine)
+    Action.scaleTo(1 / amount, amount, duration / 2).easeOut(),
+    Action.scaleTo(1, duration / 2).easeIn()
   ]),
   squashAndStretch: (amount: number, duration: number = 0.3) => Action.sequence([
     MyActions.squash(amount, duration / 2),

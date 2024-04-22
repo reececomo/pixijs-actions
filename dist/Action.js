@@ -185,7 +185,7 @@ export class Action {
      * @param orientToPath When true, the node’s rotation turns to follow the path.
      * @param fixedSpeed When true, the node's speed is consistent across different length segments.
      */
-    static followPath(path, duration, asOffset = true, orientToPath = true, fixedSpeed = true) {
+    static follow(path, duration, asOffset = true, orientToPath = true, fixedSpeed = true) {
         const _path = FollowPathAction.getPath(path);
         return new FollowPathAction(_path, duration, asOffset, orientToPath, fixedSpeed);
     }
@@ -201,7 +201,7 @@ export class Action {
      * @param asOffset When true, the path is relative to the node's current position.
      * @param orientToPath If true, the node’s rotation turns to follow the path.
      */
-    static followPathAtSpeed(path, speed, asOffset = true, orientToPath = true) {
+    static followAtSpeed(path, speed, asOffset = true, orientToPath = true) {
         const _path = FollowPathAction.getPath(path);
         const _length = FollowPathAction.getLength(_path);
         return new FollowPathAction(_path, _length[0] / speed, asOffset, orientToPath, true);
@@ -281,7 +281,7 @@ export class Action {
      *
      * This action is reversible.
      */
-    static scaleXBy(x, duration) {
+    static scaleByX(x, duration) {
         return Action.scaleBy(x, 0.0, duration);
     }
     /**
@@ -289,7 +289,7 @@ export class Action {
      *
      * This action is reversible.
      */
-    static scaleYBy(y, duration) {
+    static scaleByY(y, duration) {
         return Action.scaleBy(0.0, y, duration);
     }
     static scaleTo(x, y, duration) {
@@ -312,7 +312,7 @@ export class Action {
      * This action is not reversible; the reverse of this action has the same duration but does not
      * change anything.
      */
-    static scaleXTo(x, duration) {
+    static scaleToX(x, duration) {
         return new ScaleToAction(x, undefined, duration);
     }
     /**
@@ -321,7 +321,7 @@ export class Action {
      * This action is not reversible; the reverse of this action has the same duration but does not
      * change anything.
      */
-    static scaleYTo(y, duration) {
+    static scaleToY(y, duration) {
         return new ScaleToAction(undefined, y, duration);
     }
     //
@@ -433,7 +433,15 @@ export class Action {
     static tick(deltaTimeMs, categoryMask = undefined, onErrorHandler) {
         ActionTicker.stepAllActionsForward(deltaTimeMs, categoryMask, onErrorHandler);
     }
-    constructor(duration, speed = 1.0, timingMode = TimingMode.linear, categoryMask = 0x1) {
+    constructor(
+    /** The duration required to complete an action. */
+    duration, 
+    /** A speed factor that modifies how fast an action runs. */
+    speed = 1.0, 
+    /** A setting that controls the speed curve of an animation. */
+    timingMode = TimingMode.linear, 
+    /** @deprecated A global category bitmask which can be used to group actions. */
+    categoryMask = 0x1) {
         this.duration = duration;
         this.speed = speed;
         this.timingMode = timingMode;
@@ -444,6 +452,69 @@ export class Action {
         return this.duration / this.speed;
     }
     /**
+     * @deprecated To be removed soon. Modify node and action speed directly instead.
+     *
+     * Set a category mask for this action.
+     * Use this to tick different categories of actions separately (e.g. separate different UI).
+     */
+    setCategory(categoryMask) {
+        this.categoryMask = categoryMask;
+        return this;
+    }
+    /**
+     * Set the action's speed scale. Default: `1.0`.
+     */
+    setSpeed(speed) {
+        this.speed = speed;
+        return this;
+    }
+    /**
+     * Adjust the speed curve of an animation. Default: `TimingMode.linear`.
+     *
+     * @see {TimingMode}
+     */
+    setTimingMode(timingMode) {
+        this.timingMode = timingMode;
+        return this;
+    }
+    /**
+     * Sets the speed curve of the action to linear pacing (the default). Linear pacing causes an
+     * animation to occur evenly over its duration.
+     *
+     * @see {TimingMode.linear}
+     */
+    linear() {
+        return this.setTimingMode(TimingMode.linear);
+    }
+    /**
+     * Sets the speed curve of the action to the default ease-in pacing. Ease-in pacing causes the
+     * animation to begin slowly and then speed up as it progresses.
+     *
+     * @see {Action.DefaultTimingModeEaseIn}
+     */
+    easeIn() {
+        return this.setTimingMode(Action.DefaultTimingModeEaseIn);
+    }
+    /**
+     * Sets the speed curve of the action to the default ease-out pacing. Ease-out pacing causes the
+     * animation to begin quickly and then slow as it completes.
+     *
+     * @see {Action.DefaultTimingModeEaseOut}
+     */
+    easeOut() {
+        return this.setTimingMode(Action.DefaultTimingModeEaseOut);
+    }
+    /**
+     * Sets the speed curve of the action to the default ease-in, ease-out pacing. Ease-in, ease-out
+     * pacing causes the animation to begin slowly, accelerate through the middle of its duration,
+     * and then slow again before completing.
+     *
+     * @see {Action.DefaultTimingModeEaseInOut}
+     */
+    easeInOut() {
+        return this.setTimingMode(Action.DefaultTimingModeEaseInOut);
+    }
+    /**
      * Do first time setup here.
      *
      * Anything you return here will be available as `ticker.data`.
@@ -451,31 +522,16 @@ export class Action {
     _setupTicker(target, ticker) {
         return undefined;
     }
-    /** Set the action's speed scale. Defaults to 1.0. */
-    setSpeed(speed) {
-        this.speed = speed;
-        return this;
-    }
-    /** Set a timing mode function for this action. Defaults to TimingMode.linear. */
-    setTimingMode(timingMode) {
-        this.timingMode = timingMode;
-        return this;
-    }
-    /**
-     * Set a category mask for this action.
-     *
-     * Use this to tick different categories of actions separately (e.g. separate different UI).
-     *
-     * @deprecated use speed instead
-     */
-    setCategory(categoryMask) {
-        this.categoryMask = categoryMask;
-        return this;
-    }
 }
 //
 // ----------------- Global Settings: -----------------
 //
+/** Default timing mode used for ease-in pacing. @see {Action.easeIn()} */
+Action.DefaultTimingModeEaseIn = TimingMode.easeInSine;
+/** Default timing mode used for ease-out pacing. @see {Action.easeOut()} */
+Action.DefaultTimingModeEaseOut = TimingMode.easeOutSine;
+/** Default timing mode used for ease-in, ease-out pacing. @see {Action.easeInOut()} */
+Action.DefaultTimingModeEaseInOut = TimingMode.easeInOutSine;
 /** All currently running actions. */
 Action._actions = [];
 //
