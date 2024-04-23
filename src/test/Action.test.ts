@@ -98,6 +98,37 @@ describe('Action Chaining', () => {
       expect(node.position.x).toBeCloseTo(22);
       expect(node.hasActions()).toBe(false);
     });
+
+    it('should loop over a group', () => {
+      const group = Action.group([
+        Action.moveByX(5, 1.0),
+        Action.moveByX(5, 0.0),
+        Action.waitForDuration(1.0),
+      ]);
+      const action = Action.repeat(group, 3);
+
+      expect(action.duration).toBeCloseTo(3.0);
+      expect(action.scaledDuration).toBeCloseTo(3.0);
+
+      const node = new Container();
+      node.run(action);
+      expect(node.hasActions()).toBe(true);
+
+      simulateTime(1.0);
+      expect(node.position.x).toBeCloseTo(10);
+
+      simulateTime(1.0);
+      expect(node.position.x).toBeCloseTo(20);
+
+      simulateTime(1.0);
+      expect(node.position.x).toBeCloseTo(30);
+
+      simulateTime(1.0);
+      expect(node.position.x).toBeCloseTo(30);
+
+      // Sanity check: We're still going.
+      expect(node.hasActions()).toBe(false);
+    });
   });
 
   describe('repeatForever()', () => {
@@ -119,6 +150,64 @@ describe('Action Chaining', () => {
 
       simulateTime(10.0);
       expect(node.position.x).toBeCloseTo(25);
+
+      // Sanity check: We're still going.
+      expect(node.hasActions()).toBe(true);
+
+      // Cleanup.
+      node.removeAllActions();
+    });
+
+    it('should loop over a group', () => {
+      const group = Action.group([
+        Action.moveByX(5, 1.0),
+        Action.moveByX(5, 0.0),
+        Action.waitForDuration(1.0),
+      ]);
+      const action = Action.repeatForever(group);
+
+      const node = new Container();
+      node.run(action);
+      expect(node.hasActions()).toBe(true);
+
+      simulateTime(0.5);
+      expect(node.position.x).toBeCloseTo(7.5);
+
+      simulateTime(0.5);
+      expect(node.position.x).toBeCloseTo(10);
+
+      simulateTime(0.5);
+      expect(node.position.x).toBeCloseTo(17.5);
+
+      simulateTime(0.499999);
+      expect(node.position.x).toBeCloseTo(20);
+
+      // Sanity check: We're still going.
+      expect(node.hasActions()).toBe(true);
+
+      // Cleanup.
+      node.removeAllActions();
+    });
+
+    it('should loop over a sequence', () => {
+      const group = Action.sequence([
+        Action.moveByX(5, 1.0),
+        Action.moveByY(5, 1.0),
+        Action.waitForDuration(1.0),
+      ]);
+      const action = Action.repeatForever(group);
+
+      const node = new Container();
+      node.run(action);
+
+      simulateTime(3.0);
+      expect(node.position.x).toBeCloseTo(5);
+
+      simulateTime(3.0);
+      expect(node.position.x).toBeCloseTo(10);
+
+      simulateTime(3.0);
+      expect(node.position.x).toBeCloseTo(15);
 
       // Sanity check: We're still going.
       expect(node.hasActions()).toBe(true);
