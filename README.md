@@ -148,7 +148,7 @@ mySprite.run(Action.repeatForever(moveBackAndForthWhilePulsating));
 | `Action.fadeOut(duration)` | Fade the alpha to `0.0`. | Yes |
 | `Action.fadeAlphaBy(delta, duration)` | Fade the alpha by a relative value. | Yes |
 | `Action.fadeAlphaTo(alpha, duration)` | Fade the alpha to a specified value. |  _*No_ |
-|***Controlling Node Visibility***|||
+|***Controlling a Node's Visibility***|||
 | `Action.unhide()` | Set a node's `visible` property to `true`. | Yes |
 | `Action.hide()` | Set a node's `visible` property to `false`. | Yes |
 |***Removing a Node from the Canvas***|||
@@ -159,7 +159,7 @@ mySprite.run(Action.repeatForever(moveBackAndForthWhilePulsating));
 |***Triggers and Custom Actions***|||
 | `Action.run(callback)` | Execute a block (i.e. trigger another action). | _†Identical_ |
 | `Action.customAction(duration, stepHandler)` | Execute a custom stepping function over the action duration. | _†Identical_ |
-|***Controlling the Node's Action Speed***|||
+|***Manipulating the Action Speed of a Node***|||
 | `Action.speedBy(delta, duration)` | Change how fast a node executes its actions by a relative value. | Yes |
 | `Action.speedTo(speed, duration)` | Set how fast a node executes actions to a specified value. |  _*No_ |
 
