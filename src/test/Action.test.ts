@@ -1,4 +1,4 @@
-import { Container } from 'pixi.js';
+import { Container, Sprite } from 'pixi.js';
 import { Action } from '../index';
 
 function simulateTime(seconds: number, steps: number = 100): void {
@@ -130,51 +130,84 @@ describe('Action Chaining', () => {
 });
 
 describe('Action', () => {
-  describe('scaleTo', () => {
-    it('can be initialized with one value', () => {
+  describe('scaleTo()', () => {
+    it('can be initialized with (x, y, duration)', () => {
+      const node = new Container();
+      expect(node.scale.x).toBe(1); // Sanity check.
+      expect(node.scale.y).toBe(1);
+
+      node.run(Action.scaleTo(2, 1.5, 1.0));
+      simulateTime(1.0);
+      expect(node.scale.x).toBeCloseTo(2);
+      expect(node.scale.y).toBeCloseTo(1.5);
+    });
+
+    it('can be initialized with (scale, duration)', () => {
       const node = new Container();
       expect(node.scale.x).toBe(1); // Sanity check.
       expect(node.scale.y).toBe(1);
 
       node.run(Action.scaleTo(2, 1.0));
       simulateTime(1.0);
-      expect(node.scale.x).toBe(2);
-      expect(node.scale.y).toBe(2);
+      expect(node.scale.x).toBeCloseTo(2);
+      expect(node.scale.y).toBeCloseTo(2);
     });
 
-    it('can be initialized with x and y', () => {
+    it('can be initialized with ({ width, height }, duration)', () => {
+      const node = new Sprite();
+      expect(node.scale.x).toBe(1); // Sanity check.
+      expect(node.scale.y).toBe(1);
+
+      node.run(Action.scaleTo({ width: 2, height: 1.5 }, 1.0));
+      simulateTime(1.0);
+      expect(node.scale.x).toBeCloseTo(2);
+      expect(node.scale.y).toBeCloseTo(1.5);
+
+      const otherNode = new Sprite();
+      otherNode.width = 50;
+      otherNode.height = 120;
+
+      node.run(Action.scaleTo(otherNode, 1.0));
+      simulateTime(1.0);
+      expect(node.width).toBeCloseTo(50);
+      expect(node.height).toBeCloseTo(120);
+      expect(node.scale.x).toBeCloseTo(50);
+      expect(node.scale.y).toBeCloseTo(120);
+    });
+  });
+
+  describe('scaleBy()', () => {
+    it('can be initialized with (x, y, duration)', () => {
       const node = new Container();
       expect(node.scale.x).toBe(1); // Sanity check.
       expect(node.scale.y).toBe(1);
 
       node.run(Action.scaleTo(2, 1.5, 1.0));
       simulateTime(1.0);
-      expect(node.scale.x).toBe(2);
-      expect(node.scale.y).toBe(1.5);
+      expect(node.scale.x).toBeCloseTo(2);
+      expect(node.scale.y).toBeCloseTo(1.5);
     });
-  });
 
-  describe('scaleBy', () => {
-    it('can be initialized with one value', () => {
+    it('can be initialized with (delta, duration)', () => {
       const node = new Container();
       expect(node.scale.x).toBe(1); // Sanity check.
       expect(node.scale.y).toBe(1);
 
       node.run(Action.scaleBy(2, 1.0));
       simulateTime(1.0);
-      expect(node.scale.x).toBe(2);
-      expect(node.scale.y).toBe(2);
+      expect(node.scale.x).toBeCloseTo(2);
+      expect(node.scale.y).toBeCloseTo(2);
     });
 
-    it('can be initialized with x and y', () => {
+    it('can be initialized with ({ x, y }, duration)', () => {
       const node = new Container();
       expect(node.scale.x).toBe(1); // Sanity check.
       expect(node.scale.y).toBe(1);
 
-      node.run(Action.scaleTo(2, 1.5, 1.0));
+      node.run(Action.scaleBy({ x: 2, y: 1.5 }, 1.0));
       simulateTime(1.0);
-      expect(node.scale.x).toBe(2);
-      expect(node.scale.y).toBe(1.5);
+      expect(node.scale.x).toBeCloseTo(2);
+      expect(node.scale.y).toBeCloseTo(1.5);
     });
   });
 });

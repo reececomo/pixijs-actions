@@ -4,10 +4,15 @@ import { TimingModeFn } from './TimingMode';
 type TimeInterval = number;
 /** Targeted display node. */
 type TargetNode = PIXI.DisplayObject;
-/** Any two dimensional vector. */
+/** A vector (e.g. PIXI.Point, or any node). */
 interface VectorLike {
     x: number;
     y: number;
+}
+/** Any object with a width and height. */
+interface SizeLike {
+    width: number;
+    height: number;
 }
 /** Any object containing an array of points. */
 interface PathLike {
@@ -125,13 +130,8 @@ export declare abstract class Action {
      *
      * This action is reversible.
      */
-    static moveBy(x: number, y: number, duration: TimeInterval): Action;
-    /**
-     * Creates an action that moves a node relative to its current position.
-     *
-     * This action is reversible.
-     */
-    static moveByVector(vec: VectorLike, duration: TimeInterval): Action;
+    static moveBy(delta: VectorLike, duration: TimeInterval): Action;
+    static moveBy(dx: number, dy: number, duration: TimeInterval): Action;
     /**
      * Creates an action that moves a node horizontally relative to its current position.
      *
@@ -150,14 +150,8 @@ export declare abstract class Action {
      * This action is not reversible; the reverse of this action has the same duration but does not
      * move the node.
      */
+    static moveTo(position: VectorLike, duration: TimeInterval): Action;
     static moveTo(x: number, y: number, duration: TimeInterval): Action;
-    /**
-     * Creates an action that moves a node to a new position.
-     *
-     * This action is not reversible; the reverse of this action has the same duration but does not
-     * move the node.
-     */
-    static moveToPoint(point: VectorLike, duration: TimeInterval): Action;
     /**
      * Creates an action that moves a node horizontally.
      *
@@ -180,11 +174,11 @@ export declare abstract class Action {
      *
      * @param path A path to follow, or an object containing an array of points called `points`.
      * @param duration The duration of the animation.
-     * @param asOffset When true, the path is relative to the node's current position.
-     * @param orientToPath When true, the node’s rotation turns to follow the path.
-     * @param fixedSpeed When true, the node's speed is consistent across different length segments.
+     * @param asOffset (Default: true) When true, the path is relative to the node's current position.
+     * @param orientToPath (Default: true) When true, the node’s rotation turns to follow the path.
+     * @param fixedSpeed (Default: true) When true, the node's speed is consistent for each segment.
      */
-    static follow(path: VectorLike[] | PathLike, duration: number, asOffset?: boolean, orientToPath?: boolean, fixedSpeed?: boolean): Action;
+    static follow(path: PathLike | VectorLike[], duration: number, asOffset?: boolean, orientToPath?: boolean, fixedSpeed?: boolean): Action;
     /**
      * Creates an action that moves the node along a path at a specified speed, optionally orienting
      * the node to the path.
@@ -193,11 +187,11 @@ export declare abstract class Action {
      * with the same speed.
      *
      * @param path A path to follow.
-     * @param speed The velocity at which the node should move in world units per second.
-     * @param asOffset When true, the path is relative to the node's current position.
-     * @param orientToPath If true, the node’s rotation turns to follow the path.
+     * @param speed The velocity at which the node should move, in world units per second.
+     * @param asOffset (Default: true) When true, the path is relative to the node's current position.
+     * @param orientToPath (Default: true) When true, the node’s rotation turns to follow the path.
      */
-    static followAtSpeed(path: VectorLike[] | PathLike, speed: number, asOffset?: boolean, orientToPath?: boolean): Action;
+    static followAtSpeed(path: PathLike | VectorLike[], speed: number, asOffset?: boolean, orientToPath?: boolean): Action;
     /**
      * Creates an action that rotates the node by a relative value (in radians).
      *
@@ -242,14 +236,9 @@ export declare abstract class Action {
      *
      * This action is reversible.
      */
-    static scaleBy(value: number, duration: TimeInterval): Action;
-    static scaleBy(x: number, y: number, duration: TimeInterval): Action;
-    /**
-     * Creates an action that changes the x and y scale values of a node by a relative value.
-     *
-     * This action is reversible.
-     */
-    static scaleByVector(vector: VectorLike, duration: TimeInterval): Action;
+    static scaleBy(scale: number, duration: TimeInterval): Action;
+    static scaleBy(size: VectorLike, duration: TimeInterval): Action;
+    static scaleBy(dx: number, dy: number, duration: TimeInterval): Action;
     /**
      * Creates an action that changes the x scale of a node by a relative value.
      *
@@ -268,15 +257,9 @@ export declare abstract class Action {
      * This action is not reversible; the reverse of this action has the same duration but does not
      * change anything.
      */
-    static scaleTo(value: number, duration: TimeInterval): Action;
+    static scaleTo(scale: number, duration: TimeInterval): Action;
+    static scaleTo(size: SizeLike, duration: TimeInterval): Action;
     static scaleTo(x: number, y: number, duration: TimeInterval): Action;
-    /**
-     * Creates an action that changes the x and y scale values of a node.
-     *
-     * This action is not reversible; the reverse of this action has the same duration but does not
-     * change anything.
-     */
-    static scaleToSize(size: VectorLike, duration: TimeInterval): Action;
     /**
      * Creates an action that changes the y scale values of a node.
      *
