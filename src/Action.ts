@@ -14,10 +14,19 @@ type TimeInterval = number;
 /** Targeted display node. */
 type TargetNode = PIXI.DisplayObject;
 
-/** Any two dimensional vector. */
+/** Targeted display node that has a width/height. */
+type SizedTargetNode = TargetNode & SizeLike;
+
+/** A vector (e.g. PIXI.Point, or any node). */
 interface VectorLike {
   x: number;
   y: number;
+}
+
+/** Any object with a width and height. */
+interface SizeLike {
+  width: number;
+  height: number;
 }
 
 /** Any object containing an array of points. */
@@ -173,17 +182,12 @@ export abstract class Action {
    *
    * This action is reversible.
    */
-  public static moveBy(x: number, y: number, duration: TimeInterval): Action {
-    return new MoveByAction(x, y, duration);
-  }
-
-  /**
-   * Creates an action that moves a node relative to its current position.
-   *
-   * This action is reversible.
-   */
-  public static moveByVector(vec: VectorLike, duration: TimeInterval): Action {
-    return Action.moveBy(vec.x, vec.y, duration);
+  public static moveBy(delta: VectorLike, duration: TimeInterval): Action;
+  public static moveBy(dx: number, dy: number, duration: TimeInterval): Action;
+  public static moveBy(a: number | VectorLike, b: number | TimeInterval, c?: TimeInterval): Action {
+    return typeof a === 'number'
+      ? new MoveByAction(a, b, c)
+      : new MoveByAction(a.x, a.y, b);
   }
 
   /**
@@ -210,18 +214,12 @@ export abstract class Action {
    * This action is not reversible; the reverse of this action has the same duration but does not
    * move the node.
    */
-  public static moveTo(x: number, y: number, duration: TimeInterval): Action {
-    return new MoveToAction(x, y, duration);
-  }
-
-  /**
-   * Creates an action that moves a node to a new position.
-   *
-   * This action is not reversible; the reverse of this action has the same duration but does not
-   * move the node.
-   */
-  public static moveToPoint(point: VectorLike, duration: TimeInterval): Action {
-    return Action.moveTo(point.x, point.y, duration);
+  public static moveTo(position: VectorLike, duration: TimeInterval): Action;
+  public static moveTo(x: number, y: number, duration: TimeInterval): Action;
+  public static moveTo(a: number | VectorLike, b: number | TimeInterval, c?: TimeInterval): Action {
+    return typeof a === 'number'
+      ? new MoveToAction(a, b, c)
+      : new MoveToAction(a.x, a.y, b);
   }
 
   /**
@@ -256,12 +254,12 @@ export abstract class Action {
    *
    * @param path A path to follow, or an object containing an array of points called `points`.
    * @param duration The duration of the animation.
-   * @param asOffset When true, the path is relative to the node's current position.
-   * @param orientToPath When true, the node’s rotation turns to follow the path.
-   * @param fixedSpeed When true, the node's speed is consistent across different length segments.
+   * @param asOffset (Default: true) When true, the path is relative to the node's current position.
+   * @param orientToPath (Default: true) When true, the node’s rotation turns to follow the path.
+   * @param fixedSpeed (Default: true) When true, the node's speed is consistent for each segment.
    */
   public static follow(
-    path: VectorLike[] | PathLike,
+    path: PathLike | VectorLike[],
     duration: number,
     asOffset: boolean = true,
     orientToPath: boolean = true,
@@ -279,19 +277,18 @@ export abstract class Action {
    * with the same speed.
    *
    * @param path A path to follow.
-   * @param speed The velocity at which the node should move in world units per second.
-   * @param asOffset When true, the path is relative to the node's current position.
-   * @param orientToPath If true, the node’s rotation turns to follow the path.
+   * @param speed The velocity at which the node should move, in world units per second.
+   * @param asOffset (Default: true) When true, the path is relative to the node's current position.
+   * @param orientToPath (Default: true) When true, the node’s rotation turns to follow the path.
    */
   public static followAtSpeed(
-    path: VectorLike[] | PathLike,
+    path: PathLike | VectorLike[],
     speed: number,
     asOffset: boolean = true,
     orientToPath: boolean = true,
   ): Action {
     const _path = FollowPathAction.getPath(path);
     const _length = FollowPathAction.getLength(_path);
-
     return new FollowPathAction(_path, _length[0] / speed, asOffset, orientToPath, true);
   }
 
@@ -370,21 +367,15 @@ export abstract class Action {
    *
    * This action is reversible.
    */
-  public static scaleBy(value: number, duration: TimeInterval): Action;
-  public static scaleBy(x: number, y: number, duration: TimeInterval): Action;
-  public static scaleBy(x: number, y: number | TimeInterval, duration?: TimeInterval): Action {
-    return duration === undefined
-      ? new ScaleByAction(x, x, y)
-      : new ScaleByAction(x, y, duration);
-  }
-
-  /**
-   * Creates an action that changes the x and y scale values of a node by a relative value.
-   *
-   * This action is reversible.
-   */
-  public static scaleByVector(vector: VectorLike, duration: TimeInterval): Action {
-    return Action.scaleBy(vector.x, vector.y, duration);
+  public static scaleBy(scale: number, duration: TimeInterval): Action;
+  public static scaleBy(size: VectorLike, duration: TimeInterval): Action;
+  public static scaleBy(dx: number, dy: number, duration: TimeInterval): Action;
+  public static scaleBy(a: number | VectorLike, b: number | TimeInterval, c?: TimeInterval): Action {
+    return typeof a === 'number'
+      ? c === undefined
+        ? new ScaleByAction(a, a, b)
+        : new ScaleByAction(a, b, c)
+      : new ScaleByAction(a.x, a.y, b);
   }
 
   /**
@@ -411,22 +402,15 @@ export abstract class Action {
    * This action is not reversible; the reverse of this action has the same duration but does not
    * change anything.
    */
-  public static scaleTo(value: number, duration: TimeInterval): Action;
+  public static scaleTo(scale: number, duration: TimeInterval): Action;
+  public static scaleTo(size: SizeLike, duration: TimeInterval): Action;
   public static scaleTo(x: number, y: number, duration: TimeInterval): Action;
-  public static scaleTo(x: number, y: number | TimeInterval, duration?: TimeInterval): Action {
-    return duration === undefined
-      ? new ScaleToAction(x, x, y)
-      : new ScaleToAction(x, y, duration);
-  }
-
-  /**
-   * Creates an action that changes the x and y scale values of a node.
-   *
-   * This action is not reversible; the reverse of this action has the same duration but does not
-   * change anything.
-   */
-  public static scaleToSize(size: VectorLike, duration: TimeInterval): Action {
-    return Action.scaleTo(size.x, size.y, duration);
+  public static scaleTo(a: number | SizeLike, b: number | TimeInterval, c?: TimeInterval): Action {
+    return typeof a === 'number'
+      ? c === undefined
+        ? new ScaleToAction(a, a, b)
+        : new ScaleToAction(a, b, c)
+      : new ScaleToSizeAction(a.width, a.height, b);
   }
 
   /**
@@ -841,11 +825,42 @@ class RepeatForeverAction extends Action {
   }
 }
 
+class ScaleToSizeAction extends Action {
+  public constructor(
+    protected readonly width: number,
+    protected readonly height: number,
+    duration: TimeInterval,
+  ) {
+    super(duration);
+  }
+
+  protected _setupTicker(target: SizedTargetNode): any {
+    if (target.width === undefined) {
+      throw new Error('Action can only be run against a target with a width & height.');
+    }
+
+    return {
+      sW: target.width,
+      sH: target.height,
+    };
+  }
+
+  public updateAction(target: SizedTargetNode, progress: number, progressDelta: number, ticker: ActionTicker): void {
+    target.width = ticker.data.sW + (this.width - ticker.data.sW) * progress;
+    target.height = ticker.data.sH + (this.height - ticker.data.sH) * progress;
+  }
+
+  public reversed(): Action {
+    return new DelayAction(this.scaledDuration);
+  }
+}
+
 class ScaleToAction extends Action {
   public constructor(
     protected readonly x: number | undefined,
     protected readonly y: number | undefined,
     duration: TimeInterval,
+    protected asSize: boolean = false,
   ) {
     super(duration);
   }
@@ -1012,8 +1027,8 @@ class FollowPathAction extends Action {
   public constructor(
     path: VectorLike[],
     duration: number,
-		protected readonly asOffset: boolean,
-		protected readonly orientToPath: boolean,
+    protected readonly asOffset: boolean,
+    protected readonly orientToPath: boolean,
     protected readonly fixedSpeed: boolean,
   ) {
     super(duration);
@@ -1586,7 +1601,7 @@ export function registerGlobalMixin(displayObject: any): void {
     // eslint-disable-next-line @typescript-eslint/no-this-alias
     const node = this;
     return new Promise(function (resolve, reject) {
-      const timeLimitMs = timeoutBufferMs + (node.speed * action.duration * 1_000);
+      const timeLimitMs = timeoutBufferMs + (getSpeed(node) * action.duration * 1_000);
       const timeoutCheck = setTimeout(() => reject('Took too long to complete.'), timeLimitMs);
       node.run(action, () => {
         clearTimeout(timeoutCheck);

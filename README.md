@@ -14,9 +14,13 @@ A PixiJS implementation of [Apple's SKActions](https://developer.apple.com/docum
 
 ## Installation
 
-`npm install pixijs-actions`
+```sh
+# npm
+npm install pixijs-actions
 
-`yarn add pixijs-actions`
+# yarn
+yarn add pixijs-actions
+```
 
 ## Getting started with Actions
 
@@ -26,15 +30,16 @@ You tell nodes to run an instace of `Action` when you want to animate contents o
 
 ## Basic usage
 
-```ts
-import { Action } from 'pixijs-actions';
+*Create reusable animations &amp; actions, run them on display objects.*
 
-const fadeOutAndRemove = Action.sequence([
-  Action.fadeOut(1.0),
-  Action.removeFromParent()
+```ts
+const razzleDazzle = Action.sequence([
+  Action.fadeIn(0.3),
+  Action.rotateByDegrees(360, 0.3).easeInOut(),
 ]);
 
-sprite.run(fadeOutAndRemove);
+// ✨ Show mySprite with some flair!
+mySprite.run(razzleDazzle);
 ```
 
 ## Setup
@@ -71,20 +76,36 @@ Now you are ready to start using actions!
 
 ## Action Initializers
 
-*Use these functions to create actions.*
+*Combine these initializers to create complex animations.*
 
 Most actions implement specific predefined animations that are ready to use. If your animation needs fall outside of the suite provided here, then you should implement a custom action. See **Creating Custom Actions** below.
 
 ```ts
-const razzleDazzle = Action.sequence([
-  Action.unhide(),
-  Action.fadeIn(0.3),
-  Action.scaleTo(2, 0.3).easeIn(),
-  Action.scaleTo(1, 0.3).easeOut(),
+import { Action } from 'pixijs-actions';
+
+// ✨ Expand and contract smoothly over 2 seconds.
+const pulsate = Action.sequence([
+  Action.scaleTo(1.5, 1.0).easeOut(),
+  Action.scaleTo(1, 1.0).easeIn()
 ]);
 
-// ✨ Show mySprite with some flair!
-mySprite.run(razzleDazzle);
+// ✨ Follow a complex path (e.g. a bezier curve).
+const path = [
+  { x: 0, y: 0 },
+  { x: 100, y: 0 },
+  { x: 100, y: 100 },
+  { x: 200, y: 200 }
+];
+const followPath = Action.follow(path, 5.0);
+
+// ✨ Create a 10 second loop.
+const moveBackAndForthWhilePulsating = Action.group([
+  Action.repeat(pulsate, 5),
+  Action.sequence([followPath, followPath.reversed()]),
+]);
+
+// ✨ Animate continuously.
+mySprite.run(Action.repeatForever(moveBackAndForthWhilePulsating));
 ```
 
 | Action | Description | Reversible? |
@@ -95,12 +116,12 @@ mySprite.run(razzleDazzle);
 | `Action.repeat(action, count)` | Repeat an action a specified number of times. | Yes |
 | `Action.repeatForever(action)` | Repeat an action indefinitely. | Yes |
 |***Animating a Node's Position in a Linear Path***|||
-| `Action.moveBy(dx, dy, duration)` | Move a node by a relative amount. | Yes |
-| `Action.moveByVector(vector, duration)` | Move a node by a relative vector (e.g. `PIXI.Point`). | Yes |
-| `Action.moveByX(dx, duration)` | Move a node horizontally by a relative amount. | Yes |
-| `Action.moveByY(dy, duration)` | Move a node vertically by a relative amount. | Yes |
+| `Action.moveBy(vector, duration)` | Move a node by a relative vector `{ x, y }` (e.g. `PIXI.Point`). | Yes |
+| `Action.moveBy(dx, dy, duration)` | Move a node by relative values. | Yes |
+| `Action.moveByX(dx, duration)` | Move a node horizontally by a relative value. | Yes |
+| `Action.moveByY(dy, duration)` | Move a node vertically by a relative value. | Yes |
+| `Action.moveTo(position, duration)` | Move a node to a specified position `{ x, y }` (e.g. `PIXI.Point`, `PIXI.DisplayObject`). |  _*No_ |
 | `Action.moveTo(x, y, duration)` | Move a node to a specified position. |  _*No_ |
-| `Action.moveToPoint(point, duration)` | Move a node to a specified position (e.g. `PIXI.Point`). |  _*No_ |
 | `Action.moveToX(x, duration)` | Move a node to a specified horizontal position. |  _*No_ |
 | `Action.moveToY(y, duration)` | Move a node to a specified vertical position. |  _*No_ |
 |***Animating a Node's Position Along a Custom Path***|||
@@ -112,14 +133,14 @@ mySprite.run(razzleDazzle);
 | `Action.rotateTo(radians, duration)` | Rotate a node to a specified value (in radians). |  _*No_ |
 | `Action.rotateToDegrees(degrees, duration)` | Rotate a node to a specified value (in degrees). | _*No_ |
 |***Animating the Scaling of a Node***|||
-| `Action.scaleBy(delta, duration)` | Scale a node by a relative value. | Yes |
-| `Action.scaleBy(dx, dy, duration)` | Scale a node by a relative value. | Yes |
-| `Action.scaleByVector(vector, duration)` | Scale a node by a given vector (e.g. `PIXI.Point`). | Yes |
+| `Action.scaleBy(vector, duration)` | Scale a node by a relative vector `{ x, y }` (e.g. `PIXI.Point`). | Yes |
+| `Action.scaleBy(scale, duration)` | Scale a node by a relative value. | Yes |
+| `Action.scaleBy(dx, dy, duration)` | Scale a node in each axis by relative values. | Yes |
 | `Action.scaleByX(dx, duration)` | Scale a node horizontally by a relative value. | Yes |
 | `Action.scaleByY(dy, duration)` | Scale a node vertically by a relative value. | Yes |
+| `Action.scaleTo(size, duration)` | Scale a node to achieve a specified size `{ width, height }` (e.g. `PIXI.ISize`, `PIXI.DisplayObject`). |  _*No_ |
 | `Action.scaleTo(scale, duration)` | Scale a node to a specified value. |  _*No_ |
-| `Action.scaleTo(x, y, duration)` | Scale a node to a specified value. |  _*No_ |
-| `Action.scaleToSize(vector, duration)` | Scale a node to a specified size (e.g. `PIXI.Point`). |  _*No_ |
+| `Action.scaleTo(x, y, duration)` | Scale a node in each axis to specified values. |  _*No_ |
 | `Action.scaleToX(x, duration)` | Scale a node horizontally to a specified value. |  _*No_ |
 | `Action.scaleToY(y, duration)` | Scale a node vertically to a specified value. |  _*No_ |
 |***Animating the Transparency of a Node***|||
@@ -127,18 +148,18 @@ mySprite.run(razzleDazzle);
 | `Action.fadeOut(duration)` | Fade the alpha to `0.0`. | Yes |
 | `Action.fadeAlphaBy(delta, duration)` | Fade the alpha by a relative value. | Yes |
 | `Action.fadeAlphaTo(alpha, duration)` | Fade the alpha to a specified value. |  _*No_ |
-|***Controlling Node Visibility***|||
-| `Action.unhide()` | Instant. Set a node's `visible` property to `true`. | Yes |
-| `Action.hide()` | Instant. Set a node's `visible` property to `false`. | Yes |
+|***Controlling a Node's Visibility***|||
+| `Action.unhide()` | Set a node's `visible` property to `true`. | Yes |
+| `Action.hide()` | Set a node's `visible` property to `false`. | Yes |
 |***Removing a Node from the Canvas***|||
-| `Action.removeFromParent()` | Instant. Remove a node from its parent. | _†Identical_ |
+| `Action.removeFromParent()` | Remove a node from its parent. | _†Identical_ |
 |***Delaying Actions***|||
 | `Action.waitForDuration(duration)` | Idle for a specified period of time. | _†Identical_ |
 | `Action.waitForDurationWithRange(duration, range)` | Idle for a randomized period of time. | _†Identical_ |
 |***Triggers and Custom Actions***|||
-| `Action.run(callback)` | Instant. Execute a block. | _†Identical_ |
+| `Action.run(callback)` | Execute a block (i.e. trigger another action). | _†Identical_ |
 | `Action.customAction(duration, stepHandler)` | Execute a custom stepping function over the action duration. | _†Identical_ |
-|***Controlling the Node's Action Speed***|||
+|***Manipulating the Action Speed of a Node***|||
 | `Action.speedBy(delta, duration)` | Change how fast a node executes its actions by a relative value. | Yes |
 | `Action.speedTo(speed, duration)` | Set how fast a node executes actions to a specified value. |  _*No_ |
 
@@ -249,18 +270,18 @@ mySprite.run(MyActions.squashAndStretch(1.25));
 mySprite.run(MyActions.squashAndStretch(2.0));
 ```
 
-## Using Actions with display objects
+## Running Actions on DisplayObjects
 
 *Running actions in your canvas.*
 
 ```ts
-// Hide me instantly.
+// Hide me instantly!
 mySprite.run(Action.hide(), () => {
   console.log('where did I go?');
 });
 ```
 
-Display objects are extended with a few new methods and properties.
+Display objects are extended with a few new methods and properties to make it easy to interact with actions.
 
 | Property | Description |
 | :----- | :------ |
@@ -273,10 +294,10 @@ Display objects are extended with a few new methods and properties.
 | `run(action, completion)` | Run an action with a completion handler. |
 | `runWithKey(action, withKey)` | Run an action, and store it so it can be retrieved later. |
 | `runAsPromise(action): Promise<void>` | Run an action as a promise. |
-| `action(forKey): Action \| undefined` | Return an action associated with a specific key. |
+| `action(forKey): Action \| undefined` | Return an action associated with a specified key. |
 | `hasActions(): boolean` | Return a boolean indicating whether the node is executing actions. |
 | `removeAllActions(): void` | End and removes all actions from the node. |
-| `removeAction(forKey): void` | Remove an action associated with a specific key. |
+| `removeAction(forKey): void` | Remove an action associated with a specified key. |
 
 ### Running actions
 

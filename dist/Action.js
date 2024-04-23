@@ -99,24 +99,10 @@ export class Action {
     static waitForDurationWithRange(average, rangeSize) {
         return new DelayAction(average + (rangeSize * Math.random() - rangeSize * 0.5));
     }
-    //
-    // ----------------- Linear Path Actions: -----------------
-    //
-    /**
-     * Creates an action that moves a node relative to its current position.
-     *
-     * This action is reversible.
-     */
-    static moveBy(x, y, duration) {
-        return new MoveByAction(x, y, duration);
-    }
-    /**
-     * Creates an action that moves a node relative to its current position.
-     *
-     * This action is reversible.
-     */
-    static moveByVector(vec, duration) {
-        return Action.moveBy(vec.x, vec.y, duration);
+    static moveBy(a, b, c) {
+        return typeof a === 'number'
+            ? new MoveByAction(a, b, c)
+            : new MoveByAction(a.x, a.y, b);
     }
     /**
      * Creates an action that moves a node horizontally relative to its current position.
@@ -134,23 +120,10 @@ export class Action {
     static moveByY(y, duration) {
         return Action.moveBy(0, y, duration);
     }
-    /**
-     * Creates an action that moves a node to a new position.
-     *
-     * This action is not reversible; the reverse of this action has the same duration but does not
-     * move the node.
-     */
-    static moveTo(x, y, duration) {
-        return new MoveToAction(x, y, duration);
-    }
-    /**
-     * Creates an action that moves a node to a new position.
-     *
-     * This action is not reversible; the reverse of this action has the same duration but does not
-     * move the node.
-     */
-    static moveToPoint(point, duration) {
-        return Action.moveTo(point.x, point.y, duration);
+    static moveTo(a, b, c) {
+        return typeof a === 'number'
+            ? new MoveToAction(a, b, c)
+            : new MoveToAction(a.x, a.y, b);
     }
     /**
      * Creates an action that moves a node horizontally.
@@ -181,9 +154,9 @@ export class Action {
      *
      * @param path A path to follow, or an object containing an array of points called `points`.
      * @param duration The duration of the animation.
-     * @param asOffset When true, the path is relative to the node's current position.
-     * @param orientToPath When true, the node’s rotation turns to follow the path.
-     * @param fixedSpeed When true, the node's speed is consistent across different length segments.
+     * @param asOffset (Default: true) When true, the path is relative to the node's current position.
+     * @param orientToPath (Default: true) When true, the node’s rotation turns to follow the path.
+     * @param fixedSpeed (Default: true) When true, the node's speed is consistent for each segment.
      */
     static follow(path, duration, asOffset = true, orientToPath = true, fixedSpeed = true) {
         const _path = FollowPathAction.getPath(path);
@@ -197,9 +170,9 @@ export class Action {
      * with the same speed.
      *
      * @param path A path to follow.
-     * @param speed The velocity at which the node should move in world units per second.
-     * @param asOffset When true, the path is relative to the node's current position.
-     * @param orientToPath If true, the node’s rotation turns to follow the path.
+     * @param speed The velocity at which the node should move, in world units per second.
+     * @param asOffset (Default: true) When true, the path is relative to the node's current position.
+     * @param orientToPath (Default: true) When true, the node’s rotation turns to follow the path.
      */
     static followAtSpeed(path, speed, asOffset = true, orientToPath = true) {
         const _path = FollowPathAction.getPath(path);
@@ -263,18 +236,12 @@ export class Action {
     static speedTo(speed, duration) {
         return new SpeedToAction(speed, duration);
     }
-    static scaleBy(x, y, duration) {
-        return duration === undefined
-            ? new ScaleByAction(x, x, y)
-            : new ScaleByAction(x, y, duration);
-    }
-    /**
-     * Creates an action that changes the x and y scale values of a node by a relative value.
-     *
-     * This action is reversible.
-     */
-    static scaleByVector(vector, duration) {
-        return Action.scaleBy(vector.x, vector.y, duration);
+    static scaleBy(a, b, c) {
+        return typeof a === 'number'
+            ? c === undefined
+                ? new ScaleByAction(a, a, b)
+                : new ScaleByAction(a, b, c)
+            : new ScaleByAction(a.x, a.y, b);
     }
     /**
      * Creates an action that changes the x scale of a node by a relative value.
@@ -292,19 +259,12 @@ export class Action {
     static scaleByY(y, duration) {
         return Action.scaleBy(0.0, y, duration);
     }
-    static scaleTo(x, y, duration) {
-        return duration === undefined
-            ? new ScaleToAction(x, x, y)
-            : new ScaleToAction(x, y, duration);
-    }
-    /**
-     * Creates an action that changes the x and y scale values of a node.
-     *
-     * This action is not reversible; the reverse of this action has the same duration but does not
-     * change anything.
-     */
-    static scaleToSize(size, duration) {
-        return Action.scaleTo(size.x, size.y, duration);
+    static scaleTo(a, b, c) {
+        return typeof a === 'number'
+            ? c === undefined
+                ? new ScaleToAction(a, a, b)
+                : new ScaleToAction(a, b, c)
+            : new ScaleToSizeAction(a.width, a.height, b);
     }
     /**
      * Creates an action that changes the y scale values of a node.
@@ -652,11 +612,35 @@ class RepeatForeverAction extends Action {
         }
     }
 }
+class ScaleToSizeAction extends Action {
+    constructor(width, height, duration) {
+        super(duration);
+        this.width = width;
+        this.height = height;
+    }
+    _setupTicker(target) {
+        if (target.width === undefined) {
+            throw new Error('Action can only be run against a target with a width & height.');
+        }
+        return {
+            sW: target.width,
+            sH: target.height,
+        };
+    }
+    updateAction(target, progress, progressDelta, ticker) {
+        target.width = ticker.data.sW + (this.width - ticker.data.sW) * progress;
+        target.height = ticker.data.sH + (this.height - ticker.data.sH) * progress;
+    }
+    reversed() {
+        return new DelayAction(this.scaledDuration);
+    }
+}
 class ScaleToAction extends Action {
-    constructor(x, y, duration) {
+    constructor(x, y, duration, asSize = false) {
         super(duration);
         this.x = x;
         this.y = y;
+        this.asSize = asSize;
     }
     _setupTicker(target, ticker) {
         return {
@@ -1180,7 +1164,7 @@ export function registerGlobalMixin(displayObject) {
         // eslint-disable-next-line @typescript-eslint/no-this-alias
         const node = this;
         return new Promise(function (resolve, reject) {
-            const timeLimitMs = timeoutBufferMs + (node.speed * action.duration * 1000);
+            const timeLimitMs = timeoutBufferMs + (getSpeed(node) * action.duration * 1000);
             const timeoutCheck = setTimeout(() => reject('Took too long to complete.'), timeLimitMs);
             node.run(action, () => {
                 clearTimeout(timeoutCheck);
