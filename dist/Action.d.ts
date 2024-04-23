@@ -431,6 +431,12 @@ export declare abstract class Action {
      * Anything you return here will be available as `ticker.data`.
      */
     protected _setupTicker(target: TargetNode, ticker: ActionTicker): any;
+    /**
+     * Do resetting ticker stuff here.
+     *
+     * Anything you return here will be available as `ticker.data`.
+     */
+    protected _onDidReset(ticker: ActionTicker): any;
 }
 declare class ActionTicker {
     key: string | undefined;
@@ -438,6 +444,7 @@ declare class ActionTicker {
     action: Action;
     protected static _running: ActionTicker[];
     static runAction(key: string | undefined, target: TargetNode, action: Action): void;
+    reset(): void;
     static removeAction(actionTicker: ActionTicker): ActionTicker;
     static hasTargetActions(target: TargetNode): boolean;
     static getTargetActionTickerForKey(target: TargetNode, key: string): ActionTicker | undefined;
@@ -477,8 +484,6 @@ declare class ActionTicker {
      */
     duration: number;
     constructor(key: string | undefined, target: TargetNode, action: Action);
-    /** Whether action is in progress (or has not yet started). */
-    get isPlaying(): boolean;
     /** The relative time elapsed between 0 and 1. */
     get timeDistance(): number;
     /**

@@ -129,8 +129,7 @@ export abstract class Action {
    * and then repeats it the same number of times.
    */
   public static repeat(action: Action, repeats: number): Action {
-    const length = Math.max(0, Math.round(repeats));
-    return Action.sequence(Array.from({ length }, () => action));
+    return new RepeatAction(action, repeats);
   }
 
   /**
@@ -679,6 +678,15 @@ export abstract class Action {
   protected _setupTicker(target: TargetNode, ticker: ActionTicker): any {
     return undefined;
   }
+
+  /**
+   * Do resetting ticker stuff here.
+   *
+   * Anything you return here will be available as `ticker.data`.
+   */
+  protected _onDidReset(ticker: ActionTicker): any {
+    return undefined;
+  }
 }
 
 //
@@ -696,14 +704,6 @@ class GroupAction extends Action {
     );
 
     this.actions = actions;
-  }
-
-  protected _setupTicker(target: TargetNode, ticker: ActionTicker): any {
-    ticker.autoComplete = false;
-
-    return {
-      childTickers: this.actions.map(action => new ActionTicker(undefined, target, action))
-    };
   }
 
   public updateAction(
@@ -731,6 +731,18 @@ class GroupAction extends Action {
   public reversed(): Action {
     return new GroupAction(this.actions.map(action => action.reversed()));
   }
+
+  protected _setupTicker(target: TargetNode, ticker: ActionTicker): any {
+    ticker.autoComplete = false;
+
+    return {
+      childTickers: this.actions.map(action => new ActionTicker(undefined, target, action))
+    };
+  }
+
+  protected _onDidReset(ticker: ActionTicker): any {
+    ticker.data.childTickers.forEach((ticker: ActionTicker) => ticker.reset());
+  }
 }
 
 class SequenceAction extends Action {
@@ -742,14 +754,6 @@ class SequenceAction extends Action {
       actions.reduce((total, action) => total + action.scaledDuration, 0)
     );
     this.actions = actions;
-  }
-
-  protected _setupTicker(target: TargetNode, ticker: ActionTicker): any {
-    ticker.autoComplete = false;
-
-    return {
-      childTickers: this.actions.map(action => new ActionTicker(undefined, target, action))
-    };
   }
 
   public updateAction(
@@ -789,6 +793,69 @@ class SequenceAction extends Action {
     const reversedSequence = [...this.actions].reverse().map(action => action.reversed());
     return new SequenceAction(reversedSequence);
   }
+
+  protected _setupTicker(target: TargetNode, ticker: ActionTicker): any {
+    ticker.autoComplete = false;
+
+    return {
+      childTickers: this.actions.map(action => new ActionTicker(undefined, target, action))
+    };
+  }
+
+  protected _onDidReset(ticker: ActionTicker): any {
+    ticker.data.childTickers.forEach((ticker: ActionTicker) => ticker.reset());
+  }
+}
+
+class RepeatAction extends Action {
+  public constructor(
+    protected readonly action: Action,
+    protected readonly repeats: number,
+  ) {
+    super(
+      // Duration:
+      action.scaledDuration * repeats
+    );
+
+    if (Math.round(repeats) !== repeats || repeats < 0) {
+      throw new Error('Repeats must be a positive integer.');
+    }
+  }
+
+  public reversed(): Action {
+    return new RepeatAction(this.action.reversed(), this.repeats);
+  }
+
+  public updateAction(target: TargetNode, progress: number, progressDelta: number, ticker: ActionTicker, timeDelta: number): void {
+    let childTicker: ActionTicker = ticker.data.childTicker;
+    let remainingTimeDelta = timeDelta * this.speed;
+
+    remainingTimeDelta = childTicker.stepActionForward(remainingTimeDelta);
+
+    if (remainingTimeDelta > 0) {
+      if (++ticker.data.n >= this.repeats) {
+        ticker.isDone = true;
+        return;
+      }
+
+      childTicker.reset();
+      childTicker.stepActionForward(remainingTimeDelta);
+    }
+  }
+
+  protected _setupTicker(target: TargetNode, ticker: ActionTicker): any {
+    ticker.autoComplete = false;
+
+    return {
+      childTicker: new ActionTicker(undefined, target, this.action),
+      n: 0,
+    };
+  }
+
+  protected _onDidReset(ticker: ActionTicker): any {
+    ticker.data.childTicker.reset();
+    ticker.data.n = 0;
+  }
 }
 
 class RepeatForeverAction extends Action {
@@ -806,12 +873,6 @@ class RepeatForeverAction extends Action {
     return new RepeatForeverAction(this.action.reversed());
   }
 
-  protected _setupTicker(target: TargetNode, ticker: ActionTicker): any {
-    return {
-      childTicker: new ActionTicker(undefined, target, this.action)
-    };
-  }
-
   public updateAction(target: TargetNode, progress: number, progressDelta: number, ticker: ActionTicker, timeDelta: number): void {
     let childTicker: ActionTicker = ticker.data.childTicker;
     let remainingTimeDelta = timeDelta * this.speed;
@@ -819,9 +880,19 @@ class RepeatForeverAction extends Action {
     remainingTimeDelta = childTicker.stepActionForward(remainingTimeDelta);
 
     if (remainingTimeDelta > 0) {
-      childTicker.elapsed = 0.0; // reset
+      childTicker.reset();
       childTicker.stepActionForward(remainingTimeDelta);
     }
+  }
+
+  protected _setupTicker(target: TargetNode, ticker: ActionTicker): any {
+    return {
+      childTicker: new ActionTicker(undefined, target, this.action)
+    };
+  }
+
+  protected _onDidReset(ticker: ActionTicker): any {
+    ticker.data.childTicker.reset();
   }
 }
 
@@ -1360,6 +1431,12 @@ class ActionTicker {
     this._running.push(new ActionTicker(key, target, action));
   }
 
+  public reset(): void {
+    this.elapsed = 0.0;
+    this.isDone = false;
+    (this.action as any)._onDidReset(this);
+  }
+
   public static removeAction(actionTicker: ActionTicker): ActionTicker {
     const index = ActionTicker._running.indexOf(actionTicker);
     if (index >= 0) {
@@ -1486,11 +1563,6 @@ class ActionTicker {
     this.duration = action.scaledDuration;
   }
 
-  /** Whether action is in progress (or has not yet started). */
-  public get isPlaying(): boolean {
-    return this.isDone === false;
-  }
-
   /** The relative time elapsed between 0 and 1. */
   public get timeDistance(): number {
     return this.duration === 0 ? 1 : Math.min(1, this.elapsed / this.action.scaledDuration);
@@ -1508,6 +1580,7 @@ class ActionTicker {
   /** @returns Any unused time delta. Negative value means action is still in progress. */
   public stepActionForward(timeDelta: number): number {
     if (!this.isSetup) {
+      // cache action attributes
       this.speed = this.action.speed;
       this.duration = this.action.duration;
       this.data = (this.action as any)._setupTicker(this.target, this);
