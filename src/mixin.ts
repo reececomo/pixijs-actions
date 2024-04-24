@@ -1,5 +1,5 @@
-import { ActionTicker } from "./lib/ActionTicker";
 import { _ as Action } from "./Action";
+import { ActionTicker } from "./lib/ActionTicker";
 import { getSpeed } from "./lib/utils/displayobject";
 
 //
@@ -15,12 +15,10 @@ export function registerGlobalMixin(displayObject: any): void {
   const prototype = displayObject.prototype;
 
   // - Properties:
-
   prototype.speed = 1.0;
   prototype.isPaused = false;
 
   // - Methods:
-
   prototype.run = function (_action: Action, completion?: () => void): void {
     const action = completion ? Action.sequence([_action, Action.run(completion)]) : _action;
     ActionTicker.runAction(undefined, this, action);
@@ -34,7 +32,6 @@ export function registerGlobalMixin(displayObject: any): void {
     action: Action,
     timeoutBufferMs: number = 100
   ): Promise<void> {
-    // eslint-disable-next-line @typescript-eslint/no-this-alias
     const node = this;
     return new Promise(function (resolve, reject) {
       const timeLimitMs = timeoutBufferMs + (getSpeed(node) * action.duration * 1_000);

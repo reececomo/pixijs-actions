@@ -1,5 +1,3 @@
-// typealiases
-
 declare global {
 
   /** Time measured in seconds. */
@@ -8,16 +6,16 @@ declare global {
   /** Targeted display node. */
   type TargetNode = PIXI.DisplayObject;
 
-  /** Targeted display node that has a width/height. */
+  /** Targeted display node with a width and height. */
   type SizedTargetNode = TargetNode & SizeLike;
 
-  /** A vector (e.g. PIXI.Point, or any node). */
+  /** Any vector-like object (e.g. PIXI.Point, or any node). */
   interface VectorLike {
     x: number;
     y: number;
   }
 
-  /** Any object with a width and height. */
+  /** Any object with a width and height (e.g. PIXI.Sprite). */
   interface SizeLike {
     width: number;
     height: number;
