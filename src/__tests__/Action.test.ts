@@ -1,5 +1,5 @@
 import { Container, Sprite } from 'pixi.js';
-import { Action } from '../index';
+import { Action, TimingMode } from '../index';
 
 function simulateTime(seconds: number, steps: number = 100): void {
   const tickMs = seconds / steps * 1_000;
@@ -9,6 +9,50 @@ function simulateTime(seconds: number, steps: number = 100): void {
     Action.tick(tickMs);
   }
 }
+
+/** Load the global mixin first. */
+// beforeAll(() => registerGlobalMixin(DisplayObject));
+
+describe('DefaultTimingMode static properties', () => {
+  it('should reflect the DefaultTimingModeEaseInOut on the root Action type', () => {
+    expect(Action.DefaultTimingModeEaseInOut).toBe(TimingMode.easeInOutSine);
+    expect(Action.fadeIn(0.3).easeInOut().timingMode).toBe(TimingMode.easeInOutSine);
+    expect(Action.fadeIn(0.3).easeInOut().timingMode).not.toBe(TimingMode.easeInCubic);
+
+    // Update to any other function.
+    Action.DefaultTimingModeEaseInOut = TimingMode.easeInCubic;
+
+    expect(Action.DefaultTimingModeEaseInOut).toBe(TimingMode.easeInCubic);
+    expect(Action.fadeIn(0.3).easeInOut().timingMode).toBe(TimingMode.easeInCubic);
+    expect(Action.fadeIn(0.3).easeInOut().timingMode).not.toBe(TimingMode.easeInOutSine);
+  });
+
+  it('should reflect the DefaultTimingModeEaseIn on the root Action type', () => {
+    expect(Action.DefaultTimingModeEaseIn).toBe(TimingMode.easeInSine);
+    expect(Action.fadeIn(0.3).easeIn().timingMode).toBe(TimingMode.easeInSine);
+    expect(Action.fadeIn(0.3).easeIn().timingMode).not.toBe(TimingMode.easeInCubic);
+
+    // Update to any other function.
+    Action.DefaultTimingModeEaseIn = TimingMode.easeInCubic;
+
+    expect(Action.DefaultTimingModeEaseIn).toBe(TimingMode.easeInCubic);
+    expect(Action.fadeIn(0.3).easeIn().timingMode).toBe(TimingMode.easeInCubic);
+    expect(Action.fadeIn(0.3).easeIn().timingMode).not.toBe(TimingMode.easeInSine);
+  });
+
+  it('should reflect the DefaultTimingModeEaseOut on the root Action type', () => {
+    expect(Action.DefaultTimingModeEaseOut).toBe(TimingMode.easeOutSine);
+    expect(Action.fadeIn(0.3).easeOut().timingMode).toBe(TimingMode.easeOutSine);
+    expect(Action.fadeIn(0.3).easeOut().timingMode).not.toBe(TimingMode.easeInCubic);
+
+    // Update to any other function.
+    Action.DefaultTimingModeEaseOut = TimingMode.easeInCubic;
+
+    expect(Action.DefaultTimingModeEaseOut).toBe(TimingMode.easeInCubic);
+    expect(Action.fadeIn(0.3).easeOut().timingMode).toBe(TimingMode.easeInCubic);
+    expect(Action.fadeIn(0.3).easeOut().timingMode).not.toBe(TimingMode.easeInSine);
+  });
+});
 
 describe('Action Chaining', () => {
   describe('sequence()', () => {
