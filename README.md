@@ -153,6 +153,8 @@ mySprite.run(Action.repeatForever(moveBackAndForthWhilePulsating));
 | `Action.hide()` | Set a node's `visible` property to `false`. | Yes |
 |***Removing a Node from the Canvas***|||
 | `Action.removeFromParent()` | Remove a node from its parent. | _†Identical_ |
+|***Running Actions on Children***|||
+| `Action.runOnChildWithName(action, childName)` | Run an action on a named child node. | Yes |
 |***Delaying Actions***|||
 | `Action.waitForDuration(duration)` | Idle for a specified period of time. | _†Identical_ |
 | `Action.waitForDurationWithRange(duration, range)` | Idle for a randomized period of time. | _†Identical_ |
