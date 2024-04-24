@@ -11,6 +11,10 @@ export class ScaleToSizeAction extends Action {
     super(duration);
   }
 
+  public reversed(): Action {
+    return new DelayAction(this.scaledDuration);
+  }
+
   protected onSetupTicker(target: SizedTargetNode): any {
     if (target.width === undefined) {
       throw new Error('Action can only be run against a target with a width & height.');
@@ -25,9 +29,5 @@ export class ScaleToSizeAction extends Action {
   protected onTick(target: SizedTargetNode, t: number, dt: number, ticker: IActionTicker): void {
     target.width = ticker.data.sW + (this.width - ticker.data.sW) * t;
     target.height = ticker.data.sH + (this.height - ticker.data.sH) * t;
-  }
-
-  public reversed(): Action {
-    return new DelayAction(this.scaledDuration);
   }
 }

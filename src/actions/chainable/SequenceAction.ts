@@ -19,6 +19,14 @@ export class SequenceAction extends Action {
       .setSpeed(this.speed);
   }
 
+  protected onSetupTicker(target: TargetNode, ticker: IActionTicker): any {
+    ticker.autoComplete = false;
+
+    return {
+      childTickers: this.actions.map(action => new ActionTicker(undefined, target, action))
+    };
+  }
+
   protected onTick(
     target: TargetNode,
     t: number,
@@ -49,14 +57,6 @@ export class SequenceAction extends Action {
     if (allDone) {
       ticker.isDone = true;
     }
-  }
-
-  protected onSetupTicker(target: TargetNode, ticker: IActionTicker): any {
-    ticker.autoComplete = false;
-
-    return {
-      childTickers: this.actions.map(action => new ActionTicker(undefined, target, action))
-    };
   }
 
   protected onTickerDidReset(ticker: IActionTicker): any {

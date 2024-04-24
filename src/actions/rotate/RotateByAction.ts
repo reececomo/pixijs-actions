@@ -8,13 +8,13 @@ export class RotateByAction extends Action {
     super(duration);
   }
 
-  protected onTick(target: TargetNode, t: number, dt: number): void {
-    target.rotation += this.rotation * dt;
-  }
-
   public reversed(): Action {
     return new RotateByAction(-this.rotation, this.duration)
-      .setSpeed(this.speed)
-      .setTimingMode(this.timingMode);
+      .setTimingMode(this.timingMode)
+      .setSpeed(this.speed);
+  }
+
+  protected onTick(target: TargetNode, t: number, dt: number): void {
+    target.rotation += this.rotation * dt;
   }
 }

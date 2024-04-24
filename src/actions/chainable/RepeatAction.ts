@@ -19,7 +19,21 @@ export class RepeatAction extends Action {
   }
 
   public reversed(): Action {
-    return new RepeatAction(this.action.reversed(), this.repeats);
+    return new RepeatAction(this.action.reversed(), this.repeats)
+      .setTimingMode(this.timingMode)
+      .setSpeed(this.speed);
+  }
+
+  protected onSetupTicker(target: TargetNode, ticker: IActionTicker): any {
+    ticker.autoComplete = false;
+
+    const childTicker = new ActionTicker(undefined, target, this.action);
+    childTicker.timingMode = (x: number) => ticker.timingMode(childTicker.timingMode(x));
+
+    return {
+      childTicker,
+      n: 0,
+    };
   }
 
   protected onTick(target: TargetNode, t: number, dt: number, ticker: IActionTicker, deltaTime: number): void {
@@ -37,18 +51,6 @@ export class RepeatAction extends Action {
       childTicker.reset();
       remainingTimeDelta = childTicker.tick(remainingTimeDelta);
     }
-  }
-
-  protected onSetupTicker(target: TargetNode, ticker: IActionTicker): any {
-    ticker.autoComplete = false;
-
-    const childTicker = new ActionTicker(undefined, target, this.action);
-    childTicker.timingMode = (x: number) => ticker.timingMode(childTicker.timingMode(x));
-
-    return {
-      childTicker,
-      n: 0,
-    };
   }
 
   protected onTickerDidReset(ticker: IActionTicker): any {

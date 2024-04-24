@@ -8,16 +8,18 @@ export class RunOnChildWithNameAction extends Action {
     super(0);
   }
 
-  protected onTick(target: TargetNode, t: number, dt: number): void {
+  public reversed(): Action {
+    return new RunOnChildWithNameAction(this.action.reversed(), this.name)
+      .setTimingMode(this.timingMode)
+      .setSpeed(this.speed);
+  }
+
+  protected onTick(target: TargetNode): void {
     if (!('children' in target) || !Array.isArray(target.children)) {
       return;
     }
 
     const child: TargetNode | undefined = target.children.find((c: any) => c.name === this.name);
     child?.run(this.action);
-  }
-
-  public reversed(): Action {
-    return new RunOnChildWithNameAction(this.action.reversed(), this.name);
   }
 }

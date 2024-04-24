@@ -8,11 +8,11 @@ export class RunBlockAction extends Action {
     super(0);
   }
 
-  protected onTick(): void {
-    this.block();
-  }
-
   public reversed(): Action {
     return this;
+  }
+
+  protected onTick(): void {
+    this.block();
   }
 }

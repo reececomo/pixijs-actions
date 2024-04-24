@@ -15,7 +15,17 @@ export class GroupAction extends Action {
   }
 
   public reversed(): Action {
-    return new GroupAction(this.actions.map(action => action.reversed()));
+    return new GroupAction(this.actions.map(action => action.reversed()))
+      .setTimingMode(this.timingMode)
+      .setSpeed(this.speed);
+  }
+
+  protected onSetupTicker(target: TargetNode, ticker: IActionTicker): any {
+    ticker.autoComplete = false;
+
+    return {
+      childTickers: this.actions.map(action => new ActionTicker(undefined, target, action))
+    };
   }
 
   protected onTick(
@@ -37,14 +47,6 @@ export class GroupAction extends Action {
     if (allDone) {
       ticker.isDone = true;
     }
-  }
-
-  protected onSetupTicker(target: TargetNode, ticker: IActionTicker): any {
-    ticker.autoComplete = false;
-
-    return {
-      childTickers: this.actions.map(action => new ActionTicker(undefined, target, action))
-    };
   }
 
   protected onTickerDidReset(ticker: IActionTicker): any {

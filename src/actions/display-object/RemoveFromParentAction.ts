@@ -5,11 +5,11 @@ export class RemoveFromParentAction extends Action {
     super(0);
   }
 
-  protected onTick(target: TargetNode): void {
-    target.parent?.removeChild(target);
-  }
-
   public reversed(): Action {
     return this;
+  }
+
+  protected onTick(target: TargetNode): void {
+    target.parent?.removeChild(target);
   }
 }

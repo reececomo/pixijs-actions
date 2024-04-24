@@ -7,11 +7,13 @@ export class SetVisibleAction extends Action {
     super(0);
   }
 
-  protected onTick(target: TargetNode): void {
-    target.visible = this.visible;
+  public reversed(): Action {
+    return new SetVisibleAction(!this.visible)
+      .setTimingMode(this.timingMode)
+      .setSpeed(this.speed);
   }
 
-  public reversed(): Action {
-    return new SetVisibleAction(!this.visible);
+  protected onTick(target: TargetNode): void {
+    target.visible = this.visible;
   }
 }

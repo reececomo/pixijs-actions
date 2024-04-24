@@ -9,13 +9,13 @@ export class FadeByAction extends Action {
     super(duration);
   }
 
-  protected onTick(target: TargetNode, t: number, dt: number): void {
-    target.alpha += this.alpha * dt;
-  }
-
   public reversed(): Action {
     return new FadeByAction(-this.alpha, this.duration)
-      .setSpeed(this.speed)
-      .setTimingMode(this.timingMode);
+      .setTimingMode(this.timingMode)
+      .setSpeed(this.speed);
+  }
+
+  protected onTick(target: TargetNode, t: number, dt: number): void {
+    target.alpha += this.alpha * dt;
   }
 }

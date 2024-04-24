@@ -11,7 +11,11 @@ export class MoveToAction extends Action {
     super(duration);
   }
 
-  protected onSetupTicker(target: TargetNode, ticker: IActionTicker): any {
+  public reversed(): Action {
+    return new DelayAction(this.scaledDuration);
+  }
+
+  protected onSetupTicker(target: TargetNode): any {
     return {
       startX: target.x,
       startY: target.y
@@ -23,9 +27,5 @@ export class MoveToAction extends Action {
       this.x === undefined ? target.position.x : ticker.data.startX + (this.x - ticker.data.startX) * t,
       this.y === undefined ? target.position.y : ticker.data.startY + (this.y - ticker.data.startY) * t
     );
-  }
-
-  public reversed(): Action {
-    return new DelayAction(this.scaledDuration);
   }
 }

@@ -15,7 +15,18 @@ export class RepeatForeverAction extends Action {
   }
 
   public reversed(): Action {
-    return new RepeatForeverAction(this.action.reversed());
+    return new RepeatForeverAction(this.action.reversed())
+      .setTimingMode(this.timingMode)
+      .setSpeed(this.speed);
+  }
+
+  protected onSetupTicker(target: TargetNode, ticker: IActionTicker): any {
+    const childTicker = new ActionTicker(undefined, target, this.action);
+    childTicker.timingMode = (x: number) => ticker.timingMode(childTicker.timingMode(x));
+
+    return {
+      childTicker
+    };
   }
 
   protected onTick(
@@ -34,15 +45,6 @@ export class RepeatForeverAction extends Action {
       childTicker.reset();
       remainingTimeDelta = childTicker.tick(remainingTimeDelta);
     }
-  }
-
-  protected onSetupTicker(target: TargetNode, ticker: IActionTicker): any {
-    const childTicker = new ActionTicker(undefined, target, this.action);
-    childTicker.timingMode = (x: number) => ticker.timingMode(childTicker.timingMode(x));
-
-    return {
-      childTicker
-    };
   }
 
   protected onTickerDidReset(ticker: IActionTicker): any {

@@ -57,7 +57,7 @@ export class FollowPathAction extends Action {
 
   public reversed(): Action {
     return new FollowPathAction(
-      this._reversePath(),
+      this._getReversedPath(),
       this.duration,
       this.asOffset,
       this.orientToPath,
@@ -65,6 +65,13 @@ export class FollowPathAction extends Action {
     )
       .setTimingMode(this.timingMode)
       .setSpeed(this.speed);
+  }
+
+  protected onSetupTicker(target: any): any {
+    return {
+      x: this.asOffset ? target.x : 0,
+      y: this.asOffset ? target.y : 0,
+    };
   }
 
   protected onTick(target: any, t: number, dt: number, ticker: IActionTicker): void {
@@ -94,16 +101,9 @@ export class FollowPathAction extends Action {
     }
   }
 
-  protected onSetupTicker(target: any): any {
-    return {
-      x: this.asOffset ? target.x : 0,
-      y: this.asOffset ? target.y : 0,
-    };
-  }
-
   // ----- Internal: -----
 
-  protected _reversePath(): VectorLike[] {
+  protected _getReversedPath(): VectorLike[] {
     if (this.asOffset && this.path.length > 0) {
       // Calculate the relative delta offset when first and last are flipped.
       const first = this.path[0]!, last = this.path[this.path.length - 1]!;

@@ -10,7 +10,11 @@ export class RotateToAction extends Action {
     super(duration);
   }
 
-  protected onSetupTicker(target: TargetNode, ticker: IActionTicker): any {
+  public reversed(): Action {
+    return new DelayAction(this.scaledDuration);
+  }
+
+  protected onSetupTicker(target: TargetNode): any {
     return {
       startRotation: target.rotation
     };
@@ -18,9 +22,5 @@ export class RotateToAction extends Action {
 
   protected onTick(target: TargetNode, t: number, dt: number, ticker: IActionTicker): void {
     target.rotation = ticker.data.startRotation + (this.rotation - ticker.data.startRotation) * t;
-  }
-
-  public reversed(): Action {
-    return new DelayAction(this.scaledDuration);
   }
 }

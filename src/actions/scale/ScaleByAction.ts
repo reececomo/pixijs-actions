@@ -10,7 +10,13 @@ export class ScaleByAction extends Action {
     super(duration);
   }
 
-  protected onSetupTicker(target: TargetNode, ticker: IActionTicker): any {
+  public reversed(): Action {
+    return new ScaleByAction(-this.x, -this.y, this.duration)
+      .setTimingMode(this.timingMode)
+      .setSpeed(this.speed);
+  }
+
+  protected onSetupTicker(target: TargetNode): any {
     return {
       dx: target.scale.x * this.x - target.scale.x,
       dy: target.scale.y * this.y - target.scale.y
@@ -22,11 +28,5 @@ export class ScaleByAction extends Action {
       target.scale.x + ticker.data.dx * dt,
       target.scale.y + ticker.data.dy * dt,
     );
-  }
-
-  public reversed(): Action {
-    return new ScaleByAction(-this.x, -this.y, this.duration)
-      .setSpeed(this.speed)
-      .setTimingMode(this.timingMode);
   }
 }

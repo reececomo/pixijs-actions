@@ -12,6 +12,10 @@ export class ScaleToAction extends Action {
     super(duration);
   }
 
+  public reversed(): Action {
+    return new DelayAction(this.scaledDuration);
+  }
+
   protected onSetupTicker(target: TargetNode): any {
     return {
       startX: target.scale.x,
@@ -24,9 +28,5 @@ export class ScaleToAction extends Action {
       this.x === undefined ? target.scale.x : ticker.data.startX + (this.x - ticker.data.startX) * t,
       this.y === undefined ? target.scale.y : ticker.data.startY + (this.y - ticker.data.startY) * t
     );
-  }
-
-  public reversed(): Action {
-    return new DelayAction(this.scaledDuration);
   }
 }

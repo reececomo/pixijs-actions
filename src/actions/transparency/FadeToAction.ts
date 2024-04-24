@@ -11,7 +11,11 @@ export class FadeToAction extends Action {
     super(duration);
   }
 
-  protected onSetupTicker(target: TargetNode, ticker: IActionTicker): any {
+  public reversed(): Action {
+    return new DelayAction(this.scaledDuration);
+  }
+
+  protected onSetupTicker(target: TargetNode): any {
     return {
       startAlpha: target.alpha
     };
@@ -19,9 +23,5 @@ export class FadeToAction extends Action {
 
   protected onTick(target: TargetNode, t: number, dt: number, ticker: IActionTicker): void {
     target.alpha = ticker.data.startAlpha + (this.alpha - ticker.data.startAlpha) * t;
-  }
-
-  public reversed(): Action {
-    return new DelayAction(this.scaledDuration);
   }
 }

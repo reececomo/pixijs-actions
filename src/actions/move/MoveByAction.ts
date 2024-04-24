@@ -10,14 +10,14 @@ export class MoveByAction extends Action {
     super(duration);
   }
 
+  public reversed(): Action {
+    return new MoveByAction(-this.x, -this.y, this.duration)
+      .setTimingMode(this.timingMode)
+      .setSpeed(this.speed);
+  }
+
   protected onTick(target: TargetNode, t: number, dt: number): void {
     target.position.x += this.x * dt;
     target.position.y += this.y * dt;
-  }
-
-  public reversed(): Action {
-    return new MoveByAction(-this.x, -this.y, this.duration)
-      .setSpeed(this.speed)
-      .setTimingMode(this.timingMode);
   }
 }
