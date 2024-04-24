@@ -174,8 +174,6 @@ All actions have a `timingMode` which controls the speed curve of its execution.
 
 The default timingMode for all actions is `TimingMode.linear`, which causes an animation to occur evenly over its duration.
 
-> Note: The `timingMode` property of `.group()`, `.sequence()`, `.repeat()`, and `.repeatForever()` has no effect on the underlying action(s).
-
 You can customize the speed curve of actions like so:
 
 ```ts

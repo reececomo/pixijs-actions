@@ -126,7 +126,10 @@ describe('Action Chaining', () => {
       simulateTime(1.0);
       expect(node.position.x).toBeCloseTo(30);
 
-      // Sanity check: We're still going.
+      simulateTime(1.0);
+      expect(node.position.x).toBeCloseTo(30);
+
+      // Sanity check: We've stopped.
       expect(node.hasActions()).toBe(false);
     });
   });
@@ -297,6 +300,33 @@ describe('Action', () => {
       simulateTime(1.0);
       expect(node.scale.x).toBeCloseTo(2);
       expect(node.scale.y).toBeCloseTo(1.5);
+    });
+  });
+
+  describe('runOnChildWithName()', () => {
+    it('passes the action to the named child', () => {
+      const childNode = new Container();
+      childNode.name = "myChildNode";
+
+      const parentNode = new Container();
+      parentNode.addChild(childNode);
+
+      parentNode.run(
+        Action.runOnChildWithName(
+          Action.rotateBy(Math.PI, 1.0),
+          "myChildNode",
+        )
+      );
+
+      simulateTime(0.5);
+
+      expect(parentNode.hasActions()).toBe(false);
+      expect(childNode.hasActions()).toBe(true);
+
+      simulateTime(1.0);
+
+      expect(childNode.rotation).toBeCloseTo(Math.PI);
+      expect(childNode.hasActions()).toBe(false);
     });
   });
 });

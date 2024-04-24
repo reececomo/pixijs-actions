@@ -513,7 +513,25 @@ export abstract class Action {
   }
 
   //
-  // ----------------- Transparency Actions: -----------------
+  // ----------------- Children Actions: -----------------
+  //
+
+  /**
+   * Creates an action that runs an action on a named child object.
+   *
+   * This action has an instantaneous duration, although the action executed on the child may have
+   * a duration of its own. When the action executes, it looks up an appropriate child node and
+   * calls its `run(action)` method, passing in the action to execute.
+   *
+   * This action is reversible; it tells the child to execute the reverse of the action specified by
+   * the action parameter.
+   */
+  public static runOnChildWithName(action: Action, name: string): Action {
+    return new RunOnChildWithNameAction(action, name);
+  }
+
+  //
+  // ----------------- Custom Actions: -----------------
   //
 
   /**
@@ -711,11 +729,10 @@ class GroupAction extends Action {
     progress: number,
     progressDelta: number,
     ticker: ActionTicker,
-    timeDelta: number,
   ): void {
-    const relativeTimeDelta = timeDelta * this.speed;
-
+    const relativeTimeDelta = progressDelta * ticker.scaledDuration;
     let allDone = true;
+
     for (const childTicker of ticker.data.childTickers as ActionTicker[]) {
       if (!childTicker.isDone) {
         allDone = false;
@@ -761,15 +778,14 @@ class SequenceAction extends Action {
     progress: number,
     progressDelta: number,
     ticker: ActionTicker,
-    timeDelta: number,
   ): void {
     let allDone = true;
-    let remainingTimeDelta = timeDelta * this.speed;
+    let remainingTimeDelta = progressDelta * ticker.scaledDuration;
 
     for (const childTicker of ticker.data.childTickers as ActionTicker[]) {
       if (!childTicker.isDone) {
 
-        if (remainingTimeDelta > 0 || childTicker.duration === 0) {
+        if (remainingTimeDelta > 0 || childTicker.scaledDuration === 0) {
           remainingTimeDelta = childTicker.stepActionForward(remainingTimeDelta);
         }
         else {
@@ -790,8 +806,9 @@ class SequenceAction extends Action {
   }
 
   public reversed(): Action {
-    const reversedSequence = [...this.actions].reverse().map(action => action.reversed());
-    return new SequenceAction(reversedSequence);
+    return new SequenceAction(this.actions.map(action => action.reversed()).reverse())
+      .setTimingMode(this.timingMode)
+      .setSpeed(this.speed);
   }
 
   protected _setupTicker(target: TargetNode, ticker: ActionTicker): any {
@@ -832,22 +849,25 @@ class RepeatAction extends Action {
 
     remainingTimeDelta = childTicker.stepActionForward(remainingTimeDelta);
 
-    if (remainingTimeDelta > 0) {
+    if (remainingTimeDelta > 0 || childTicker.scaledDuration === 0) {
       if (++ticker.data.n >= this.repeats) {
         ticker.isDone = true;
         return;
       }
 
       childTicker.reset();
-      childTicker.stepActionForward(remainingTimeDelta);
+      remainingTimeDelta = childTicker.stepActionForward(remainingTimeDelta);
     }
   }
 
   protected _setupTicker(target: TargetNode, ticker: ActionTicker): any {
     ticker.autoComplete = false;
 
+    const childTicker = new ActionTicker(undefined, target, this.action);
+    childTicker.timingMode = (x) => ticker.timingMode(childTicker.timingMode(x));
+
     return {
-      childTicker: new ActionTicker(undefined, target, this.action),
+      childTicker,
       n: 0,
     };
   }
@@ -873,21 +893,30 @@ class RepeatForeverAction extends Action {
     return new RepeatForeverAction(this.action.reversed());
   }
 
-  public updateAction(target: TargetNode, progress: number, progressDelta: number, ticker: ActionTicker, timeDelta: number): void {
-    let childTicker: ActionTicker = ticker.data.childTicker;
-    let remainingTimeDelta = timeDelta * this.speed;
+  public updateAction(
+    target: TargetNode,
+    progress: number,
+    progressDelta: number,
+    ticker: ActionTicker,
+    timeDelta: number
+  ): void {
+    const childTicker: ActionTicker = ticker.data.childTicker;
+    let remainingTimeDelta = timeDelta * ticker.speed;
 
     remainingTimeDelta = childTicker.stepActionForward(remainingTimeDelta);
 
     if (remainingTimeDelta > 0) {
       childTicker.reset();
-      childTicker.stepActionForward(remainingTimeDelta);
+      remainingTimeDelta = childTicker.stepActionForward(remainingTimeDelta);
     }
   }
 
   protected _setupTicker(target: TargetNode, ticker: ActionTicker): any {
+    const childTicker = new ActionTicker(undefined, target, this.action);
+    childTicker.timingMode = (x) => ticker.timingMode(childTicker.timingMode(x));
+
     return {
-      childTicker: new ActionTicker(undefined, target, this.action)
+      childTicker
     };
   }
 
@@ -1032,12 +1061,33 @@ class CustomAction extends Action {
   }
 }
 
-class RunBlockAction extends Action {
-  protected block: () => any;
-
-  public constructor(block: () => void) {
+class RunOnChildWithNameAction extends Action {
+  public constructor(
+    protected action: Action,
+    protected name: string,
+  ) {
     super(0);
-    this.block = block;
+  }
+
+  public updateAction(target: TargetNode, progress: number, progressDelta: number): void {
+    if (!('children' in target) || !Array.isArray(target.children)) {
+      return;
+    }
+
+    const child: TargetNode | undefined = target.children.find(c => c.name === this.name);
+    child?.run(this.action);
+  }
+
+  public reversed(): Action {
+    return new RunOnChildWithNameAction(this.action.reversed(), this.name);
+  }
+}
+
+class RunBlockAction extends Action {
+  public constructor(
+    protected block: () => void
+  ) {
+    super(0);
   }
 
   public updateAction(target: TargetNode, progress: number, progressDelta: number): void {
@@ -1541,18 +1591,23 @@ class ActionTicker {
   /**
    * Relative speed of the action ticker.
    *
-   * Defaults to the action's speed and is capture at creation time, and updated on
-   * the setup tick.
+   * Copies the action's speed when the action is run.
    */
   public speed: number;
 
   /**
+   * Relative speed of the action ticker.
+   *
+   * Copies the action's timingMode when the action is run.
+   */
+  public timingMode: TimingModeFn;
+
+  /**
    * Expected duration of the action ticker.
    *
-   * Defaults to the action's scaled duration and is capture at creation time, and updated on
-   * the setup tick.
+   * Copies the action's scaledDuration when the action is run.
    */
-  public duration: number;
+  public scaledDuration: number;
 
   public constructor(
     public key: string | undefined,
@@ -1560,12 +1615,13 @@ class ActionTicker {
     public action: Action,
   ) {
     this.speed = action.speed;
-    this.duration = action.scaledDuration;
+    this.scaledDuration = action.scaledDuration;
+    this.timingMode = action.timingMode;
   }
 
   /** The relative time elapsed between 0 and 1. */
   public get timeDistance(): number {
-    return this.duration === 0 ? 1 : Math.min(1, this.elapsed / this.action.scaledDuration);
+    return this.scaledDuration === 0 ? 1 : Math.min(1, this.elapsed / this.scaledDuration);
   }
 
   /**
@@ -1574,15 +1630,18 @@ class ActionTicker {
    * Can be a value beyond 0 or 1 depending on the timing mode function.
    */
   protected get easedTimeDistance(): number {
-    return this.action.timingMode(this.timeDistance);
+    return this.timingMode(this.timeDistance);
   }
 
   /** @returns Any unused time delta. Negative value means action is still in progress. */
   public stepActionForward(timeDelta: number): number {
     if (!this.isSetup) {
-      // cache action attributes
+      // Copy action attributes:
       this.speed = this.action.speed;
-      this.duration = this.action.duration;
+      this.scaledDuration = this.action.duration;
+      this.timingMode = this.action.timingMode;
+
+      // Perform first time setup:
       this.data = (this.action as any)._setupTicker(this.target, this);
       this.isSetup = true;
     }
@@ -1604,7 +1663,7 @@ class ActionTicker {
 
     const scaledTimeDelta = timeDelta * this.speed /* target speed is applied at the root */;
 
-    if (this.duration === 0) {
+    if (this.scaledDuration === 0) {
       // Instantaneous action.
       action.updateAction(this.target, 1.0, 1.0, this, scaledTimeDelta);
       this.isDone = true;
@@ -1632,7 +1691,7 @@ class ActionTicker {
       // Remove completed action.
       ActionTicker.removeAction(this);
 
-      return this.elapsed > this.duration ? this.elapsed - this.duration : 0;
+      return this.elapsed > this.scaledDuration ? this.elapsed - this.scaledDuration : 0;
     }
 
     return -1; // relinquish no time
