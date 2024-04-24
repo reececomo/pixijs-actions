@@ -215,9 +215,9 @@ See the following table for default `TimingMode` options.
 | **Bounce**      | `easeInOutBounce` | `easeInBounce` | `easeOutBounce` | Bouncy effect at the start or end, with multiple rebounds. |
 | **Elastic**     | `easeInOutElastic` | `easeInElastic` | `easeOutElastic` | Stretchy motion with overshoot and multiple oscillations. |
 
-### Custom actions
+### Custom Actions
 
-Actions are reusable, so you can create complex animations once, and then run them on many display objects.
+Actions are stateless and reusable, so you can create complex animations once, and then run them on many display objects.
 
 ```ts
 /** A nice gentle rock back and forth. */
@@ -340,15 +340,15 @@ mySprite.parent.speed = 1 / 4;
 // The entire action should now take 10 seconds.
 ```
 
-> Note: Since actions are designed to be mostly immutable, the `speed` property is captured when the action runs for the first time.
+> Note: Since actions are designed to be stateless, the `speed` property is captured when the action runs. Any changes to `speed` or `timingMode` will not affect animations that have already been run.
 
 ## Creating Custom Actions
 
-Beyond combining the built-ins with chaining actions like `sequence()`, `group()`, `repeat()` and `repeatForever()`, you can provide code that implements your own action.
+Beyond combining chaining actions like `sequence()`, `group()`, `repeat()` and `repeatForever()`, you can provide code that implements your own action.
 
-### Basic - Custom Action
+### Action.customAction()
 
-You can also use the built-in `Action.customAction(duration, stepHandler)` to provide a custom actions:
+You can use the built-in `Action.customAction(duration, stepHandler)` to provide custom actions:
 
 ```ts
 const rainbowColors = Action.customAction(5.0, (target, t, dt) => {
@@ -376,58 +376,3 @@ mySprite.removeAction('rainbow');
 > _Note: `t` can be outside of 0 and 1 in timing mode functions which overshoot, such as `TimingMode.easeInOutBack`._
 
 This function will be called as many times as the renderer asks over the course of its duration.
-
-### Advanced - Custom Subclass Action
-
-For more control, you can provide a custom subclass Action which can capture and manipulate state on the underlying action ticker.
-
-```ts
-class MyTintAction extends Action {
-  constructor(
-    protected readonly color: 'red' | 'blue',
-    duration: number,
-  ) {
-    super(duration);
-    this.timingMode = TimingMode.easeInOutSine;
-  }
-
-  /** (Optional) Setup any initial state here. */
-  _setupTicker(target: PIXI.DisplayObject): any {
-    // If your action has any target-specific state, it should go here.
-    // Anything you return in this function will be availabler as `ticker.data`.
-    return {
-      startColor: new PIXI.Color(target.tint),
-      endColor: new PIXI.Color(this.color === 'red' ? 0xFF0000 : 0x0000FF),
-    };
-  }
-
-  /** Stepping function. Update the target here. */
-  updateAction(
-    target: PIXI.DisplayObject,
-    progress: number,      // Progress from 0 to 1 after timing mode
-    progressDelta: number, // Change in progress
-    ticker: any,           // Use `ticker.data` to access any ticker state.
-    deltaTime: number,     // The amount of time elapsed (scaled by `speed`).
-  ): void {
-    const start = ticker.data.startColor;
-    const end = ticker.data.endColor;
-
-    const color = new PIXI.Color().setValue([
-      start.red + (end.red - start.red) * progress,
-      start.green + (end.green - start.green) * progress,
-      start.blue + (end.blue - start.blue) * progress
-    ]);
-
-    target.tint = color;
-  }
-
-  /** Provide a function that reverses the current action. */
-  reversed(): Action {
-    const oppositeColor = this.color === 'red' ? 'blue' : 'red';
-
-    return new MyTintAction(oppositeColor, this.duration)
-      .setTimingMode(this.timingMode)
-      .setSpeed(this.speed);
-  }
-}
-```

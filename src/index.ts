@@ -1,26 +1,34 @@
-
 import * as PIXI from 'pixi.js';
-import { Action, registerGlobalMixin } from "./Action";
+
+import { _ as Action } from "./Action";
+import { TimingMode, TimingModeFn } from "./TimingMode";
+import { registerGlobalMixin } from './mixin';
 
 //
-// ----- Library exports -----
-//
-
-export * from "./Action";
-export * from "./TimingMode";
-
-//
-// ----- [Side-effect] Load global mixin: -----
+// ----- [Side-effect] Initialize global mixin for DisplayObject: -----
 //
 
 registerGlobalMixin(PIXI.DisplayObject);
 
 //
-// ----- Additional types and documentation for the global mixin: -----
+// ----- PixiJS Actions library: -----
+//
+
+export {
+  Action,
+  registerGlobalMixin,
+  TimingMode,
+  TimingModeFn,
+};
+
+//
+// ----- Types and documentation for the global mixin: -----
 //
 
 declare module 'pixi.js' {
+
   export interface DisplayObject {
+
     /**
      * A boolean value that determines whether actions on the node and its descendants are processed.
      */
@@ -34,7 +42,7 @@ declare module 'pixi.js' {
     /**
      * Adds an action to the list of actions executed by the node.
      *
-     * The new action is processed the next time the scene’s animation loop is processed.
+     * The new action is processed the next time the canvas's animation loop is processed.
      *
      * After the action completes, your completion block is called, but only if the action runs to
      * completion. If the action is removed before it completes, the completion handler is never
@@ -59,7 +67,7 @@ declare module 'pixi.js' {
     /**
      * Adds an action to the list of actions executed by the node.
      *
-     * The new action is processed the next time the scene’s animation loop is processed.
+     * The new action is processed the next time the canvas's animation loop is processed.
      *
      * Runs the action as a promise.
      *
@@ -87,4 +95,5 @@ declare module 'pixi.js' {
      */
     removeAction(forKey: string): void;
   }
+
 }
