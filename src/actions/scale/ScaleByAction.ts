@@ -3,9 +3,9 @@ import { IActionTicker } from '../../lib/IActionTicker';
 
 export class ScaleByAction extends Action {
   public constructor(
-      protected readonly x: number,
-      protected readonly y: number,
-      duration: TimeInterval,
+    protected readonly x: number,
+    protected readonly y: number,
+    duration: TimeInterval,
   ) {
     super(duration);
   }

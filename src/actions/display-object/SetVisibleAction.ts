@@ -2,7 +2,7 @@ import { Action } from '../../lib/Action';
 
 export class SetVisibleAction extends Action {
   public constructor(
-      protected readonly visible: boolean,
+    protected readonly visible: boolean,
   ) {
     super(0);
   }

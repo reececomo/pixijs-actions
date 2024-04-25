@@ -2,8 +2,8 @@ import { Action } from '../../lib/Action';
 
 export class RotateByAction extends Action {
   public constructor(
-      protected readonly rotation: number,
-      duration: TimeInterval,
+    protected readonly rotation: number,
+    duration: TimeInterval,
   ) {
     super(duration);
   }

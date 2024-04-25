@@ -1,16 +1,13 @@
 import { Action } from '../../lib/Action';
 import { IActionTicker } from '../../lib/IActionTicker';
 import { ActionTicker } from '../../lib/ActionTicker';
+import { TimingMode } from '../../TimingMode';
 
 export class SequenceAction extends Action {
   public constructor(
-    protected readonly actions: Action[]
+    protected actions: Action[]
   ) {
-    super(
-      // Total duration:
-      actions.reduce((total, action) => total + action.scaledDuration, 0)
-    );
-    this.actions = actions;
+    super(actions.reduce((total, action) => total + action.scaledDuration, 0));
   }
 
   public reversed(): Action {
@@ -23,7 +20,8 @@ export class SequenceAction extends Action {
     ticker.autoComplete = false;
 
     return {
-      childTickers: this.actions.map(action => new ActionTicker(undefined, target, action))
+      childTickers: this._squashedActions()
+        .map(action => new ActionTicker(undefined, target, action))
     };
   }
 
@@ -61,5 +59,26 @@ export class SequenceAction extends Action {
 
   protected onTickerDidReset(ticker: IActionTicker): any {
     ticker.data.childTickers.forEach((ticker: IActionTicker) => ticker.reset());
+  }
+
+  // ----- Implementation: -----
+
+  protected _squashedActions(): Action[] {
+    const actions: Action[] = [];
+
+    for (const action of this.actions) {
+      if (
+        action instanceof SequenceAction
+        && action.speed === 1
+        && action.timingMode === TimingMode.linear
+      ) {
+        actions.push(...action._squashedActions());
+      }
+      else {
+        actions.push(action);
+      }
+    }
+
+    return actions;
   }
 }

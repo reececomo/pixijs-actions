@@ -17,12 +17,16 @@ export abstract class Action {
     /** The duration required to complete an action. */
     public readonly duration: TimeInterval,
     /** A speed factor that modifies how fast an action runs. */
-    public speed: number = 1.0,
+    public speed: number = 1,
     /** A setting that controls the speed curve of an animation. */
     public timingMode: TimingModeFn = TimingMode.linear,
     /** @deprecated A global category bitmask which can be used to group actions. */
     public categoryMask: number = 0x1,
-  ) {}
+  ) {
+    if (duration < 0) {
+      throw new RangeError('Action duration must be 0 or more.');
+    }
+  }
 
   /** Duration of the action after its local speed scalar is applied. */
   public get scaledDuration(): number {

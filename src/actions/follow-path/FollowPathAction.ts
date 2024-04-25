@@ -1,4 +1,3 @@
-
 import { IActionTicker } from 'src/lib/IActionTicker';
 import { Action } from '../../lib/Action';
 
@@ -13,9 +12,9 @@ export class FollowPathAction extends Action {
   public constructor(
     path: VectorLike[],
     duration: number,
-      protected readonly asOffset: boolean,
-      protected readonly orientToPath: boolean,
-      protected readonly fixedSpeed: boolean,
+    protected readonly asOffset: boolean,
+    protected readonly orientToPath: boolean,
+    protected readonly fixedSpeed: boolean,
   ) {
     super(duration);
     this.path = path;
@@ -25,6 +24,7 @@ export class FollowPathAction extends Action {
     if (orientToPath || fixedSpeed) {
       const [totalDist, segmentLengths] = FollowPathAction.getLength(path);
       this.segmentLengths = segmentLengths;
+
       if (fixedSpeed) {
         this.segmentWeights = segmentLengths.map(v => v / (totalDist || 1));
       }

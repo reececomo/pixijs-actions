@@ -2,8 +2,8 @@ import { Action } from '../../lib/Action';
 
 export class RunOnChildWithNameAction extends Action {
   public constructor(
-      protected readonly action: Action,
-      protected readonly name: string,
+    protected readonly action: Action,
+    protected readonly name: string,
   ) {
     super(0);
   }

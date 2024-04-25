@@ -4,9 +4,9 @@ import { DelayAction } from '../delay';
 
 export class MoveToAction extends Action {
   public constructor(
-      protected readonly x: number | undefined,
-      protected readonly y: number | undefined,
-      duration: TimeInterval,
+    protected readonly x: number | undefined,
+    protected readonly y: number | undefined,
+    duration: TimeInterval,
   ) {
     super(duration);
   }

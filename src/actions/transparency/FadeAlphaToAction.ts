@@ -1,12 +1,11 @@
-
 import { Action } from '../../lib/Action';
 import { IActionTicker } from '../../lib/IActionTicker';
 import { DelayAction } from '../delay';
 
-export class FadeToAction extends Action {
+export class FadeAlphaToAction extends Action {
   public constructor(
-      protected readonly alpha: number,
-      duration: TimeInterval
+    protected readonly alpha: number,
+    duration: TimeInterval
   ) {
     super(duration);
   }

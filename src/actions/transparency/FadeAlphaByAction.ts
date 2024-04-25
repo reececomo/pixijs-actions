@@ -1,10 +1,9 @@
-
 import { Action } from '../../lib/Action';
 
 export class FadeByAction extends Action {
   public constructor(
-      protected readonly alpha: number,
-      duration: TimeInterval,
+    protected readonly alpha: number,
+    duration: TimeInterval,
   ) {
     super(duration);
   }

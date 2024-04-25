@@ -1,21 +1,14 @@
 import { Action } from '../../lib/Action';
-import { IActionTicker } from '../../lib/IActionTicker';
-import { FadeOutAction } from './FadeOutAction';
+import { FadeAlphaToAction } from './FadeAlphaToAction';
 
-export class FadeInAction extends Action {
+export class FadeInAction extends FadeAlphaToAction {
+  public constructor(duration: number) {
+    super(1, duration);
+  }
+
   public reversed(): Action {
-    return new FadeOutAction(this.duration)
+    return new FadeAlphaToAction(0, this.duration)
       .setTimingMode(this.timingMode)
       .setSpeed(this.speed);
-  }
-
-  protected onSetupTicker(target: TargetNode): any {
-    return {
-      startAlpha: target.alpha
-    };
-  }
-
-  protected onTick(target: TargetNode, t: number, dt: number, ticker: IActionTicker): void {
-    target.alpha = ticker.data.startAlpha + (1.0 - ticker.data.startAlpha) * t;
   }
 }

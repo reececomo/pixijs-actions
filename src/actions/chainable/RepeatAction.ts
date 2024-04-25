@@ -1,20 +1,16 @@
-
 import { Action } from '../../lib/Action';
 import { IActionTicker } from '../../lib/IActionTicker';
 import { ActionTicker } from '../../lib/ActionTicker';
 
 export class RepeatAction extends Action {
   public constructor(
-      protected readonly action: Action,
-      protected readonly repeats: number,
+    protected readonly action: Action,
+    protected readonly repeats: number,
   ) {
-    super(
-      // Duration:
-      action.scaledDuration * repeats
-    );
+    super(action.scaledDuration * repeats);
 
-    if (Math.round(repeats) !== repeats || repeats < 0) {
-      throw new Error('Repeats must be a positive integer.');
+    if (!Number.isInteger(repeats) || repeats < 0) {
+      throw new RangeError('The number of repeats must be a positive integer.');
     }
   }
 
@@ -36,8 +32,14 @@ export class RepeatAction extends Action {
     };
   }
 
-  protected onTick(target: TargetNode, t: number, dt: number, ticker: IActionTicker, deltaTime: number): void {
-    let childTicker: IActionTicker = ticker.data.childTicker;
+  protected onTick(
+    target: TargetNode,
+    t: number,
+    dt: number,
+    ticker: IActionTicker,
+    deltaTime: number
+  ): void {
+    const childTicker: IActionTicker = ticker.data.childTicker;
     let remainingTimeDelta = deltaTime * this.speed;
 
     remainingTimeDelta = childTicker.tick(remainingTimeDelta);

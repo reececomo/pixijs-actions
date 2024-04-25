@@ -1,11 +1,10 @@
-
 import { Action } from '../../lib/Action';
 
 export class MoveByAction extends Action {
   public constructor(
-      protected readonly x: number,
-      protected readonly y: number,
-      duration: number,
+    protected readonly x: number,
+    protected readonly y: number,
+    duration: number,
   ) {
     super(duration);
   }

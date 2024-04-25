@@ -180,9 +180,9 @@ You can customize the speed curve of actions like so:
 
 ```ts
 // Use the defaults
-Action.fadeIn(0.3).easeInOut();
 Action.fadeIn(0.3).easeIn();
 Action.fadeIn(0.3).easeOut();
+Action.fadeIn(0.3).easeInOut();
 
 // Set a TimingMode
 Action.fadeIn(0.3).setTimingMode(TimingMode.easeInOutCubic);
@@ -222,17 +222,15 @@ Actions are stateless and reusable, so you can create complex animations once, a
 ```ts
 /** A nice gentle rock back and forth. */
 const rockBackAndForth = Action.repeatForever(
-  Action.sequence([
-    Action.group([
+  Action.group([
+    Action.sequence([
       Action.moveByX(5, 0.33).easeOut(),
-      Action.rotateByDegrees(-2, 0.33).easeOut(),
-    ]),
-    Action.group([
       Action.moveByX(-10, 0.34).easeInOut(),
-      Action.rotateByDegrees(4, 0.34).easeInOut(),
-    ]),
-    Action.group([
       Action.moveByX(5, 0.33).easeIn(),
+    ]),
+    Action.sequence([
+      Action.rotateByDegrees(-2, 0.33).easeOut(),
+      Action.rotateByDegrees(4, 0.34).easeInOut(),
       Action.rotateByDegrees(-2, 0.33).easeIn(),
     ]),
   ])

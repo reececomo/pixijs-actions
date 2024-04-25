@@ -4,8 +4,8 @@ import { DelayAction } from '../delay';
 
 export class RotateToAction extends Action {
   public constructor(
-      protected readonly rotation: number,
-      duration: TimeInterval,
+    protected readonly rotation: number,
+    duration: TimeInterval,
   ) {
     super(duration);
   }

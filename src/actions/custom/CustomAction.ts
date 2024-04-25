@@ -1,10 +1,9 @@
-
 import { Action } from '../../lib/Action';
 
 export class CustomAction extends Action {
   public constructor(
     duration: TimeInterval,
-      protected readonly stepFn: (target: TargetNode, t: number, dt: number) => void
+    protected readonly stepFn: (target: TargetNode, t: number, dt: number) => void
   ) {
     super(duration);
   }

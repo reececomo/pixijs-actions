@@ -1,16 +1,15 @@
-
 import { Action } from '../../lib/Action';
 import { IActionTicker } from '../../lib/IActionTicker';
 import { ActionTicker } from '../../lib/ActionTicker';
 
 export class RepeatForeverAction extends Action {
   public constructor(
-      protected readonly action: Action
+    protected readonly action: Action
   ) {
     super(Infinity);
 
-    if (action.duration <= 0) {
-      throw new Error('The action to be repeated must have a non-instantaneous duration.');
+    if (action.scaledDuration <= 0) {
+      throw new TypeError('The action to be repeated must have a non-instantaneous duration.');
     }
   }
 
@@ -21,6 +20,8 @@ export class RepeatForeverAction extends Action {
   }
 
   protected onSetupTicker(target: TargetNode, ticker: IActionTicker): any {
+    ticker.autoComplete = false;
+
     const childTicker = new ActionTicker(undefined, target, this.action);
     childTicker.timingMode = (x: number) => ticker.timingMode(childTicker.timingMode(x));
 

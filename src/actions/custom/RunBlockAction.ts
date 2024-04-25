@@ -1,9 +1,8 @@
-
 import { Action } from '../../lib/Action';
 
 export class RunBlockAction extends Action {
   public constructor(
-      protected readonly block: () => void
+    protected readonly block: () => void
   ) {
     super(0);
   }

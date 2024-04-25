@@ -1,4 +1,3 @@
-
 import { Action } from '../../lib/Action';
 
 export class DelayAction extends Action {

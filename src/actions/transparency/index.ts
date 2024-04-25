@@ -1,4 +1,4 @@
-export * from './FadeByAction';
+export * from './FadeAlphaByAction';
 export * from './FadeInAction';
 export * from './FadeOutAction';
-export * from './FadeToAction';
+export * from './FadeAlphaToAction';

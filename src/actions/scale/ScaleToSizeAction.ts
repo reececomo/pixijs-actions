@@ -4,9 +4,9 @@ import { DelayAction } from '../delay';
 
 export class ScaleToSizeAction extends Action {
   public constructor(
-        protected readonly width: number,
-        protected readonly height: number,
-        duration: TimeInterval,
+    protected readonly width: number,
+    protected readonly height: number,
+    duration: TimeInterval,
   ) {
     super(duration);
   }
@@ -16,18 +16,18 @@ export class ScaleToSizeAction extends Action {
   }
 
   protected onSetupTicker(target: SizedTargetNode): any {
-    if (target.width === undefined) {
-      throw new Error('Action can only be run against a target with a width & height.');
+    if (typeof target.width !== 'number' || typeof target.height !== 'number') {
+      throw new TypeError("The target must have numeric 'width' and 'height'.");
     }
 
     return {
-      sW: target.width,
-      sH: target.height,
+      width: target.width,
+      height: target.height,
     };
   }
 
   protected onTick(target: SizedTargetNode, t: number, dt: number, ticker: IActionTicker): void {
-    target.width = ticker.data.sW + (this.width - ticker.data.sW) * t;
-    target.height = ticker.data.sH + (this.height - ticker.data.sH) * t;
+    target.width = ticker.data.width + (this.width - ticker.data.width) * t;
+    target.height = ticker.data.height + (this.height - ticker.data.height) * t;
   }
 }

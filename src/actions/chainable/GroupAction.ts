@@ -6,12 +6,7 @@ export class GroupAction extends Action {
   public constructor(
     protected readonly actions: Action[]
   ) {
-    super(
-      // Max duration:
-      Math.max(...actions.map(action => action.scaledDuration))
-    );
-
-    this.actions = actions;
+    super(Math.max(...actions.map(action => action.scaledDuration)));
   }
 
   public reversed(): Action {

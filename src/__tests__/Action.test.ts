@@ -78,7 +78,6 @@ describe('Action Chaining', () => {
       simulateTime(1.0);
       expect(node.position.x).toBeCloseTo(10.0);
 
-
       simulateTime(1.0);
       expect(node.position.x).toBeCloseTo(5.0);
 
@@ -89,6 +88,68 @@ describe('Action Chaining', () => {
       simulateTime(10.0);
       expect(node.position.x).toBeCloseTo(-5.0);
       expect(node.hasActions()).toBe(false);
+    });
+
+    it('successfully completes nested sequences', () => {
+      // this test secretly makes sure squashing works
+      const action = Action.sequence([
+        Action.sequence([
+          Action.sequence([
+            Action.moveByX(5, 1.0),
+            Action.moveByX(-5, 1.0)
+          ]),
+          Action.sequence([
+            Action.sequence([
+              Action.moveByX(5, 1.0),
+              Action.moveByX(5, 1.0),
+            ]),
+            Action.sequence([ // Runs with custom timing mode
+              Action.rotateBy(Math.PI, 0.5),
+              Action.rotateBy(Math.PI, 0.5),
+            ]).easeInOut(),
+          ]),
+          Action.group([ // Also has 'actions' but not a SequenceAction
+            Action.fadeOut(0.5),
+            Action.scaleTo({ width: 2, height: 2 }, 1.0),
+          ]),
+        ]),
+        Action.sequence([
+          Action.sequence([
+            Action.moveByY(-5, 1.0),
+            Action.moveByY(5, 1.0),
+          ]),
+          Action.sequence([
+            Action.sequence([
+              Action.moveByY(5, 1.0),
+              Action.moveByY(5, 1.0),
+            ]),
+            Action.sequence([ // Runs at half speed
+              Action.fadeAlphaTo(0.25, 1.0),
+              Action.fadeAlphaBy(0.5, 1.0),
+            ]).setSpeed(2),
+          ]),
+        ]),
+      ]);
+
+      expect(action.duration).toBeCloseTo(11.0);
+      expect(action.scaledDuration).toBeCloseTo(11.0);
+
+      const node = new Container();
+      node.run(action);
+
+      simulateTime(11.0);
+      expect(node.position.x).toBeCloseTo(10);
+      expect(node.position.y).toBeCloseTo(10);
+      expect(node.rotation).toBeCloseTo(Math.PI * 2);
+      expect(node.alpha).toBeCloseTo(0.75);
+
+      // Sanity check: We completed.
+      expect(node.hasActions()).toBe(false);
+
+      // Ignore that this tests the underlying implementation.
+      // Just a lazy hack to make sure it's working nicely.
+      expect((action as any).actions.length).toBe(2);
+      expect((action as any)._squashedActions().length).toBe(11);
     });
   });
 
@@ -371,6 +432,54 @@ describe('Action', () => {
 
       expect(childNode.rotation).toBeCloseTo(Math.PI);
       expect(childNode.hasActions()).toBe(false);
+    });
+  });
+
+  describe('speedTo()', () => {
+    it('changes the nodes action speed', () => {
+      const myNode = new Container();
+
+      myNode.run(Action.speedTo(2, 0));
+
+      simulateTime(0.01, 1);
+
+      expect(myNode.speed).toBeCloseTo(2);
+    });
+
+    it('changes the nodes action speed over time', () => {
+      const myNode = new Container();
+
+      myNode.run(Action.speedTo(2, 10.0));
+
+      simulateTime(8.0);
+
+      // Completes early because speed changes
+      expect(myNode.speed).toBeCloseTo(2);
+      expect(myNode.hasActions()).toBe(false);
+    });
+  });
+
+  describe('speedBy()', () => {
+    it('changes the nodes action speed', () => {
+      const myNode = new Container();
+
+      myNode.run(Action.speedBy(1, 0));
+
+      simulateTime(0.01, 1);
+
+      expect(myNode.speed).toBeCloseTo(2);
+    });
+
+    it('changes the nodes action speed over time', () => {
+      const myNode = new Container();
+
+      myNode.run(Action.speedBy(1, 10.0));
+
+      simulateTime(8.0);
+
+      // Completes early because speed changes
+      expect(myNode.speed).toBeCloseTo(2);
+      expect(myNode.hasActions()).toBe(false);
     });
   });
 });

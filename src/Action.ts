@@ -6,7 +6,7 @@ import {
   FadeByAction,
   FadeInAction,
   FadeOutAction,
-  FadeToAction,
+  FadeAlphaToAction,
   FollowPathAction,
   GroupAction,
   MoveByAction,
@@ -479,7 +479,7 @@ export abstract class _ extends Action {
    * change anything.
    */
   public static fadeAlphaTo(alpha: number, duration: TimeInterval): Action {
-    return new FadeToAction(alpha, duration);
+    return new FadeAlphaToAction(alpha, duration);
   }
 
   /**
