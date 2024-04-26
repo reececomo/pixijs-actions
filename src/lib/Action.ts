@@ -2,6 +2,7 @@ import { TimingMode, TimingModeFn } from '../TimingMode';
 import { IActionTicker } from './IActionTicker';
 
 export abstract class Action {
+  public log = false;
 
   // ----- Default Timing Modes: -----
 

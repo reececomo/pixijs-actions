@@ -32,32 +32,21 @@ export class SequenceAction extends Action {
     ticker: IActionTicker,
     deltaTime: number,
   ): void {
-    let allDone = true;
-    let remainingTimeDelta = ticker.scaledDuration === Infinity
+    let remainingDeltaTime = ticker.scaledDuration === Infinity
       ? deltaTime * this.speed
       : dt * ticker.scaledDuration;
 
     for (const childTicker of ticker.data.childTickers as IActionTicker[]) {
-      if (!childTicker.isDone) {
+      if (childTicker.isDone) continue;
 
-        if (remainingTimeDelta > 0 || childTicker.scaledDuration === 0) {
-          remainingTimeDelta = childTicker.tick(remainingTimeDelta);
-        }
-        else {
-          allDone = false;
-          break;
-        }
+      remainingDeltaTime = childTicker.tick(remainingDeltaTime);
 
-        if (remainingTimeDelta < 0) {
-          allDone = false;
-          break;
-        }
+      if (remainingDeltaTime < 0) {
+        return; // Cannot continue to next: Current action not completed yet.
       }
     }
 
-    if (allDone) {
-      ticker.isDone = true;
-    }
+    ticker.isDone = true;
   }
 
   protected onTickerDidReset(ticker: IActionTicker): any {

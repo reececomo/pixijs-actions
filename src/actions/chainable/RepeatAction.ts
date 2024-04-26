@@ -40,18 +40,18 @@ export class RepeatAction extends Action {
     deltaTime: number
   ): void {
     const childTicker: IActionTicker = ticker.data.childTicker;
-    let remainingTimeDelta = deltaTime * this.speed;
+    let remainingDeltaTime = deltaTime * this.speed;
 
-    remainingTimeDelta = childTicker.tick(remainingTimeDelta);
+    remainingDeltaTime = childTicker.tick(remainingDeltaTime);
 
-    if (remainingTimeDelta > 0 || childTicker.scaledDuration === 0) {
+    if (remainingDeltaTime > 0 || childTicker.scaledDuration === 0) {
       if (++ticker.data.n >= this.repeats) {
         ticker.isDone = true;
         return;
       }
 
       childTicker.reset();
-      remainingTimeDelta = childTicker.tick(remainingTimeDelta);
+      remainingDeltaTime = childTicker.tick(remainingDeltaTime);
     }
   }
 

@@ -25,7 +25,10 @@
       "warn",
       "stroustrup"
     ],
-    "curly": "warn",
+    "curly": [
+      "warn",
+      "multi-line"
+    ],
     "semi": [
       "warn",
       "always"

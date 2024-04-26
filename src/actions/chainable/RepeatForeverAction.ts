@@ -38,13 +38,13 @@ export class RepeatForeverAction extends Action {
     deltaTime: number
   ): void {
     const childTicker: IActionTicker = ticker.data.childTicker;
-    let remainingTimeDelta = deltaTime * ticker.speed;
+    let remainingDeltaTime = deltaTime * ticker.speed;
 
-    remainingTimeDelta = childTicker.tick(remainingTimeDelta);
+    remainingDeltaTime = childTicker.tick(remainingDeltaTime);
 
-    if (remainingTimeDelta > 0) {
+    if (remainingDeltaTime > 0) {
       childTicker.reset();
-      remainingTimeDelta = childTicker.tick(remainingTimeDelta);
+      remainingDeltaTime = childTicker.tick(remainingDeltaTime);
     }
   }
 

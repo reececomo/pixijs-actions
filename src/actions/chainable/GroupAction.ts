@@ -30,21 +30,19 @@ export class GroupAction extends Action {
     ticker: IActionTicker,
     deltaTime: number,
   ): void {
-    let allDone = true;
-    const relativeTimeDelta = ticker.scaledDuration === Infinity
+    const relativeDeltaTime = ticker.scaledDuration === Infinity
       ? deltaTime * this.speed
       : dt * ticker.scaledDuration;
 
+    let allDone = true;
     for (const childTicker of ticker.data.childTickers as IActionTicker[]) {
-      if (!childTicker.isDone) {
-        allDone = false;
-        childTicker.tick(relativeTimeDelta);
-      }
+      if (childTicker.isDone) continue;
+
+      allDone = false;
+      childTicker.tick(relativeDeltaTime);
     }
 
-    if (allDone) {
-      ticker.isDone = true;
-    }
+    if (allDone) ticker.isDone = true;
   }
 
   protected onTickerDidReset(ticker: IActionTicker): any {

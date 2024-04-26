@@ -2,7 +2,7 @@ import { Action } from "./Action";
 import { TimingModeFn } from "../TimingMode";
 
 const EPSILON = 0.0000000001;
-const EPSILON_ONE = 1 - EPSILON;
+const EPSILON_1 = 1 - EPSILON;
 
 /**
  * An internal utility class that runs (or "ticks") stateless
@@ -240,11 +240,11 @@ export class ActionTicker {
       return;
     }
 
-    const scaledTimeDelta = deltaTime * this.speed;
+    const scaledDeltaTime = deltaTime * this.speed;
 
+    // Instantaneous actions:
     if (this.scaledDuration === 0) {
-      // Instantaneous action.
-      (action as any).onTick(this.target, 1.0, 1.0, this, scaledTimeDelta);
+      (action as any).onTick(this.target, 1.0, 1.0, this, scaledDeltaTime);
       this.isDone = true;
 
       // Remove completed action.
@@ -253,18 +253,18 @@ export class ActionTicker {
       return deltaTime; // relinquish the full time.
     }
 
-    if (deltaTime === 0) {
+    if (deltaTime === 0 && this.timeDistance < EPSILON_1) {
       return -1; // Early exit, no progress.
     }
 
     const b = this.easedTimeDistance;
-    this._elapsed += scaledTimeDelta;
+    this._elapsed += scaledDeltaTime;
     const t = this.easedTimeDistance;
     const dt = t - b;
 
-    (action as any).onTick(this.target, t, dt, this, scaledTimeDelta);
+    (action as any).onTick(this.target, t, dt, this, scaledDeltaTime);
 
-    if (this.isDone || (this.autoComplete && this.timeDistance >= EPSILON_ONE)) {
+    if (this.isDone || (this.autoComplete && this.timeDistance >= EPSILON_1)) {
       this.isDone = true;
 
       // Remove completed action.

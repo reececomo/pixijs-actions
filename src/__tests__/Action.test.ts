@@ -225,6 +225,30 @@ describe('Action Chaining', () => {
       expect((action as any).actions.length).toBe(2);
       expect((action as any)._squashedActions().length).toBe(11);
     });
+
+    it('completes regression case', () => {
+      const otherNodeA = new Container();
+      const otherNodeB = new Container();
+
+      let myRunCompleted = false;
+
+      const action = Action.sequence([
+        Action.group([
+          Action.waitForDuration(0.25),
+          Action.run(() => otherNodeA.run(Action.moveByX(2, 1.0))),
+          Action.run(() => otherNodeB.run(Action.moveByX(2, 1.0))),
+        ]),
+        Action.run(() => myRunCompleted = true),
+      ]);
+
+      const myNode = new Container();
+      myNode.run(action);
+
+      simulateTime(0.28);
+
+      expect(myNode.hasActions()).toBe(false);
+      expect(myRunCompleted).toBe(true);
+    });
   });
 
   describe('group()', () => {
@@ -268,6 +292,28 @@ describe('Action Chaining', () => {
       expect(myNode.x).toBeCloseTo(2.5);
 
       myNode.removeAllActions();
+    });
+
+    it('should work with waitForDuration()', () => {
+      const otherNodeA = new Container();
+      const otherNodeB = new Container();
+
+      const action = Action.group([
+        Action.waitForDuration(0.25),
+        Action.run(() => otherNodeA.run(Action.moveByX(2, 1.0))),
+        Action.run(() => otherNodeB.run(Action.moveByX(2, 1.0))),
+      ]);
+
+      expect(action.duration).toBeCloseTo(0.25);
+      expect(action.scaledDuration).toBeCloseTo(0.25);
+
+      const myNode = new Container();
+      myNode.runWithKey(action, 'myTriggerAction');
+
+      simulateTime(0.3);
+
+      expect(myNode.action('myTriggerAction')).toBeUndefined();
+      expect(myNode.hasActions()).toBe(false);
     });
   });
 
