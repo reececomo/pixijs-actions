@@ -253,6 +253,24 @@ describe('Action Chaining', () => {
       expect(node.position.x).toBeCloseTo(-5);
       expect(node.hasActions()).toBe(false);
     });
+
+    it('should work with repeatForever()', () => {
+      let i = 0;
+      const myCustomAction = Action.customAction(5.0, (target, t) => {
+        target.position.x = 5.0 * t;
+        i++;
+      });
+
+      const myNode = new Container();
+      myNode.run(Action.group([Action.repeatForever(myCustomAction)]));
+
+      simulateTime(7.5);
+
+      expect(myNode.hasActions()).toBe(true);
+      expect(myNode.x).toBeCloseTo(2.5);
+
+      myNode.removeAllActions();
+    });
   });
 
   describe('repeat()', () => {
@@ -554,6 +572,29 @@ describe('Action', () => {
       // Completes early because speed changes
       expect(myNode.speed).toBeCloseTo(2);
       expect(myNode.hasActions()).toBe(false);
+    });
+  });
+
+  describe('customAction()', () => {
+    it('runs arbitrary code', () => {
+      const myCustomAction = Action.customAction(5.0, (target, t, dt) => {
+        target.position.x = 5.0 * t;
+        target.position.y += 5.0 * dt;
+      });
+
+      const myNode = new Container();
+      myNode.run(myCustomAction);
+
+      simulateTime(2.5);
+
+      expect(myNode.hasActions()).toBe(true);
+      expect(myNode.x).toBeCloseTo(2.5);
+      expect(myNode.y).toBeCloseTo(2.5);
+
+      simulateTime(2.49999999);
+
+      expect(myNode.x).toBeCloseTo(5);
+      expect(myNode.y).toBeCloseTo(5);
     });
   });
 });

@@ -243,11 +243,7 @@ export class ActionTicker {
 
     // If action no longer valid, or target not on the stage
     // we garbage collect its actions.
-    if (
-      target == null
-      || target.destroyed
-      || target.parent === undefined
-    ) {
+    if (target == null || target.destroyed) {
       ActionTicker._removeActionTicker(this);
 
       return;
