@@ -20,8 +20,6 @@ export abstract class Action {
     public speed: number = 1,
     /** A setting that controls the speed curve of an animation. */
     public timingMode: TimingModeFn = TimingMode.linear,
-    /** @deprecated A global category bitmask which can be used to group actions. */
-    public categoryMask: number = 0x1,
   ) {
     if (duration < 0) {
       throw new RangeError('Action duration must be 0 or more.');
@@ -31,19 +29,6 @@ export abstract class Action {
   /** Duration of the action after its local speed scalar is applied. */
   public get scaledDuration(): number {
     return this.duration / this.speed;
-  }
-
-  /**
-   * @deprecated To be removed soon. Modify node and action speed directly instead.
-   *
-   * Set a category mask for this action.
-   * Use this to tick different categories of actions separately (e.g. separate different UI).
-   *
-   * This function mutates the underlying action.
-   */
-  public setCategory(categoryMask: number): this {
-    this.categoryMask = categoryMask;
-    return this;
   }
 
   /**

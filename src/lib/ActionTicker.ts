@@ -21,14 +21,9 @@ export class ActionTicker {
    * Tick all actions forward.
    *
    * @param deltaTimeMs Delta time given in milliseconds.
-   * @param categoryMask (Optional) Bitmask to filter which categories of actions to update.
-   * @param onErrorHandler (Optional) Handler errors from each action's tick.
+   * @param onErrorHandler Handle action errors.
    */
-  public static tickAll(
-    deltaTimeMs: number,
-    categoryMask: number | undefined = undefined,
-    onErrorHandler?: (error: any) => void
-  ): void {
+  public static tickAll(deltaTimeMs: number, onErrorHandler?: (error: any) => void): void {
     const deltaTime = deltaTimeMs * 0.001;
 
     for (const [target, tickers] of this._tickers.entries()) {
@@ -39,15 +34,11 @@ export class ActionTicker {
       }
 
       for (const actionTicker of tickers.values()) {
-        if (categoryMask !== undefined && (categoryMask & actionTicker.action.categoryMask) === 0) {
-          continue;
-        }
-
         try {
           actionTicker.tick(deltaTime * speed);
         }
         catch (error) {
-          // Isolate individual action errors.
+          // Report individual action errors.
           if (onErrorHandler === undefined) {
             console.error('Action failed with error: ', error);
           }

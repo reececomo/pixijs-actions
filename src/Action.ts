@@ -94,15 +94,10 @@ export abstract class _ extends Action {
    * Tick all actions forward.
    *
    * @param deltaTimeMs Delta time in milliseconds.
-   * @param categoryMask (Optional) Bitmask to filter which categories of actions to update.
-   * @param onErrorHandler (Optional) Handler errors from each action's tick.
+   * @param onErrorHandler Handle action errors.
    */
-  public static tick(
-    deltaTimeMs: number,
-    categoryMask: number | undefined = undefined,
-    onErrorHandler?: (error: any) => void
-  ): void {
-    ActionTicker.tickAll(deltaTimeMs, categoryMask, onErrorHandler);
+  public static tick(deltaTimeMs: number, onErrorHandler?: (error: any) => void): void {
+    ActionTicker.tickAll(deltaTimeMs, onErrorHandler);
   }
 
   //
