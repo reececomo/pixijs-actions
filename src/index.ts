@@ -1,14 +1,6 @@
-import * as PIXI from 'pixi.js';
-
 import { _ as Action } from "./Action";
 import { TimingMode, TimingModeFn } from "./TimingMode";
 import { registerDisplayObjectMixin } from './DisplayObject.mixin';
-
-//
-// ----- [Side-effect] Initialize DisplayObject mixin: -----
-//
-
-registerDisplayObjectMixin(PIXI.DisplayObject);
 
 //
 // ----- PixiJS Actions library: -----
