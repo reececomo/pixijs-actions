@@ -18,9 +18,10 @@ export function registerDisplayObjectMixin(displayObject: any): void {
   prototype.isPaused = false;
 
   // - Methods:
-  prototype.run = function (_action: Action, completion?: () => void): void {
-    const action = completion ? Action.sequence([_action, Action.run(completion)]) : _action;
-    ActionTicker.runAction(undefined, this, action);
+  prototype.run = function (action: Action, completion?: () => void): void {
+    return completion
+      ? ActionTicker.runAction(undefined, this, Action.sequence([action, Action.run(completion)]))
+      : ActionTicker.runAction(undefined, this, action);
   };
 
   prototype.runWithKey = function (action: Action, key: string): void {

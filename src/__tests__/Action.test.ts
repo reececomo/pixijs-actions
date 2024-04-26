@@ -1,5 +1,5 @@
-import { Container, Sprite } from 'pixi.js';
-import { Action, TimingMode } from '../index';
+import { Container, DisplayObject, Sprite } from 'pixi.js';
+import { Action, TimingMode, registerDisplayObjectMixin } from '../index';
 // import { registerDisplayObjectMixin } from '../DisplayObject.mixin';
 
 function simulateTime(seconds: number, steps: number = 100): void {
@@ -12,7 +12,7 @@ function simulateTime(seconds: number, steps: number = 100): void {
 }
 
 /** Load the DisplayObject mixin first. */
-// beforeAll(() => registerDisplayObjectMixin(DisplayObject));
+beforeAll(() => registerDisplayObjectMixin(DisplayObject));
 
 describe('DefaultTimingMode static properties', () => {
   it('should reflect the DefaultTimingModeEaseInOut on the root Action type', () => {
@@ -255,10 +255,8 @@ describe('Action Chaining', () => {
     });
 
     it('should work with repeatForever()', () => {
-      let i = 0;
       const myCustomAction = Action.customAction(5.0, (target, t) => {
         target.position.x = 5.0 * t;
-        i++;
       });
 
       const myNode = new Container();
