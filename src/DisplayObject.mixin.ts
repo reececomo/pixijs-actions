@@ -1,6 +1,5 @@
 import { _ as Action } from "./Action";
 import { ActionTicker } from "./lib/ActionTicker";
-import { getSpeed } from "./lib/utils/displayobject";
 
 //
 // ----- DisplayObject Mixin: -----
@@ -28,19 +27,8 @@ export function registerDisplayObjectMixin(displayObject: any): void {
     ActionTicker.runAction(key, this, action);
   };
 
-  prototype.runAsPromise = function (
-    action: Action,
-    timeoutBufferMs: number = 100
-  ): Promise<void> {
-    const node = this;
-    return new Promise(function (resolve, reject) {
-      const timeLimitMs = timeoutBufferMs + (getSpeed(node) * action.duration * 1_000);
-      const timeoutCheck = setTimeout(() => reject('Took too long to complete.'), timeLimitMs);
-      node.run(action, () => {
-        clearTimeout(timeoutCheck);
-        resolve();
-      });
-    });
+  prototype.runAsPromise = function (action: Action): Promise<void> {
+    return new Promise(resolve => this.run(action, () => resolve()));
   };
 
   prototype.action = function (forKey: string): Action | undefined {
