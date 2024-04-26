@@ -12,53 +12,11 @@ const EPSILON_ONE = 1 - EPSILON;
 export class ActionTicker {
 
   /** All currently executing actions. */
-  protected static _running: ActionTicker[] = [];
+  protected static _tickers: Map<TargetNode, Map<string | ActionTicker, ActionTicker>> = new Map();
 
   //
-  // ----- Static Methods: -----
+  // ----- Global ticker: -----
   //
-
-  /** Adds an action to the list of actions executed by the node. */
-  public static runAction(key: string | undefined, target: TargetNode, action: Action): void {
-    if (key !== undefined) {
-      // Stop any existing, identical-keyed actions on insert.
-      ActionTicker.removeTargetActionForKey(target, key);
-    }
-
-    this._running.push(new ActionTicker(key, target, action));
-  }
-
-  /** Whether a target has any actions. */
-  public static hasTargetActions(target: TargetNode): boolean {
-    return ActionTicker._running.find(at => at.target === target) !== undefined;
-  }
-
-  /** Retrieve an action with a key from a specific target. */
-  public static getTargetActionForKey(target: TargetNode, key: string): Action | undefined {
-    return this._getTargetActionTickerForKey(target, key)?.action;
-  }
-
-  /** Remove an action with a key from a specific target. */
-  public static removeTargetActionForKey(target: TargetNode, key: string): void {
-    const actionTicker = this._getTargetActionTickerForKey(target, key);
-
-    if (!actionTicker) {
-      return;
-    }
-
-    ActionTicker._removeActionTicker(actionTicker);
-  }
-
-  /** Remove all actions for a specific target. */
-  public static removeAllTargetActions(target: TargetNode): void {
-    for (let i = ActionTicker._running.length - 1; i >= 0; i--) {
-      const actionTicker = ActionTicker._running[i];
-
-      if (actionTicker.target === target) {
-        ActionTicker._removeActionTicker(actionTicker);
-      }
-    }
-  }
 
   /**
    * Tick all actions forward.
@@ -74,50 +32,96 @@ export class ActionTicker {
   ): void {
     const deltaTime = deltaTimeMs * 0.001;
 
-    for (let i = ActionTicker._running.length - 1; i >= 0; i--) {
-      const actionTicker = ActionTicker._running[i];
-
-      if (categoryMask !== undefined && (categoryMask & actionTicker.action.categoryMask) === 0) {
+    for (const [target, tickers] of this._tickers.entries()) {
+      if (getIsPaused(target)) {
         continue;
       }
 
-      if (getIsPaused(actionTicker.target)) {
-        continue;
-      }
+      const targetSpeed = getSpeed(target);
 
-      try {
-        actionTicker.tick(deltaTime * getSpeed(actionTicker.target));
-      }
-      catch (error) {
-        // Isolate individual action errors.
-        if (onErrorHandler === undefined) {
-          console.error('Action failed with error: ', error);
-        }
-        else {
-          onErrorHandler(error);
+      for (const actionTicker of tickers.values()) {
+        if (categoryMask !== undefined && (categoryMask & actionTicker.action.categoryMask) === 0) {
+          continue;
         }
 
-        // Remove offending ticker.
-        ActionTicker._removeActionTicker(actionTicker);
+        try {
+          actionTicker.tick(deltaTime * targetSpeed);
+        }
+        catch (error) {
+          // Isolate individual action errors.
+          if (onErrorHandler === undefined) {
+            console.error('Action failed with error: ', error);
+          }
+          else {
+            onErrorHandler(error);
+          }
+
+          // Remove offending ticker.
+          this._removeActionTicker(actionTicker);
+        }
       }
     }
   }
 
-  /** Retrieve the ticker for an action with a key from a specific target. */
-  protected static _getTargetActionTickerForKey(
-    target: TargetNode,
-    key: string
-  ): ActionTicker | undefined {
-    return ActionTicker._running.find(a => a.target === target && a.key === key);
+  //
+  // ----- Ticker Management: -----
+  //
+
+  /** Adds an action to the list of actions executed by the node. */
+  public static runAction(key: string | undefined, target: TargetNode, action: Action): void {
+    if (!this._tickers.has(target)) {
+      this._tickers.set(target, new Map());
+    }
+
+    const actionTicker = new ActionTicker(key, target, action);
+
+    // Replaces any existing, identical-keyed actions on insert.
+    this._tickers.get(target).set(key ?? actionTicker, actionTicker);
   }
 
-  /** Remove an action ticker for a target. */
-  protected static _removeActionTicker(actionTicker: ActionTicker): ActionTicker {
-    const index = ActionTicker._running.indexOf(actionTicker);
-    if (index >= 0) {
-      ActionTicker._running.splice(index, 1);
+  /** Whether a target has any actions. */
+  public static hasTargetActions(target: TargetNode): boolean {
+    return this._tickers.has(target);
+  }
+
+  /** Retrieve an action with a key from a specific target. */
+  public static getTargetActionForKey(target: TargetNode, key: string): Action | undefined {
+    return this._tickers.get(target)?.get(key)?.action;
+  }
+
+  /** Remove an action with a key from a specific target. */
+  public static removeTargetActionForKey(target: TargetNode, key: string): void {
+    const actionTicker = this._tickers.get(target)?.get(key);
+    if (actionTicker) {
+      this._removeActionTicker(actionTicker);
     }
-    return actionTicker;
+  }
+
+  /** Remove all actions for a specific target. */
+  public static removeAllTargetActions(target: TargetNode): void {
+    this._tickers.delete(target);
+  }
+
+  //
+  // ----- Internal helpers: -----
+  //
+
+  /**
+   * Remove an action ticker for a target.
+   *
+   * This cleans up any references to target too.
+   */
+  protected static _removeActionTicker(actionTicker: ActionTicker): void {
+    const tickers = this._tickers.get(actionTicker.target);
+    if (tickers === undefined) {
+      return; // No change.
+    }
+
+    tickers.delete(actionTicker.key ?? actionTicker);
+
+    if (tickers.size === 0) {
+      this._tickers.delete(actionTicker.target);
+    }
   }
 
   //
@@ -250,7 +254,7 @@ export class ActionTicker {
       return;
     }
 
-    const scaledTimeDelta = deltaTime * this.speed /* target speed is applied at the root */;
+    const scaledTimeDelta = deltaTime * this.speed;
 
     if (this.scaledDuration === 0) {
       // Instantaneous action.

@@ -55,6 +55,79 @@ describe('DefaultTimingMode static properties', () => {
   });
 });
 
+describe('keyed actions', () => {
+  it('allows actions to be checked/retrieved', () => {
+    const action = Action.sequence([
+      Action.moveByX(5, 5.0),
+      Action.moveByX(-5, 5.0),
+    ]);
+
+    const node = new Container();
+    node.runWithKey(action, 'myKey');
+
+    simulateTime(5.0);
+    expect(node.position.x).toBeCloseTo(5.0);
+
+    expect(node.action('myKey')).toBe(action);
+    expect(node.hasActions()).toBe(true);
+
+    simulateTime(5.0);
+    expect(node.position.x).toBeCloseTo(0.0);
+
+    expect(node.action('myKey')).toBeUndefined();
+    expect(node.hasActions()).toBe(false);
+  });
+
+  it('replaces identical keyed actions on run()', () => {
+    const action = Action.sequence([
+      Action.moveByX(5, 5.0),
+      Action.moveByX(-5, 5.0),
+    ]);
+
+    const node = new Container();
+    node.runWithKey(action, 'myKey');
+
+    simulateTime(5.0);
+    expect(node.position.x).toBeCloseTo(5.0);
+
+    expect(node.action('myKey')).toBe(action);
+    expect(node.hasActions()).toBe(true);
+
+    // Run again
+    node.runWithKey(action, 'myKey');
+
+    simulateTime(5.0);
+    expect(node.position.x).toBeCloseTo(10.0);
+
+    expect(node.action('myKey')).toBe(action);
+    expect(node.hasActions()).toBe(true);
+
+    simulateTime(5.0);
+    expect(node.position.x).toBeCloseTo(5.0);
+
+    expect(node.action('myKey')).toBeUndefined();
+    expect(node.hasActions()).toBe(false);
+  });
+
+  it('does not replace non-identical actions on run()', () => {
+    const action = Action.sequence([
+      Action.moveByX(5, 5.0),
+      Action.moveByX(-5, 5.0),
+    ]);
+
+    const node = new Container();
+    node.runWithKey(action, 'myKey');
+    node.runWithKey(action, 'myKey');
+    node.run(action);
+    node.run(action);
+
+    simulateTime(5.0);
+    expect(node.position.x).toBeCloseTo(15.0); // 3/4 should run.
+
+    node.removeAllActions();
+  });
+});
+
 describe('Action Chaining', () => {
   describe('sequence()', () => {
     it('complete all steps in order', () => {

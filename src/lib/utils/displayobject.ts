@@ -9,17 +9,17 @@ export function getIsPaused(target: PIXI.DisplayObject): boolean {
     }
     leaf = leaf.parent;
   }
-  while (leaf);
+  while (leaf != null);
 
   return false;
 }
 
-/** @returns The targets action speed, after factoring in any ancestors. */
+/** @returns The target's action speed, after factoring in any ancestors. */
 export function getSpeed(target: PIXI.DisplayObject): number {
   let leaf = target;
   let speed = leaf.speed;
 
-  while (leaf.parent) {
+  while (leaf.parent != null) {
     speed *= leaf.parent.speed;
     leaf = leaf.parent;
   }
