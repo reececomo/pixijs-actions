@@ -3,15 +3,15 @@ import { ActionTicker } from "./lib/ActionTicker";
 import { getSpeed } from "./lib/utils/displayobject";
 
 //
-// ----- Global Mixin: -----
+// ----- DisplayObject Mixin: -----
 //
 
 /**
- * Register the global mixins for PIXI.DisplayObject.
+ * Register the mixins for PIXI.DisplayObject.
  *
  * @param displayObject A reference to `PIXI.DisplayObject`.
  */
-export function registerGlobalMixin(displayObject: any): void {
+export function registerDisplayObjectMixin(displayObject: any): void {
   const prototype = displayObject.prototype;
 
   // - Properties:

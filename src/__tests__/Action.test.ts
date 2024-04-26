@@ -1,5 +1,6 @@
 import { Container, Sprite } from 'pixi.js';
 import { Action, TimingMode } from '../index';
+// import { registerDisplayObjectMixin } from '../DisplayObject.mixin';
 
 function simulateTime(seconds: number, steps: number = 100): void {
   const tickMs = seconds / steps * 1_000;
@@ -10,8 +11,8 @@ function simulateTime(seconds: number, steps: number = 100): void {
   }
 }
 
-/** Load the global mixin first. */
-// beforeAll(() => registerGlobalMixin(DisplayObject));
+/** Load the DisplayObject mixin first. */
+// beforeAll(() => registerDisplayObjectMixin(DisplayObject));
 
 describe('DefaultTimingMode static properties', () => {
   it('should reflect the DefaultTimingModeEaseInOut on the root Action type', () => {

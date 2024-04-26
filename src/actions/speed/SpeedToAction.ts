@@ -14,7 +14,7 @@ export class SpeedToAction extends Action {
     return new DelayAction(this.scaledDuration);
   }
 
-  protected onSetupTicker(target: TargetNode, ticker: IActionTicker): any {
+  protected onSetupTicker(target: TargetNode): any {
     return {
       startSpeed: target.speed,
     };
@@ -24,8 +24,7 @@ export class SpeedToAction extends Action {
     target: TargetNode,
     t: number,
     dt: number,
-    ticker: IActionTicker,
-    deltaTime: number,
+    ticker: IActionTicker
   ): void {
     target.speed = ticker.data.startSpeed + (this._speed - ticker.data.startSpeed) * t;
   }

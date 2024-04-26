@@ -2,13 +2,13 @@ import * as PIXI from 'pixi.js';
 
 import { _ as Action } from "./Action";
 import { TimingMode, TimingModeFn } from "./TimingMode";
-import { registerGlobalMixin } from './mixin';
+import { registerDisplayObjectMixin } from './DisplayObject.mixin';
 
 //
-// ----- [Side-effect] Initialize global mixin for DisplayObject: -----
+// ----- [Side-effect] Initialize DisplayObject mixin: -----
 //
 
-registerGlobalMixin(PIXI.DisplayObject);
+registerDisplayObjectMixin(PIXI.DisplayObject);
 
 //
 // ----- PixiJS Actions library: -----
@@ -16,13 +16,13 @@ registerGlobalMixin(PIXI.DisplayObject);
 
 export {
   Action,
-  registerGlobalMixin,
+  registerDisplayObjectMixin,
   TimingMode,
   TimingModeFn,
 };
 
 //
-// ----- Types and documentation for the global mixin: -----
+// ----- Types and documentation for the DisplayObject mixin: -----
 //
 
 declare module 'pixi.js' {

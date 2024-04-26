@@ -97,7 +97,11 @@ export abstract class _ extends Action {
    * @param categoryMask (Optional) Bitmask to filter which categories of actions to update.
    * @param onErrorHandler (Optional) Handler errors from each action's tick.
    */
-  public static tick(deltaTimeMs: number, categoryMask: number | undefined = undefined, onErrorHandler?: (error: any) => void): void {
+  public static tick(
+    deltaTimeMs: number,
+    categoryMask: number | undefined = undefined,
+    onErrorHandler?: (error: any) => void
+  ): void {
     ActionTicker.tickAll(deltaTimeMs, categoryMask, onErrorHandler);
   }
 

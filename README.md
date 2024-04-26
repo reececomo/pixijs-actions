@@ -56,7 +56,7 @@ npm install pixijs-actions
 yarn add pixijs-actions
 ```
 
-2. Import `pixijs-actions` somewhere in your application. The global mixins and their types are automatically registered when you import the library.
+2. Import `pixijs-actions` somewhere in your application. The DisplayObject mixin and its types are automatically registered when you import the library.
 
 3. Register the global ticker with your PixiJS app (or other render loop):
 
