@@ -1,6 +1,5 @@
 import { Action } from "./Action";
 import { TimingModeFn } from "../TimingMode";
-import { getIsPaused, getSpeed } from "./utils/displayobject";
 
 const EPSILON = 0.0000000001;
 const EPSILON_ONE = 1 - EPSILON;
@@ -33,11 +32,11 @@ export class ActionTicker {
     const deltaTime = deltaTimeMs * 0.001;
 
     for (const [target, tickers] of this._tickers.entries()) {
-      if (getIsPaused(target)) {
+      const [isPaused, speed] = _getTargetState(target);
+
+      if (isPaused || speed <= 0) {
         continue;
       }
-
-      const targetSpeed = getSpeed(target);
 
       for (const actionTicker of tickers.values()) {
         if (categoryMask !== undefined && (categoryMask & actionTicker.action.categoryMask) === 0) {
@@ -45,7 +44,7 @@ export class ActionTicker {
         }
 
         try {
-          actionTicker.tick(deltaTime * targetSpeed);
+          actionTicker.tick(deltaTime * speed);
         }
         catch (error) {
           // Isolate individual action errors.
@@ -300,4 +299,21 @@ export class ActionTicker {
     this.isDone = false;
     (this.action as any).onTickerDidReset(this);
   }
+}
+
+/**
+ * Get the global action processing state of a descendent target.
+ */
+function _getTargetState(target: TargetNode): [isPaused: boolean, speed: number] {
+  let leaf = target;
+  let isPaused = leaf.isPaused;
+  let speed = leaf.speed;
+
+  while (!isPaused && leaf.parent != null) {
+    isPaused = leaf.parent.isPaused;
+    speed *= leaf.parent.speed;
+    leaf = leaf.parent;
+  }
+
+  return [isPaused, speed];
 }
