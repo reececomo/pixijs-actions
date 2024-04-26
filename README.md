@@ -56,23 +56,32 @@ npm install pixijs-actions
 yarn add pixijs-actions
 ```
 
-2. Import `pixijs-actions` somewhere in your application. The DisplayObject mixin and its types are automatically registered when you import the library.
-
-3. Register the global ticker with your PixiJS app (or other render loop):
+2. Register the DisplayObject mixin:
 
 ```ts
-import { Action } from 'pixijs-actions';
+import * as PIXI from 'pixi.js';
+import { registerDisplayObjectMixin } from 'pixijs-actions';
+
+registerDisplayObjectMixin(PIXI.DisplayObject);
+```
+
+2. Register the `registerDisplayObjectMixin()` mixin and ticker with your PixiJS app (or other render loop):
+
+```ts
+import * as PIXI from 'pixi.js';
+import { Action, registerDisplayObjectMixin } from 'pixijs-actions';
+
+// Register the Actions mixin
+registerDisplayObjectMixin(PIXI.DisplayObject);
 
 const myApp = new PIXI.Application({ ... });
 
-// PixiJS v8:
-myApp.ticker.add(ticker => Action.tick(ticker.deltaTime));
-
-// or PixiJS v6 + v7:
-myApp.ticker.add(dt => Action.tick(dt));
+// Tick actions
+myApp.ticker.add(ticker => Action.tick(ticker.deltaTime)); // PixiJS v8
+myApp.ticker.add(dt => Action.tick(dt)); // PixiJS v6 + v7
 ```
 
-Now you are ready to start using actions!
+Now you can add your first action!
 
 ## Action Initializers
 
