@@ -17,7 +17,7 @@ import {
   RotateByAction,
   RotateToAction,
   RunBlockAction,
-  RunOnChildWithNameAction,
+  RunOnChildAction,
   ScaleByAction,
   ScaleToAction,
   ScaleToSizeAction,
@@ -33,7 +33,7 @@ const DEG_TO_RAD = Math.PI / 180;
 /**
  * Create, configure, and run actions in PixiJS.
  *
- * An action is an animation that is executed by a DisplayObject in the canvas.
+ * An action is an animation that is executed by a target node.
  *
  * ### Setup:
  * Bind `Action.tick(deltaTimeMs)` to your renderer/shared ticker to activate actions.
@@ -491,7 +491,7 @@ export abstract class _ extends Action {
   }
 
   //
-  // ----------------- Display Object Actions: -----------------
+  // ----------------- Container Actions: -----------------
   //
 
   /**
@@ -543,8 +543,8 @@ export abstract class _ extends Action {
    * This action is reversible; it tells the child to execute the reverse of the action specified by
    * the action parameter.
    */
-  public static runOnChildWithName(action: Action, name: string): Action {
-    return new RunOnChildWithNameAction(action, name);
+  public static runOnChild(nameOrLabel: string, action: Action): Action {
+    return new RunOnChildAction(action, nameOrLabel);
   }
 
   //

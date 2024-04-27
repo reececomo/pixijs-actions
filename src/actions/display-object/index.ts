@@ -1,3 +1,3 @@
 export * from './RemoveFromParentAction';
-export * from './RunOnChildWithNameAction';
+export * from './RunOnChildAction';
 export * from './SetVisibleAction';

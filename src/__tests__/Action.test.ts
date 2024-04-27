@@ -1,18 +1,20 @@
-import { Container, DisplayObject, Sprite } from 'pixi.js';
-import { Action, TimingMode, registerDisplayObjectMixin } from '../index';
-// import { registerDisplayObjectMixin } from '../DisplayObject.mixin';
+import { Container, Sprite } from 'pixi.js';
+import { Action, TimingMode, registerPixiJSActionsMixin } from '../index';
 
-function simulateTime(seconds: number, steps: number = 100): void {
+function simulateTime(seconds: number, steps: number = 100): Error[] {
+  const errors: Error[] = [];
   const tickMs = seconds / steps * 1_000;
 
   // Simulate in multiple increments to mimic real world conditions.
   for (let i = 0; i < steps; i++) {
-    Action.tick(tickMs);
+    Action.tick(tickMs, (error) => errors.push(error));
   }
+
+  return errors;
 }
 
-/** Load the DisplayObject mixin first. */
-beforeAll(() => registerDisplayObjectMixin(DisplayObject));
+/** Load the Container mixin first. */
+beforeAll(() => registerPixiJSActionsMixin(Container));
 
 describe('DefaultTimingMode static properties', () => {
   it('should reflect the DefaultTimingModeEaseInOut on the root Action type', () => {
@@ -544,19 +546,16 @@ describe('Action', () => {
     });
   });
 
-  describe('runOnChildWithName()', () => {
-    it('passes the action to the named child', () => {
+  describe('runOnChild()', () => {
+    it('passes the action to the named child with PixiJS v8 label', () => {
       const childNode = new Container();
-      childNode.name = "myChildNode";
+      (childNode as any).label = 'myChildNode';
 
       const parentNode = new Container();
       parentNode.addChild(childNode);
 
       parentNode.run(
-        Action.runOnChildWithName(
-          Action.rotateBy(Math.PI, 1.0),
-          "myChildNode",
-        )
+        Action.runOnChild('myChildNode', Action.rotateBy(Math.PI, 1.0))
       );
 
       simulateTime(0.5);
@@ -568,6 +567,62 @@ describe('Action', () => {
 
       expect(childNode.rotation).toBeCloseTo(Math.PI);
       expect(childNode.hasActions()).toBe(false);
+    });
+
+    it('passes the action to the named child with PixiJS v6/v7 name', () => {
+      const childNode = new Container();
+      childNode.name = 'myChildNode';
+
+      const parentNode = new Container();
+      parentNode.addChild(childNode);
+
+      parentNode.run(
+        Action.runOnChild('myChildNode', Action.rotateBy(Math.PI, 1.0))
+      );
+
+      simulateTime(0.5);
+
+      expect(parentNode.hasActions()).toBe(false);
+      expect(childNode.hasActions()).toBe(true);
+
+      simulateTime(1.0);
+
+      expect(childNode.rotation).toBeCloseTo(Math.PI);
+      expect(childNode.hasActions()).toBe(false);
+    });
+
+    it('errors with ReferenceError when child node does not exist', () => {
+      const childNode = new Container();
+      childNode.name = 'otherChildNode';
+
+      const parentNode = new Container();
+      parentNode.addChild(childNode);
+
+      parentNode.run(
+        Action.runOnChild('myChildNode', Action.rotateBy(Math.PI, 1.0))
+      );
+
+      const errors = simulateTime(0.5);
+      expect(errors.length).toBe(1);
+      expect(errors[0]).toBeInstanceOf(ReferenceError);
+
+      expect(parentNode.hasActions()).toBe(false);
+      expect(childNode.hasActions()).toBe(false);
+    });
+
+    it('errors with TypeError when target cannot have children', () => {
+      const parentNode = new Container();
+      (parentNode as any).children = undefined; // Simulate PixiJS v8
+
+      parentNode.run(
+        Action.runOnChild('myChildNode', Action.rotateBy(Math.PI, 1.0))
+      );
+
+      const errors = simulateTime(0.5);
+      expect(errors.length).toBe(1);
+      expect(errors[0]).toBeInstanceOf(TypeError);
+
+      expect(parentNode.hasActions()).toBe(false);
     });
   });
 

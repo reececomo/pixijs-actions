@@ -15,16 +15,42 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-
     strategy:
       matrix:
-        node-version: [20.x]
+        include:
+          # https://pixijs.com/versions
 
+          - label: v6.3
+            pixi-version: '6.3.2'
+            typescript-version: '4.9.5'
+
+          - label: v6.x
+            pixi-version: '6.x.x'
+            typescript-version: '4.9.5'
+
+          - label: v7.0
+            pixi-version: '7.0.0'
+            typescript-version: '4.9.5'
+
+          - label: v7.x
+            pixi-version: '7.x.x'
+            typescript-version: '5.4.5'
+
+          - label: v8.0
+            pixi-version: '8.0.0'
+            typescript-version: '5.4.5'
+
+          - label: v8.x
+            pixi-version: '8.x.x'
+            typescript-version: '5.4.5'
+
+    name: pixi.js ${{ matrix.label }} (@v${{ matrix.pixi-version }})
     steps:
       - uses: actions/checkout@v3
-      - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v3
+      - uses: actions/setup-node@v3
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: 20.x
       - run: npm install
+      - name: Install PixiJS v${{ matrix.pixi-version }}
+        run: npm install pixi.js@v${{ matrix.pixi-version }} typescript@v${{ matrix.typescript-version }}
       - run: npm run test

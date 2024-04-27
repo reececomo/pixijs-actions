@@ -6,7 +6,7 @@ declare global {
   type TimeInterval = number;
 
   /** Targeted display node. */
-  type TargetNode = PIXI.DisplayObject;
+  type TargetNode = PIXI.Container;
 
   /** Targeted display node with a width and height. */
   type SizedTargetNode = TargetNode & SizeLike;

@@ -1,6 +1,6 @@
 import { _ as Action } from "./Action";
 import { TimingMode, TimingModeFn } from "./TimingMode";
-import { registerDisplayObjectMixin } from './DisplayObject.mixin';
+import { registerPixiJSActionsMixin } from './Container.mixin';
 
 //
 // ----- PixiJS Actions library: -----
@@ -8,18 +8,18 @@ import { registerDisplayObjectMixin } from './DisplayObject.mixin';
 
 export {
   Action,
-  registerDisplayObjectMixin,
+  registerPixiJSActionsMixin,
   TimingMode,
   TimingModeFn,
 };
 
 //
-// ----- Types and documentation for the DisplayObject mixin: -----
+// ----- Types and documentation for the Container mixin: -----
 //
 
 declare module 'pixi.js' {
 
-  export interface DisplayObject {
+  export interface Container {
 
     /**
      * A boolean value that determines whether actions on the node and its descendants are processed.
