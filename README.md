@@ -81,6 +81,78 @@ Ticker.shared.add(() => Action.tick(Ticker.shared.elapsedMS));
 
 ✨ You are now ready to run your first action!
 
+## Running Actions
+
+*Running actions in your canvas.*
+
+```ts
+// Hide me instantly!
+mySprite.run(Action.hide(), () => {
+  console.log('where did I go?');
+});
+```
+
+Nodes are extended with a few new methods and properties to make it easy to interact with actions.
+
+| Property | Description |
+| :----- | :------ |
+| `speed` | A speed modifier applied to all actions executed by the node and its descendants. Defaults to `1.0`. |
+| `isPaused` | A boolean value that determines whether actions on the node and its descendants are processed. Defaults to `false`. |
+
+| Method | Description |
+| :----- | :------ |
+| `run(action)` | Run an action. |
+| `run(action, completion)` | Run an action with a completion handler. |
+| `runWithKey(action, withKey)` | Run an action, and store it so it can be retrieved later. |
+| `runAsPromise(action): Promise<void>` | Run an action as a promise. |
+| `action(forKey): Action \| undefined` | Return an action associated with a specified key. |
+| `hasActions(): boolean` | Return a boolean indicating whether the node is executing actions. |
+| `removeAllActions(): void` | End and removes all actions from the node. |
+| `removeAction(forKey): void` | Remove an action associated with a specified key. |
+
+### Running Identifiable Actions
+
+```ts
+// Repeat an action forever!
+const spin = Action.repeatForever(Action.rotateBy(5, 1.0));
+mySprite.runWithKey(spin, 'spinForever');
+
+// Or remove it later.
+mySprite.removeAction('spinForever');
+```
+
+### Pausing All Actions
+
+```ts
+mySprite.isPaused = true;
+// All actions will stop running.
+```
+
+### Manipulating Action Speed
+
+Speed can be manipulated on both actions and nodes.
+
+```ts
+const moveAction = Action.moveByX(10, 4.0);
+moveAction.speed = 2.0;
+// moveAction will now take only 2 seconds instead of 4.
+
+const repeatAction = Action.repeat(moveAction, 5);
+repeatAction.speed = 2.0;
+// Each moveAction will only take 1 second, for a total of 5 seconds.
+
+mySprite.run(moveAction);
+mySprite.speed = 2.0;
+// mySprite is running at 2x speed!
+// The entire action should now take ~2.5 seconds.
+
+mySprite.parent!.speed = 1 / 4;
+// Now we've slowed down mySprite's parent.
+// The entire action will now take ~10 seconds.
+```
+
+> Note: Since actions are designed to be stateless, the `speed` property is captured when the action runs. Any changes to `speed` or `timingMode` on the action object will not affect actions that have already been run.
+
 ## Action Initializers
 
 *Combine these initializers to create expressive animations and behaviors.*
@@ -243,7 +315,11 @@ Action.DefaultTimingModeEaseInOut = TimingMode.easeInOutExpo;
 myNode.run(myAction.easeIn()); // myAction.timingMode === TimingMode.easeInQuad
 ```
 
-## Custom Actions
+## Creating Custom Actions
+
+Beyond combining chaining actions like `sequence()`, `group()`, `repeat()` and `repeatForever()`, you can provide code that implements your own action.
+
+### Composite Actions
 
 Actions are stateless and reusable, so you can create complex animations once, and then run them on many nodes.
 
@@ -295,82 +371,6 @@ mySprite.run(MyActions.squashAndStretch(1.25));
 // Big squish!
 mySprite.run(MyActions.squashAndStretch(2.0));
 ```
-
-## Running Actions on Nodes
-
-*Running actions in your canvas.*
-
-```ts
-// Hide me instantly!
-mySprite.run(Action.hide(), () => {
-  console.log('where did I go?');
-});
-```
-
-Nodes are extended with a few new methods and properties to make it easy to interact with actions.
-
-| Property | Description |
-| :----- | :------ |
-| `speed` | A speed modifier applied to all actions executed by the node and its descendants. Defaults to `1.0`. |
-| `isPaused` | A boolean value that determines whether actions on the node and its descendants are processed. Defaults to `false`. |
-
-| Method | Description |
-| :----- | :------ |
-| `run(action)` | Run an action. |
-| `run(action, completion)` | Run an action with a completion handler. |
-| `runWithKey(action, withKey)` | Run an action, and store it so it can be retrieved later. |
-| `runAsPromise(action): Promise<void>` | Run an action as a promise. |
-| `action(forKey): Action \| undefined` | Return an action associated with a specified key. |
-| `hasActions(): boolean` | Return a boolean indicating whether the node is executing actions. |
-| `removeAllActions(): void` | End and removes all actions from the node. |
-| `removeAction(forKey): void` | Remove an action associated with a specified key. |
-
-### Running Actions
-
-```ts
-// Repeat an action forever!
-const spin = Action.repeatForever(Action.rotateBy(5, 1.0));
-mySprite.runWithKey(spin, 'spinForever');
-
-// Or remove it later.
-mySprite.removeAction('spinForever');
-```
-
-### Pausing Actions
-
-```ts
-mySprite.isPaused = true;
-// All actions will stop running.
-```
-
-### Manipulating Action Speed
-
-Speed can be manipulated on both actions and nodes.
-
-```ts
-const moveAction = Action.moveByX(10, 4.0);
-moveAction.speed = 2.0;
-// moveAction will now take only 2 seconds instead of 4.
-
-const repeatAction = Action.repeat(moveAction, 5);
-repeatAction.speed = 2.0;
-// Each moveAction will only take 1 second, for a total of 5 seconds.
-
-mySprite.run(moveAction);
-mySprite.speed = 2.0;
-// mySprite is running at 2x speed!
-// The entire action should now take ~2.5 seconds.
-
-mySprite.parent!.speed = 1 / 4;
-// Now we've slowed down mySprite's parent.
-// The entire action will now take ~10 seconds.
-```
-
-> Note: Since actions are designed to be stateless, the `speed` property is captured when the action runs. Any changes to `speed` or `timingMode` on the action object will not affect actions that have already been run.
-
-## Creating Custom Actions
-
-Beyond combining chaining actions like `sequence()`, `group()`, `repeat()` and `repeatForever()`, you can provide code that implements your own action.
 
 ### Custom Action (Basic)
 
@@ -436,3 +436,7 @@ mySprite.run(
   Action.repeatForever(makeOrbitAction(10, 15.0))
 );
 ```
+
+### Contributions
+
+**PixiJS Actions** was originally forked from [srpatel](https://github.com/srpatel)'s awesome [pixi-actions](https://github.com/srpatel/pixi-actions) library, but became a hard fork when we changed approach.
