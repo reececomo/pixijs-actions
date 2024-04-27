@@ -21,21 +21,24 @@ jobs:
           # https://pixijs.com/versions
 
           - label: v6
-            package-version: 6.5.10
+            pixi-version: 6.5.10
+            typescript-version: 4.2.3
 
           - label: v7
             package-version: 7.4.2
+            typescript-version: 5.4.5
 
           - label: v8
             package-version: 8.1.0
+            typescript-version: 5.4.5
 
-    name: PixiJS ${{ matrix.label }} (@${{ matrix.package-version }})
+    name: PixiJS ${{ matrix.label }} (@${{ matrix.pixi-version }})
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
         with:
           node-version: 20.x
       - run: npm install
-      - name: Install PixiJS v${{ matrix.package-version }}
-        run: npm install pixi.js@v${{ matrix.package-version }}
+      - name: Install PixiJS v${{ matrix.pixi-version }}
+        run: npm install pixi.js@v${{ matrix.pixi-version }} typescript@v${{ matrix.typescript-version }}
       - run: npm run test
