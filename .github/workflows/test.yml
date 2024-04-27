@@ -19,12 +19,19 @@ jobs:
     strategy:
       matrix:
         node-version: [20.x]
+        pixi-version: [6.1.0, 7.2.0, 8.1.0]
 
     steps:
       - uses: actions/checkout@v3
+
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.node-version }}
+
       - run: npm install
+
+      - name: Use pixi.js@${{ matrix.node-version }}
+        run: npm install pixi-js@${{ matrix.pixi-version}}
+
       - run: npm run test
