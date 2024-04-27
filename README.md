@@ -1,121 +1,97 @@
-<div align="center">
+# 🎬 pixijs-actions &nbsp;[![NPM version](https://img.shields.io/npm/v/pixijs-actions.svg?style=flat-square)](https://www.npmjs.com/package/pixijs-actions) [![test ci/cd status badge](https://github.com/reececomo/pixijs-actions/actions/workflows/test.yml/badge.svg)](https://github.com/reececomo/pixijs-actions/actions/workflows/test.yml) [![lint ci/cd status badge](https://github.com/reececomo/pixijs-actions/actions/workflows/lint.yml/badge.svg)](https://github.com/reececomo/pixijs-actions/actions/workflows/lint.yml)
 
-# 🎬 PixiJS Actions
+PixiJS Actions allow developers to easily configure complex, high-performance animations in [PixiJS](https://pixijs.com/).
 
-Powerful, lightweight animations in [PixiJS](https://pixijs.com/).
+- 🚀 35+ [built-in actions](#action-initializers), 30+ [smoothing options](#timing-modes)
+- 🔀 Reuseable, chainable & reversible actions
+- ⌚ Comprehensive speed and pausing support
+- ✨ Support for PixiJS v6, v7, v8+
+- 🎬 Based on similar concepts in [Cocos2d-x](https://docs.cocos2d-x.org/cocos2d-x/v3/en/actions/getting_started.html), [LibGDX](https://libgdx.com/wiki/graphics/2d/scene2d/scene2d#actions), [SpriteKit](https://developer.apple.com/documentation/spritekit/getting_started_with_actions) & others
 
-[![NPM version](https://img.shields.io/npm/v/pixijs-actions.svg?style=flat-square)](https://www.npmjs.com/package/pixijs-actions)
-[![test](https://github.com/reececomo/pixijs-actions/actions/workflows/test.yml/badge.svg)](https://github.com/reececomo/pixijs-actions/actions/workflows/test.yml)
-[![lint](https://github.com/reececomo/pixijs-actions/actions/workflows/lint.yml/badge.svg)](https://github.com/reececomo/pixijs-actions/actions/workflows/lint.yml)
+## Sample Usage
 
-A PixiJS implementation of [Apple's SKActions](https://developer.apple.com/documentation/spritekit#2242743) (forked from [srpatel/pixi-actions](https://github.com/srpatel/pixi-actions)).
+*Create, configure, and run animations & actions.*
 
-</div>
+```ts
+// Define an action
+const spinAndRemove = Action.sequence([
+  Action.rotateByDegrees(360, 0.2).easeInOut(),
+  Action.fadeOut(0.2).easeIn(),
+  Action.removeFromParent(),
+  Action.run(() => console.info('✨ done!'))
+]);
+
+// Run an action
+mySprite.run(spinAndRemove);
+```
+
+
+## Getting Started with PixiJS Actions
+
+*Everything you need to quickly build beautiful animations.*
+
+**PixiJS Actions** is based off the idiomatic and expressive [**SKActions API**](https://developer.apple.com/documentation/spritekit/getting_started_with_actions), extending `Container` to add first-class support for action management. TypeScript types and documentation are automatically provided.
+
+The three concepts are:
+
+- **Node:** _Any container (e.g. `Container`, `Sprite`, `Graphics`)_
+
+- **Action:** _Stateless, reusable instructions (to be executed against a node)_
+  - These can include animations, stage tree updates, triggers, and more.
+  - Actions can be instantaneous, or animated over a period of time.
+  - Each action has a `.reversed()` action. See [About Reversing Actions](#about-reversing-actions).
+
+- **TimingMode / Speed:** _Control the speed & smoothness of actions and animations_
+  - Every action has a **timing mode**, which controls the timing curve of its animation. See [Timing Modes](#timing-modes).
+  - Actions and nodes each also have a **speed** attribute, which modify how fast actions run against a node and its descendents. See [Manipulating Speed](#manipulating-speed).
 
 ## Installation
 
-```sh
-# npm
-npm install pixijs-actions
+*Quick start guide (<30 seconds)*
 
-# yarn
-yarn add pixijs-actions
-```
-
-## Getting started with Actions
-
-*Create, configure, and run actions in PixiJS.*
-
-You tell nodes to run an instace of `Action` when you want to animate contents of your canvas. When the canvas processes frames of animation, the actions are executed. Some actions are completed in a single frame of animation, while other actions apply changes over multiple frames of animation before completing. The most common use for actions is to animate changes to a node’s properties. For example, you can create actions that move a node, scale or rotate it, or fade its transparency. However, actions can also change the node tree or even execute custom code.
-
-## Basic usage
-
-*Create reusable animations &amp; actions, run them on display objects.*
-
-```ts
-const razzleDazzle = Action.sequence([
-  Action.fadeIn(0.3),
-  Action.rotateByDegrees(360, 0.3).easeInOut(),
-]);
-
-// ✨ Show mySprite with some flair!
-mySprite.run(razzleDazzle);
-```
-
-## Setup
-
-*Quick start guide for first time setup.*
-
-1. First install the package. The library imports as an ES6 module, and includes TypeScript types.
+**1.** Install the latest `pixijs-actions` package:
 
 ```sh
 # npm
-npm install pixijs-actions
+npm install pixijs-actions -D
 
 # yarn
-yarn add pixijs-actions
+yarn add pixijs-actions --dev
 ```
 
-2. Register the DisplayObject mixin:
-
-```ts
-import * as PIXI from 'pixi.js';
-import { registerDisplayObjectMixin } from 'pixijs-actions';
-
-registerDisplayObjectMixin(PIXI.DisplayObject);
-```
-
-2. Register the `registerDisplayObjectMixin()` mixin and ticker with your PixiJS app (or other render loop):
+**2.** Register the mixin & ticker:
 
 ```ts
 import * as PIXI from 'pixi.js';
 import { Action, registerDisplayObjectMixin } from 'pixijs-actions';
 
-// Register the Actions mixin
-registerDisplayObjectMixin(PIXI.DisplayObject);
+// Register mixin for container.
+registerDisplayObjectMixin(PIXI.Container);
 
-const myApp = new PIXI.Application({ ... });
-
-// Tick actions
-myApp.ticker.add(ticker => Action.tick(ticker.deltaTime)); // PixiJS v8
-myApp.ticker.add(dt => Action.tick(dt)); // PixiJS v6 + v7
+// Register `Action.tick(...)` with shared ticker
+Ticker.shared.add(ticker => Action.tick(ticker.elapsedMS));
 ```
 
-Now you can add your first action!
+**For PixiJS v6/v7, that should be something like:**
+
+```ts
+Ticker.shared.add(() => Action.tick(Ticker.shared.elapsedMS));
+// or
+Ticker.shared.add((dt) => Action.tick(dt / 60));
+```
+
+> If not using the PIXI shared ticker, then put `Action.tick(elapsedMs)` in the appropriate equivalent place (i.e. your `requestAnimationFrame()` render loop).
+
+
+**3.** Done!
+
+Now you are ready to run your first action.
 
 ## Action Initializers
 
-*Combine these initializers to create complex animations.*
+*Combine these initializers to create complex animations*
 
 Most actions implement specific predefined animations that are ready to use. If your animation needs fall outside of the suite provided here, then you should implement a custom action. See **Creating Custom Actions** below.
-
-```ts
-import { Action } from 'pixijs-actions';
-
-// ✨ Expand and contract smoothly over 2 seconds.
-const pulsate = Action.sequence([
-  Action.scaleTo(1.5, 1.0).easeOut(),
-  Action.scaleTo(1, 1.0).easeIn()
-]);
-
-// ✨ Follow a complex path (e.g. a bezier curve).
-const path = [
-  { x: 0, y: 0 },
-  { x: 100, y: 0 },
-  { x: 100, y: 100 },
-  { x: 200, y: 200 }
-];
-const followPath = Action.follow(path, 5.0);
-
-// ✨ Create a 10 second loop.
-const moveBackAndForthWhilePulsating = Action.group([
-  Action.repeat(pulsate, 5),
-  Action.sequence([followPath, followPath.reversed()]),
-]);
-
-// ✨ Animate continuously.
-mySprite.run(Action.repeatForever(moveBackAndForthWhilePulsating));
-```
 
 | Action | Description | Reversible? |
 | :----- | :---------- | :---------- |
@@ -179,6 +155,38 @@ All actions have a `.reversed()` method which will return an action with the rev
 - _**†Identical:**_ The reversed action will be identical to the original action.
 - _**\*No:**_ The reversed action will only idle for the equivalent duration.
 
+### Action Chaining
+
+Many actions can be joined together using chaining actions like `.sequence()`, `.group()`, `.repeat()` and `.repeatForever()` to easily create complex animations:
+
+```ts
+import { Action } from 'pixijs-actions';
+
+// Expand and contract smoothly over 2 seconds
+const pulsate = Action.sequence([
+  Action.scaleTo(1.5, 1.0).easeOut(),
+  Action.scaleTo(1, 1.0).easeIn()
+]);
+
+// Follow a complex path (e.g. a bezier curve)
+const path = [
+  { x: 0, y: 0 },
+  { x: 100, y: 0 },
+  { x: 100, y: 100 },
+  { x: 200, y: 200 }
+];
+const followPath = Action.follow(path, 5.0);
+
+// Create a 10 second loop that goes back and forth
+const moveBackAndForthWhilePulsating = Action.group([
+  Action.repeat(pulsate, 5),
+  Action.sequence([followPath, followPath.reversed()]),
+]);
+
+// ✨ Animate continuously
+mySprite.run(Action.repeatForever(moveBackAndForthWhilePulsating));
+```
+
 ## Timing Modes
 
 All actions have a `timingMode` which controls the speed curve of its execution.
@@ -200,11 +208,28 @@ Action.fadeIn(0.3).setTimingMode(TimingMode.easeInOutCubic);
 Action.fadeIn(0.3).setTimingMode(x => x * x);
 ```
 
-### Global Defaults
+### Default Timing Modes
 
-The `.easeInOut()`, `.easeIn()`, and `.easeOut()` methods set the timing mode of the action to the global default timing for that curve type.
+The `.easeIn()`, `.easeOut()`, `.easeInOut()`, and `.linear()` methods on `Action` instances will set the timing mode of that action to the global default timing mode for that curve type.
 
-You can set any global defaults for these by updating `Action.DefaultTimingModeEaseInOut`, `Action.DefaultTimingModeEaseIn`, and `Action.DefaultTimingModeEaseOut`. The default timing modes for these easings are `TimingMode.easeInOutSine`, `TimingMode.easeInSine`, and `TimingMode.easeOutSine` respectively.
+| Global setting | Default value | Helper |
+| :--- | :--- | :--- |
+| `Action.DefaultTimingModeEaseIn` | `TimingMode.easeInSine` | `action.easeIn()` |
+| `Action.DefaultTimingModeEaseOut` | `TimingMode.easeOutSine` | `action.easeOut()` |
+| `Action.DefaultTimingModeEaseInOut` | `TimingMode.easeInOutSine` | `action.easeInOut()` |
+| _(n/a)_ | `TimingMode.linear` | `action.linear()` |
+
+Custom default timing modes can be set like so:
+
+```ts
+// Configure defaults:
+Action.DefaultTimingModeEaseIn = TimingMode.easeInQuad;
+Action.DefaultTimingModeEaseOut = TimingMode.easeOutCirc;
+Action.DefaultTimingModeEaseInOut = TimingMode.easeInOutExpo;
+
+// Use defaults:
+myNode.run(myAction.easeIn()); // myAction.timingMode === TimingMode.easeInQuad
+```
 
 ### Built-in TimingMode Options
 
@@ -224,9 +249,9 @@ See the following table for default `TimingMode` options.
 | **Bounce**      | `easeInOutBounce` | `easeInBounce` | `easeOutBounce` | Bouncy effect at the start or end, with multiple rebounds. |
 | **Elastic**     | `easeInOutElastic` | `easeInElastic` | `easeOutElastic` | Stretchy motion with overshoot and multiple oscillations. |
 
-### Custom Actions
+## Custom Actions
 
-Actions are stateless and reusable, so you can create complex animations once, and then run them on many display objects.
+Actions are stateless and reusable, so you can create complex animations once, and then run them on many nodes.
 
 ```ts
 /** A nice gentle rock back and forth. */
@@ -277,7 +302,7 @@ mySprite.run(MyActions.squashAndStretch(1.25));
 mySprite.run(MyActions.squashAndStretch(2.0));
 ```
 
-## Running Actions on DisplayObjects
+## Running Actions on Nodes
 
 *Running actions in your canvas.*
 
@@ -288,7 +313,7 @@ mySprite.run(Action.hide(), () => {
 });
 ```
 
-Display objects are extended with a few new methods and properties to make it easy to interact with actions.
+Nodes are extended with a few new methods and properties to make it easy to interact with actions.
 
 | Property | Description |
 | :----- | :------ |
@@ -306,7 +331,7 @@ Display objects are extended with a few new methods and properties to make it ea
 | `removeAllActions(): void` | End and removes all actions from the node. |
 | `removeAction(forKey): void` | Remove an action associated with a specified key. |
 
-### Running actions
+### Running Actions
 
 ```ts
 // Repeat an action forever!
@@ -317,16 +342,16 @@ mySprite.runWithKey(spin, 'spinForever');
 mySprite.removeAction('spinForever');
 ```
 
-### Pausing
+### Pausing Actions
 
 ```ts
 mySprite.isPaused = true;
 // All actions will stop running.
 ```
 
-### Manipulating speed
+### Manipulating Action Speed
 
-Speed can be manipulated on both display objects, and actions themselves.
+Speed can be manipulated on both actions and nodes.
 
 ```ts
 const moveAction = Action.moveByX(10, 4.0);
@@ -340,20 +365,20 @@ repeatAction.speed = 2.0;
 mySprite.run(moveAction);
 mySprite.speed = 2.0;
 // mySprite is running at 2x speed!
-// The entire action should now take 2.5 seconds.
+// The entire action should now take ~2.5 seconds.
 
-mySprite.parent.speed = 1 / 4;
+mySprite.parent!.speed = 1 / 4;
 // Now we've slowed down mySprite's parent.
-// The entire action should now take 10 seconds.
+// The entire action will now take ~10 seconds.
 ```
 
-> Note: Since actions are designed to be stateless, the `speed` property is captured when the action runs. Any changes to `speed` or `timingMode` will not affect animations that have already been run.
+> Note: Since actions are designed to be stateless, the `speed` property is captured when the action runs. Any changes to `speed` or `timingMode` on the action object will not affect actions that have already been run.
 
 ## Creating Custom Actions
 
 Beyond combining chaining actions like `sequence()`, `group()`, `repeat()` and `repeatForever()`, you can provide code that implements your own action.
 
-### Action.customAction()
+### Custom Action (Basic)
 
 You can use the built-in `Action.customAction(duration, stepHandler)` to provide custom actions:
 
@@ -376,10 +401,44 @@ mySprite.removeAction('rainbow');
 ```
 
 > **Step functions:**
-> - `target` = The display object.
+> - `target` = The node the aciton is runnning against.
 > - `t` = Progress of time from 0 to 1, which has been passed through the `timingMode` function.
 > - `dt` = delta/change in `t` since last step. Use for relative actions.
 >
 > _Note: `t` can be outside of 0 and 1 in timing mode functions which overshoot, such as `TimingMode.easeInOutBack`._
 
 This function will be called as many times as the renderer asks over the course of its duration.
+
+### Custom Action (with State)
+
+Here is a practical example:
+
+```ts
+// Create a custom action that relies on
+// state (radius, inital target position).
+const makeOrbitAction = (
+  radius: number,
+  duration: number
+): Action => {
+  let startPos: PIXI.IPointData;
+
+  return Action.customAction(duration, (target, t, td) => {
+    if (!startPos) {
+      // Capture on first run
+      startPos = { x: target.x, y: target.y };
+    }
+
+    const angle = Math.PI * 2 * t;
+
+    target.position.set(
+      startPos.x + radius * Math.cos(angle),
+      startPos.y + radius * Math.sin(angle)
+    );
+  });
+};
+
+// Run the custom action
+mySprite.run(
+  Action.repeatForever(makeOrbitAction(10, 15.0))
+);
+```
