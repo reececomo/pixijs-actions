@@ -1,6 +1,6 @@
 # 🎬 pixijs-actions &nbsp;[![NPM version](https://img.shields.io/npm/v/pixijs-actions.svg?style=flat-square)](https://www.npmjs.com/package/pixijs-actions) [![test ci/cd status badge](https://github.com/reececomo/pixijs-actions/actions/workflows/test.yml/badge.svg)](https://github.com/reececomo/pixijs-actions/actions/workflows/test.yml) [![lint ci/cd status badge](https://github.com/reececomo/pixijs-actions/actions/workflows/lint.yml/badge.svg)](https://github.com/reececomo/pixijs-actions/actions/workflows/lint.yml)
 
-PixiJS Actions allow developers to easily configure complex, high-performance animations in [PixiJS](https://pixijs.com/).
+PixiJS Actions allows developers to easily configure complex, high-performance animations in [PixiJS](https://pixijs.com/).
 
 - 🚀 35+ [built-in actions](#action-initializers), 30+ [smoothing options](#timing-modes)
 - 🔀 Reuseable, chainable & reversible actions
@@ -63,10 +63,10 @@ yarn add pixijs-actions --dev
 
 ```ts
 import * as PIXI from 'pixi.js';
-import { Action, registerDisplayObjectMixin } from 'pixijs-actions';
+import { Action, registerPixiJSActionsMixin } from 'pixijs-actions';
 
-// Register mixin for container.
-registerDisplayObjectMixin(PIXI.Container);
+// Register mixin for containers.
+registerPixiJSActionsMixin(PIXI.Container);
 
 // Register `Action.tick(...)` with shared ticker
 Ticker.shared.add(ticker => Action.tick(ticker.elapsedMS));
@@ -105,7 +105,7 @@ Most actions implement specific predefined animations that are ready to use. If 
 | `Action.moveBy(dx, dy, duration)` | Move a node by relative values. | Yes |
 | `Action.moveByX(dx, duration)` | Move a node horizontally by a relative value. | Yes |
 | `Action.moveByY(dy, duration)` | Move a node vertically by a relative value. | Yes |
-| `Action.moveTo(position, duration)` | Move a node to a specified position `{ x, y }` (e.g. `PIXI.Point`, `PIXI.DisplayObject`). |  _*No_ |
+| `Action.moveTo(position, duration)` | Move a node to a specified position `{ x, y }` (e.g. `PIXI.Point`, `PIXI.Container`). |  _*No_ |
 | `Action.moveTo(x, y, duration)` | Move a node to a specified position. |  _*No_ |
 | `Action.moveToX(x, duration)` | Move a node to a specified horizontal position. |  _*No_ |
 | `Action.moveToY(y, duration)` | Move a node to a specified vertical position. |  _*No_ |
@@ -123,7 +123,7 @@ Most actions implement specific predefined animations that are ready to use. If 
 | `Action.scaleBy(dx, dy, duration)` | Scale a node in each axis by relative values. | Yes |
 | `Action.scaleByX(dx, duration)` | Scale a node horizontally by a relative value. | Yes |
 | `Action.scaleByY(dy, duration)` | Scale a node vertically by a relative value. | Yes |
-| `Action.scaleTo(size, duration)` | Scale a node to achieve a specified size `{ width, height }` (e.g. `PIXI.ISize`, `PIXI.DisplayObject`). |  _*No_ |
+| `Action.scaleTo(size, duration)` | Scale a node to achieve a specified size `{ width, height }` (e.g. `PIXI.ISize`, `PIXI.Container`). |  _*No_ |
 | `Action.scaleTo(scale, duration)` | Scale a node to a specified value. |  _*No_ |
 | `Action.scaleTo(x, y, duration)` | Scale a node in each axis to specified values. |  _*No_ |
 | `Action.scaleToX(x, duration)` | Scale a node horizontally to a specified value. |  _*No_ |
@@ -139,7 +139,7 @@ Most actions implement specific predefined animations that are ready to use. If 
 |***Removing a Node from the Canvas***|||
 | `Action.removeFromParent()` | Remove a node from its parent. | _†Identical_ |
 |***Running Actions on Children***|||
-| `Action.runOnChildWithName(action, childName)` | Run an action on a named child node. | Yes |
+| `Action.runOnChild(nameOrLabel, action)` | Add an action to a child node. | Yes |
 |***Delaying Actions***|||
 | `Action.waitForDuration(duration)` | Idle for a specified period of time. | _†Identical_ |
 | `Action.waitForDurationWithRange(duration, range)` | Idle for a randomized period of time. | _†Identical_ |

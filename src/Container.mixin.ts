@@ -1,17 +1,13 @@
 import { _ as Action } from "./Action";
 import { ActionTicker } from "./lib/ActionTicker";
 
-//
-// ----- DisplayObject Mixin: -----
-//
-
 /**
- * Register the mixins for PIXI.DisplayObject.
+ * Register the mixin for PIXI.Container.
  *
- * @param displayObject A reference to `PIXI.DisplayObject`.
+ * @param container A reference to `PIXI.Container`.
  */
-export function registerDisplayObjectMixin(displayObject: any): void {
-  const prototype = displayObject.prototype;
+export function registerPixiJSActionsMixin(container: any): void {
+  const prototype = container.prototype;
 
   // - Properties:
   prototype.speed = 1.0;

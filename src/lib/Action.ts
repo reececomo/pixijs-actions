@@ -133,7 +133,7 @@ export abstract class Action {
   /**
    * Update function for the action.
    *
-   * @param target The affected display object.
+   * @param target The affected node.
    * @param t The elapsed progress of the action, with the timing mode function applied. Generally a scalar number between 0.0 and 1.0.
    * @param dt Relative change in progress since the previous animation change. Use this for relative actions.
    * @param ticker The action ticker running this update.

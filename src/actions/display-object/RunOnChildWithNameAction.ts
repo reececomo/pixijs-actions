@@ -1,25 +1,32 @@
 import { Action } from '../../lib/Action';
 
-export class RunOnChildWithNameAction extends Action {
+export class RunOnChildAction extends Action {
   public constructor(
     protected readonly action: Action,
-    protected readonly name: string,
+    protected readonly nameOrLabel: string,
   ) {
     super(0);
   }
 
   public reversed(): Action {
-    return new RunOnChildWithNameAction(this.action.reversed(), this.name)
+    return new RunOnChildAction(this.action.reversed(), this.nameOrLabel)
       .setTimingMode(this.timingMode)
       .setSpeed(this.speed);
   }
 
   protected onTick(target: TargetNode): void {
-    if (!('children' in target) || !Array.isArray(target.children)) {
+    if (target.children === undefined || !Array.isArray(target.children)) {
+      throw new TypeError('The target did not have children.');
+    }
+
+    const child: any = target.children
+      .find((child: any) => child.name === this.nameOrLabel || child.label === this.nameOrLabel);
+
+    if (child) {
+      child.run(this.action);
       return;
     }
 
-    const child: TargetNode | undefined = target.children.find((c: any) => c.name === this.name);
-    child?.run(this.action);
+    throw new ReferenceError(`The target did not have a child matching '${this.nameOrLabel}'.`);
   }
 }
