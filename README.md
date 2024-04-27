@@ -1,12 +1,12 @@
 # 🎬 pixijs-actions &nbsp;[![NPM version](https://img.shields.io/npm/v/pixijs-actions.svg?style=flat-square)](https://www.npmjs.com/package/pixijs-actions) [![test ci/cd status badge](https://github.com/reececomo/pixijs-actions/actions/workflows/test.yml/badge.svg)](https://github.com/reececomo/pixijs-actions/actions/workflows/test.yml) [![lint ci/cd status badge](https://github.com/reececomo/pixijs-actions/actions/workflows/lint.yml/badge.svg)](https://github.com/reececomo/pixijs-actions/actions/workflows/lint.yml)
 
-PixiJS Actions allow developers to easily configure complex, high-performance animations in [PixiJS](https://pixijs.com/).
+**PixiJS Actions** allows developers to easily configure complex, high-performance animations in [PixiJS](https://pixijs.com/).
 
 - 🚀 35+ [built-in actions](#action-initializers), 30+ [smoothing options](#timing-modes)
 - 🔀 Reuseable, chainable & reversible actions
 - ⌚ Comprehensive speed and pausing support
-- ✨ Support for PixiJS v6, v7, v8+
-- 🎬 Based on similar concepts in [Cocos2d-x](https://docs.cocos2d-x.org/cocos2d-x/v3/en/actions/getting_started.html), [LibGDX](https://libgdx.com/wiki/graphics/2d/scene2d/scene2d#actions), [SpriteKit](https://developer.apple.com/documentation/spritekit/getting_started_with_actions) & others
+- ✨ Support for PixiJS v8, v7 and v6.3+
+- 🎬 Inspired by actions in [Cocos2d-x](https://docs.cocos2d-x.org/cocos2d-x/v3/en/actions/getting_started.html), [LibGDX](https://libgdx.com/wiki/graphics/2d/scene2d/scene2d#actions), [SpriteKit](https://developer.apple.com/documentation/spritekit/getting_started_with_actions) & many more
 
 ## Sample Usage
 
@@ -30,24 +30,19 @@ mySprite.run(spinAndRemove);
 
 *Everything you need to quickly build beautiful animations.*
 
-**PixiJS Actions** is based off the idiomatic and expressive [**SKActions API**](https://developer.apple.com/documentation/spritekit/getting_started_with_actions), extending `Container` to add first-class support for action management. TypeScript types and documentation are automatically provided.
+**PixiJS Actions** is based off the idiomatic and expressive [**SKActions API**](https://developer.apple.com/documentation/spritekit/getting_started_with_actions), extending `Container` to add first-class support for running and managing actions.
 
-The three concepts are:
+The core concepts are:
 
-- **Node:** _Any container (e.g. `Container`, `Sprite`, `Graphics`)_
+1. **Nodes:** _Any container (e.g. `Container`, `Sprite`, `Graphics`)_
+2. **Actions:** _Stateless, reusable recipes_ (e.g. animations, triggers, and more)
+3. **TimingMode & speed:** _Controls for the speed & smoothness of actions and animations_
 
-- **Action:** _Stateless, reusable instructions (to be executed against a node)_
-  - These can include animations, stage tree updates, triggers, and more.
-  - Actions can be instantaneous, or animated over a period of time.
-  - Each action has a `.reversed()` action. See [About Reversing Actions](#about-reversing-actions).
-
-- **TimingMode / Speed:** _Control the speed & smoothness of actions and animations_
-  - Every action has a **timing mode**, which controls the timing curve of its animation. See [Timing Modes](#timing-modes).
-  - Actions and nodes each also have a **speed** attribute, which modify how fast actions run against a node and its descendents. See [Manipulating Speed](#manipulating-speed).
+> _See [Timing Modes](#timing-modes) and [Manipulating Action Speed](#manipulating-action-speed) for more information._
 
 ## Installation
 
-*Quick start guide (<30 seconds)*
+*Quick start guide.*
 
 **1.** Install the latest `pixijs-actions` package:
 
@@ -72,26 +67,25 @@ registerPixiJSActionsMixin(PIXI.Container);
 Ticker.shared.add(ticker => Action.tick(ticker.elapsedMS));
 ```
 
-**For PixiJS v6/v7, that should be something like:**
+**For PixiJS v6.3+ / v7+, that might look like:**
 
 ```ts
-Ticker.shared.add(() => Action.tick(Ticker.shared.elapsedMS));
-// or
 Ticker.shared.add((dt) => Action.tick(dt / 60));
+// or
+Ticker.shared.add(() => Action.tick(Ticker.shared.elapsedMS));
 ```
 
-> If not using the PIXI shared ticker, then put `Action.tick(elapsedMs)` in the appropriate equivalent place (i.e. your `requestAnimationFrame()` render loop).
-
+> _If not using the PIXI shared ticker, then put `Action.tick(elapsedMs)` in the appropriate equivalent place (i.e. your `requestAnimationFrame()` render loop)._
 
 **3.** Done!
 
-Now you are ready to run your first action.
+✨ You are now ready to run your first action!
 
 ## Action Initializers
 
-*Combine these initializers to create complex animations*
+*Combine these initializers to create expressive animations and behaviors.*
 
-Most actions implement specific predefined animations that are ready to use. If your animation needs fall outside of the suite provided here, then you should implement a custom action. See **Creating Custom Actions** below.
+Most actions implement specific predefined animations that are ready to use. If your animation needs fall outside of the suite provided here, then you should implement a custom action (see [Creating Custom Actions](#creating-custom-actions)).
 
 | Action | Description | Reversible? |
 | :----- | :---------- | :---------- |
@@ -157,7 +151,7 @@ All actions have a `.reversed()` method which will return an action with the rev
 
 ### Action Chaining
 
-Many actions can be joined together using chaining actions like `.sequence()`, `.group()`, `.repeat()` and `.repeatForever()` to easily create complex animations:
+Many actions can be joined together using `Action.sequence()`, `Action.group()`, `Action.repeat()` and `Action.repeatForever()` to quickly create complex animations:
 
 ```ts
 import { Action } from 'pixijs-actions';
@@ -189,24 +183,42 @@ mySprite.run(Action.repeatForever(moveBackAndForthWhilePulsating));
 
 ## Timing Modes
 
-All actions have a `timingMode` which controls the speed curve of its execution.
+Every action has a `timingMode` which controls the timing curve of its execution.
 
 The default timingMode for all actions is `TimingMode.linear`, which causes an animation to occur evenly over its duration.
 
-You can customize the speed curve of actions like so:
+You can customize the speed curve of actions in many ways:
 
 ```ts
-// Use the defaults
+// Set default easings:
 Action.fadeIn(0.3).easeIn();
 Action.fadeIn(0.3).easeOut();
 Action.fadeIn(0.3).easeInOut();
 
-// Set a TimingMode
+// Set a specific TimingMode:
 Action.fadeIn(0.3).setTimingMode(TimingMode.easeInOutCubic);
 
-// Provide a custom function
+// Set a custom timing function:
 Action.fadeIn(0.3).setTimingMode(x => x * x);
 ```
+
+### Built-in TimingMode Options
+
+See the following table for default `TimingMode` options.
+
+| Pattern | Ease In, Ease Out | Ease In | Ease Out | Description |
+| --------------- | ----- | -- | --- | ----------- |
+| **Linear**      | `linear` | - | - | Constant motion with no acceleration or deceleration. |
+| **Sine**        | `easeInOutSine` | `easeInSine` | `easeOutSine` | Gentle start and end, with accelerated motion in the middle. |
+| **Circular**        | `easeInOutCirc` | `easeInCirc` | `easeOutCirc` | Smooth start and end, faster acceleration in the middle, circular motion. |
+| **Cubic**       | `easeInOutCubic` | `easeInCubic` | `easeOutCubic` | Gradual acceleration and deceleration, smooth motion throughout. |
+| **Quadratic**        | `easeInOutQuad` | `easeInQuad` | `easeOutQuad` | Smooth acceleration and deceleration, starts and ends slowly, faster in the middle. |
+| **Quartic**     | `easeInOutQuart` | `easeInQuart` | `easeOutQuart` | Slower start and end, increased acceleration in the middle. |
+| **Quintic**     | `easeInOutQuint` | `easeInQuint` | `easeOutQuint` | Very gradual start and end, smoother acceleration in the middle. |
+| **Exponential**        | `easeInOutExpo` | `easeInExpo` | `easeOutExpo` | Very slow start, exponential acceleration, slow end. |
+| **Back**        | `easeInOutBack` | `easeInBack` | `easeOutBack` | Starts slowly, overshoots slightly, settles into final position. |
+| **Bounce**      | `easeInOutBounce` | `easeInBounce` | `easeOutBounce` | Bouncy effect at the start or end, with multiple rebounds. |
+| **Elastic**     | `easeInOutElastic` | `easeInElastic` | `easeOutElastic` | Stretchy motion with overshoot and multiple oscillations. |
 
 ### Default Timing Modes
 
@@ -230,24 +242,6 @@ Action.DefaultTimingModeEaseInOut = TimingMode.easeInOutExpo;
 // Use defaults:
 myNode.run(myAction.easeIn()); // myAction.timingMode === TimingMode.easeInQuad
 ```
-
-### Built-in TimingMode Options
-
-See the following table for default `TimingMode` options.
-
-| Pattern | Ease In, Ease Out | Ease In | Ease Out | Description |
-| --------------- | ----- | -- | --- | ----------- |
-| **Linear**      | `linear` | - | - | Constant motion with no acceleration or deceleration. |
-| **Sine**        | `easeInOutSine` | `easeInSine` | `easeOutSine` | Gentle start and end, with accelerated motion in the middle. |
-| **Circular**        | `easeInOutCirc` | `easeInCirc` | `easeOutCirc` | Smooth start and end, faster acceleration in the middle, circular motion. |
-| **Cubic**       | `easeInOutCubic` | `easeInCubic` | `easeOutCubic` | Gradual acceleration and deceleration, smooth motion throughout. |
-| **Quadratic**        | `easeInOutQuad` | `easeInQuad` | `easeOutQuad` | Smooth acceleration and deceleration, starts and ends slowly, faster in the middle. |
-| **Quartic**     | `easeInOutQuart` | `easeInQuart` | `easeOutQuart` | Slower start and end, increased acceleration in the middle. |
-| **Quintic**     | `easeInOutQuint` | `easeInQuint` | `easeOutQuint` | Very gradual start and end, smoother acceleration in the middle. |
-| **Exponential**        | `easeInOutExpo` | `easeInExpo` | `easeOutExpo` | Very slow start, exponential acceleration, slow end. |
-| **Back**        | `easeInOutBack` | `easeInBack` | `easeOutBack` | Starts slowly, overshoots slightly, settles into final position. |
-| **Bounce**      | `easeInOutBounce` | `easeInBounce` | `easeOutBounce` | Bouncy effect at the start or end, with multiple rebounds. |
-| **Elastic**     | `easeInOutElastic` | `easeInElastic` | `easeOutElastic` | Stretchy motion with overshoot and multiple oscillations. |
 
 ## Custom Actions
 
