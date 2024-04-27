@@ -548,11 +548,11 @@ describe('Action', () => {
 
   describe('runOnChild()', () => {
     it('passes the action to the named child with PixiJS v8 label', () => {
-      const childNode = new Container();
-      (childNode as any).label = 'myChildNode';
+      const childNode: any = new Container();
+      childNode.label = 'myChildNode';
 
       const parentNode = new Container();
-      parentNode.addChild(childNode);
+      parentNode.addChild(childNode as any);
 
       parentNode.run(
         Action.runOnChild('myChildNode', Action.rotateBy(Math.PI, 1.0))
@@ -574,7 +574,7 @@ describe('Action', () => {
       childNode.name = 'myChildNode';
 
       const parentNode = new Container();
-      parentNode.addChild(childNode);
+      parentNode.addChild(childNode as any);
 
       parentNode.run(
         Action.runOnChild('myChildNode', Action.rotateBy(Math.PI, 1.0))
@@ -596,7 +596,7 @@ describe('Action', () => {
       childNode.name = 'otherChildNode';
 
       const parentNode = new Container();
-      parentNode.addChild(childNode);
+      parentNode.addChild(childNode as any);
 
       parentNode.run(
         Action.runOnChild('myChildNode', Action.rotateBy(Math.PI, 1.0))
@@ -742,8 +742,8 @@ describe('Action and nodes', () => {
       const grandparent = new Container();
       const parent = new Container();
       const node = new Container();
-      grandparent.addChild(parent);
-      parent.addChild(node);
+      grandparent.addChild(parent as any);
+      parent.addChild(node as any);
 
       grandparent.speed = 4.0;
       parent.speed = 0.5;
@@ -805,8 +805,8 @@ describe('Action and nodes', () => {
       const grandparent = new Container();
       const parent = new Container();
       const node = new Container();
-      grandparent.addChild(parent);
-      parent.addChild(node);
+      grandparent.addChild(parent as any);
+      parent.addChild(node as any);
 
       node.run(action);
       expect(node.hasActions()).toBe(true);

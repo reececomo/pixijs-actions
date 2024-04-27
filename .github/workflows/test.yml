@@ -18,22 +18,24 @@ jobs:
     strategy:
       matrix:
         include:
-          - label: PixiJS v6
-            package: pixi.js@v6.5.10
+          # https://pixijs.com/versions
 
-          - label: PixiJS v7
-            package: pixi.js@v7.4.2
+          - label: v6
+            package-version: 6.5.10
 
-          - label: PixiJS v8
-            package: pixi.js@v8.1.0
+          - label: v7
+            package-version: 7.4.2
 
-    name: Test @ ${{ matrix.label }}
+          - label: v8
+            package-version: 8.1.0
+
+    name: PixiJS ${{ matrix.label }} (@${{ matrix.package-version }})
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
         with:
           node-version: 20.x
       - run: npm install
-      - name: Use ${{ matrix.package }}
-        run: npm install ${{ matrix.package }}
+      - name: Install PixiJS v${{ matrix.package-version }}
+        run: npm install pixi.js@v${{ matrix.package-version }}
       - run: npm run test
