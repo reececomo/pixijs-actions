@@ -1,6 +1,6 @@
 # 🎬 pixijs-actions &nbsp;[![NPM version](https://img.shields.io/npm/v/pixijs-actions.svg?style=flat-square)](https://www.npmjs.com/package/pixijs-actions) [![test ci/cd status badge](https://github.com/reececomo/pixijs-actions/actions/workflows/test.yml/badge.svg)](https://github.com/reececomo/pixijs-actions/actions/workflows/test.yml) [![lint ci/cd status badge](https://github.com/reececomo/pixijs-actions/actions/workflows/lint.yml/badge.svg)](https://github.com/reececomo/pixijs-actions/actions/workflows/lint.yml)
 
-PixiJS Actions allows developers to easily configure complex, high-performance animations in [PixiJS](https://pixijs.com/).
+PixiJS Actions allow developers to easily configure complex, high-performance animations in [PixiJS](https://pixijs.com/).
 
 - 🚀 35+ [built-in actions](#action-initializers), 30+ [smoothing options](#timing-modes)
 - 🔀 Reuseable, chainable & reversible actions
