@@ -39,7 +39,7 @@
     "tweening"
   ],
   "peerDependencies": {
-    "pixi.js": ">=6.1.0"
+    "pixi.js": "^6.1.0 || ^7.0.0 || ^8.0.0"
   },
   "devDependencies": {
     "pixi.js": "^6.1.0",

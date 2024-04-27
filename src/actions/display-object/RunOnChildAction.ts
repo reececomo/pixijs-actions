@@ -19,8 +19,15 @@ export class RunOnChildAction extends Action {
       throw new TypeError('The target did not have children.');
     }
 
-    const child: any = target.children
-      .find((child: any) => child.name === this.nameOrLabel || child.label === this.nameOrLabel);
+    let child: any;
+
+    if ('getChildByLabel' in target as any) {
+      child = (target as any).getChildByLabel(this.nameOrLabel); // PixiJS v8
+    }
+    else {
+      child = target.children
+        .find((child: any) => child.label === this.nameOrLabel || child.name === this.nameOrLabel);
+    }
 
     if (child) {
       child.run(this.action);
