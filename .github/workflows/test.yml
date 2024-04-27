@@ -25,14 +25,14 @@ jobs:
             typescript-version: 4.2.3
 
           - label: v7
-            package-version: 7.4.2
+            pixi-version: 7.4.2
             typescript-version: 5.4.5
 
           - label: v8
-            package-version: 8.1.0
+            pixi-version: 8.1.0
             typescript-version: 5.4.5
 
-    name: PixiJS ${{ matrix.label }} (@${{ matrix.pixi-version }})
+    name: pixi.js ${{ matrix.label }} (@v${{ matrix.pixi-version }})
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
