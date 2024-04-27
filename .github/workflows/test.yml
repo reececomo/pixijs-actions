@@ -20,17 +20,29 @@ jobs:
         include:
           # https://pixijs.com/versions
 
-          - label: v6
-            pixi-version: 6.5.10
-            typescript-version: 4.2.3
+          - label: v6.3
+            pixi-version: '6.3.2'
+            typescript-version: '4.9.5'
 
-          - label: v7
-            pixi-version: 7.4.2
-            typescript-version: 5.4.5
+          - label: v6.x
+            pixi-version: '6.x.x'
+            typescript-version: '4.9.5'
 
-          - label: v8
-            pixi-version: 8.1.0
-            typescript-version: 5.4.5
+          - label: v7.0
+            pixi-version: '7.0.0'
+            typescript-version: '4.9.5'
+
+          - label: v7.x
+            pixi-version: '7.x.x'
+            typescript-version: '5.4.5'
+
+          - label: v8.0
+            pixi-version: '8.0.0'
+            typescript-version: '5.4.5'
+
+          - label: v8.x
+            pixi-version: '8.x.x'
+            typescript-version: '5.4.5'
 
     name: pixi.js ${{ matrix.label }} (@v${{ matrix.pixi-version }})
     steps:
