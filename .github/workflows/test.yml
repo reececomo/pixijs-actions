@@ -17,17 +17,23 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        pixijs-package:
-          - pixi.js@v6.1.0
-          - pixi.js@v7.2.0
-          - pixi.js@v8.1.0
+        include:
+          - label: PixiJS v6
+            package: pixi.js@v6.5.10
 
+          - label: PixiJS v7
+            package: pixi.js@v7.4.2
+
+          - label: PixiJS v8
+            package: pixi.js@v8.1.0
+
+    name: Test @ ${{ matrix.label }}
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
         with:
           node-version: 20.x
       - run: npm install
-      - name: Use ${{ matrix.pixijs-package }}
-        run: npm install ${{ matrix.pixijs-package }}
+      - name: Use ${{ matrix.package }}
+        run: npm install ${{ matrix.package }}
       - run: npm run test
