@@ -284,6 +284,7 @@ export class ActionTicker {
   public reset(): void {
     this._elapsed = 0.0;
     this.isDone = false;
+    this._isSetup = false;
     (this.action as any).onTickerDidReset(this);
   }
 }

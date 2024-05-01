@@ -404,6 +404,23 @@ describe('Action Chaining', () => {
       node.removeAllActions();
     });
 
+    it('loops correctly with scaleTo (regression case)', () => {
+      const node = new Container();
+      node.run(Action.repeatForever(Action.sequence([
+        Action.scaleTo(0.9, 1.0).easeInOut(),
+        Action.scaleTo(10, 1.0).easeInOut(),
+      ])));
+
+      simulateTime(1.0);
+      expect(node.scale.x).toBeCloseTo(0.9);
+
+      simulateTime(1.0);
+      expect(node.scale.x).toBeCloseTo(10);
+
+      simulateTime(0.1, 1);
+      expect(node.scale.x).toBeGreaterThan(9.5);
+    });
+
     it('should loop over a group', () => {
       const group = Action.group([
         Action.moveByX(5, 1.0),
