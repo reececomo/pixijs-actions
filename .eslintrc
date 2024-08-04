@@ -1,5 +1,8 @@
 {
   "root": true,
+  "ignorePatterns": [
+    "dist"
+  ],
   "rules": {
     "@typescript-eslint/indent": 0,
     "@typescript-eslint/no-duplicate-enum-values": 0,
