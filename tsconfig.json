@@ -1,19 +1,30 @@
 {
   "compilerOptions": {
-    "outDir": "./dist/",
+    "outDir": "./dist",
     "sourceMap": true,
     "noImplicitAny": true,
-    "module": "es6",
     "target": "es6",
+    "module": "esnext",
+    "lib": ["dom", "es2020"],
     "allowJs": false,
     "moduleResolution": "node",
     "downlevelIteration": true,
     "declaration": true,
+    "declarationMap": false,
+    "emitDeclarationOnly": true,
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
     "baseUrl": "./",
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "stripInternal": true,
+    "types": ["./src/types.d.ts"],
+    "paths": {
+      "pixi.js": ["node_modules/pixi.js"]
+    }
   },
-  "include": ["src/*", "src/**/*", "src/**/**/*"],
-  "exclude": ["src/__tests__/**/*"]
+  "include": ["./src", "./src/types.d.ts"],
+  "exclude": [
+    "./node_modules",
+    "./src/__tests__"
+  ]
 }
