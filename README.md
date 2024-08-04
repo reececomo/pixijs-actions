@@ -1,12 +1,14 @@
-# 🎬 pixijs-actions &nbsp;[![NPM version](https://img.shields.io/npm/v/pixijs-actions.svg?style=flat-square)](https://www.npmjs.com/package/pixijs-actions) [![test ci/cd status badge](https://github.com/reececomo/pixijs-actions/actions/workflows/test.yml/badge.svg)](https://github.com/reececomo/pixijs-actions/actions/workflows/test.yml) [![lint ci/cd status badge](https://github.com/reececomo/pixijs-actions/actions/workflows/lint.yml/badge.svg)](https://github.com/reececomo/pixijs-actions/actions/workflows/lint.yml)
+# 🎬 pixijs-actions &nbsp;[![NPM version](https://img.shields.io/npm/v/pixijs-actions.svg?style=flat-square)](https://www.npmjs.com/package/pixijs-actions) [![Minzipped](https://badgen.net/bundlephobia/minzip/pixijs-actions@latest)](https://bundlephobia.com/package/pixijs-actions) [![Downloads](https://img.shields.io/npm/dt/pixijs-actions.svg)](https://www.npmjs.com/package/pixijs-actions) [![Tests](https://github.com/reececomo/pixijs-actions/actions/workflows/tests.yml/badge.svg)](https://github.com/reececomo/pixijs-actions/actions/workflows/tests.yml) [![License](https://badgen.net/npm/license/pixijs-actions)](https://github.com/reececomo/pixijs-actions/blob/main/LICENSE)
 
-**PixiJS Actions** allows developers to easily configure complex, high-performance animations in [PixiJS](https://pixijs.com/).
+⚡ Powerful, high-performance animations for PixiJS
 
-- 🚀 35+ [built-in actions](#action-initializers), 30+ [smoothing options](#timing-modes)
-- 🔀 Reuseable, chainable & reversible actions
-- ⌚ Comprehensive speed and pausing support
-- ✨ Support for PixiJS v8, v7 and v6.3+
-- 🎬 Inspired by actions in [Cocos2d-x](https://docs.cocos2d-x.org/cocos2d-x/v3/en/actions/getting_started.html), [LibGDX](https://libgdx.com/wiki/graphics/2d/scene2d/scene2d#actions), [SpriteKit](https://developer.apple.com/documentation/spritekit/getting_started_with_actions) & many more
+| | |
+| ------ | ------ |
+| 🔮 Simple, declarative API | 🎬 Based on [Cocos2d](https://docs.cocos2d-x.org/cocos2d-x/v3/en/actions/getting_started.html)/[SKActions](https://developer.apple.com/documentation/spritekit/getting_started_with_actions) |
+| 🚀 35+ [built-in actions](#action-initializers)<br/>30+ [smoothing options](#timing-modes) | 🔀 Reuseable, chainable & reversible |
+| 🍃 Zero dependencies | ⌚ Full speed/pausing control |
+| 🤏 `<4.5kb` minzipped | ✨ Supports PixiJS 8+, 7+, 6.3+ |
+
 
 ## Sample Usage
 
@@ -25,7 +27,6 @@ const spinAndRemove = Action.sequence([
 mySprite.run(spinAndRemove);
 ```
 
-
 ## Getting Started with PixiJS Actions
 
 *Everything you need to quickly build beautiful animations.*
@@ -38,7 +39,9 @@ The core concepts are:
 2. **Actions:** _Stateless, reusable recipes_ (e.g. animations, triggers, and more)
 3. **TimingMode & speed:** _Controls for the speed & smoothness of actions and animations_
 
+> [!TIP]
 > _See [Timing Modes](#timing-modes) and [Manipulating Action Speed](#manipulating-action-speed) for more information._
+
 
 ## Installation
 
@@ -60,14 +63,14 @@ yarn add pixijs-actions --dev
 import * as PIXI from 'pixi.js';
 import { Action, registerPixiJSActionsMixin } from 'pixijs-actions';
 
-// Register mixin for containers.
+// register container mixin
 registerPixiJSActionsMixin(PIXI.Container);
 
-// Register `Action.tick(...)` with shared ticker
+// register `Action.tick(...)` with shared ticker
 Ticker.shared.add(ticker => Action.tick(ticker.elapsedMS));
 ```
 
-**For PixiJS v6.3+ / v7+, that might look like:**
+**PixiJS 7 / 6.3+:**
 
 ```ts
 Ticker.shared.add((dt) => Action.tick(dt / 60));
