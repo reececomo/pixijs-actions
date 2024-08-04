@@ -1,5 +1,9 @@
 import * as PIXI from 'pixi.js';
 
+/*
+ * PixiJS Mixin declaration
+ */
+
 declare global {
 
   /** Time measured in seconds. */

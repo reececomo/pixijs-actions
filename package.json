@@ -15,7 +15,11 @@
   "types": "./dist/index.d.ts",
   "files": ["./dist"],
   "scripts": {
-    "build": "rimraf dist && echo 'rollup (1/2):' && rollup -c --bundleConfigAsCjs && rimraf dist/*.d.ts dist/actions dist/lib && echo 'dts-bundle-generator (2/2):' && ./node_modules/.bin/dts-bundle-generator -o dist/index.d.ts src/index.ts --sort --no-banner --export-referenced-types --external-imports pixi.js --no-check",
+    "build:rollup": "rimraf dist && echo 'rollup (1/2):' && rollup -c --bundleConfigAsCjs",
+    "build:rm-dts": "rimraf dist/*.d.ts dist/actions dist/lib",
+    "build:dts-gen": "echo 'dts-bundle-generator (2/2):' && ./node_modules/.bin/dts-bundle-generator -o dist/index.d.ts src/index.ts --sort --no-banner --export-referenced-types --external-imports pixi.js --no-check",
+    "build:export-globals": "(cat src/globals.d.ts && cat dist/index.d.ts) > tmp.d.ts && mv tmp.d.ts dist/index.d.ts",
+    "build": "npm run build:rollup && npm run build:rm-dts && npm run build:dts-gen && npm run build:export-globals",
     "coverage": "jest --runInBand --collectCoverage",
     "lint": "eslint src --ext .ts",
     "test": "jest --runInBand"
