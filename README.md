@@ -5,9 +5,9 @@
 | | |
 | ------ | ------ |
 | 🔮 Simple, declarative API | 🎬 Based on [Cocos2d](https://docs.cocos2d-x.org/cocos2d-x/v3/en/actions/getting_started.html)/[SKActions](https://developer.apple.com/documentation/spritekit/getting_started_with_actions) |
-| 🚀 35+ [built-in actions](#action-initializers)<br/>30+ [smoothing options](#timing-modes) | 🔀 Reuseable, chainable & reversible |
+| 🚀 35+ [built-in actions](#action-initializers)<br/>30+ [smoothing modes](#timing-modes) | 🔀 Reuseable, chainable & reversible |
 | 🍃 Zero dependencies | ⌚ Full speed/pausing control |
-| 🤏 `<4.5kb` minzipped | ✨ Supports PixiJS 8+, 7+, 6.3+ |
+| 🤏 `~4.3kb` minzipped | ✨ Supports PixiJS 8+, 7+, 6.3+ |
 
 
 ## Sample Usage
@@ -39,7 +39,7 @@ The core concepts are:
 2. **Actions:** _Stateless, reusable recipes_ (e.g. animations, triggers, and more)
 3. **TimingMode & speed:** _Controls for the speed & smoothness of actions and animations_
 
-> [!TIP]
+> [!NOTE]
 > _See [Timing Modes](#timing-modes) and [Manipulating Action Speed](#manipulating-action-speed) for more information._
 
 
@@ -70,15 +70,17 @@ registerPixiJSActionsMixin(PIXI.Container);
 Ticker.shared.add(ticker => Action.tick(ticker.elapsedMS));
 ```
 
-**PixiJS 7 / 6.3+:**
+> [!TIP]
+> **PixiJS 7 / 6.3+:**
+> 
+> ```ts
+> Ticker.shared.add(() => Action.tick(Ticker.shared.elapsedMS));
+> // or
+> Ticker.shared.add((dt) => Action.tick(dt));
+> ```
 
-```ts
-Ticker.shared.add((dt) => Action.tick(dt / 60));
-// or
-Ticker.shared.add(() => Action.tick(Ticker.shared.elapsedMS));
-```
-
-> _If not using the PIXI shared ticker, then put `Action.tick(elapsedMs)` in the appropriate equivalent place (i.e. your `requestAnimationFrame()` render loop)._
+> [!NOTE]
+> _If not using a PixiJS ticker, then just put `Action.tick(elapsedMs)` in the appropriate equivalent place (i.e. your `requestAnimationFrame()` render loop)._
 
 **3.** Done!
 
@@ -154,7 +156,8 @@ mySprite.parent!.speed = 1 / 4;
 // The entire action will now take ~10 seconds.
 ```
 
-> Note: Since actions are designed to be stateless, the `speed` property is captured when the action runs. Any changes to `speed` or `timingMode` on the action object will not affect actions that have already been run.
+> [!NOTE]
+> Changes to nodes' `speed` will take effect immediately, however changes to an `Action` initializer's `speed` or `timingMode` will not affect any actions that have already begun running.
 
 ## Action Initializers
 
@@ -219,10 +222,11 @@ Most actions implement specific predefined animations that are ready to use. If 
 | `Action.speedBy(delta, duration)` | Change how fast a node executes its actions by a relative value. | Yes |
 | `Action.speedTo(speed, duration)` | Set how fast a node executes actions to a specified value. |  _*No_ |
 
-### About Reversing Actions
-All actions have a `.reversed()` method which will return an action with the reverse action on it. Some actions are **not reversible**, and these cases are noted in the table above:
-- _**†Identical:**_ The reversed action will be identical to the original action.
-- _**\*No:**_ The reversed action will only idle for the equivalent duration.
+> [!IMPORTANT]
+> #### Reversing Actions
+> Every action initializer has a `.reversed()` method which will return a new action. Some actions are **not reversible**, and these cases are noted in the table above:
+> - _**†Identical**_ &mdash; The reversed action is identical to the original action.
+> - _**\*No**_ &mdash; The reversed action will idle for the equivalent duration.
 
 ### Action Chaining
 
@@ -265,7 +269,7 @@ The default timingMode for all actions is `TimingMode.linear`, which causes an a
 You can customize the speed curve of actions in many ways:
 
 ```ts
-// Set default easings:
+// Default easings:
 Action.fadeIn(0.3).easeIn();
 Action.fadeIn(0.3).easeOut();
 Action.fadeIn(0.3).easeInOut();
@@ -277,45 +281,49 @@ Action.fadeIn(0.3).setTimingMode(TimingMode.easeInOutCubic);
 Action.fadeIn(0.3).setTimingMode(x => x * x);
 ```
 
+> [!IMPORTANT]
+> **Timing Mutators:** The `.easeIn()`, `.easeOut()`, `.easeInOut()`, `setTimingMode(…)`, `setSpeed(…)` methods mutate the underlying action.
+
 ### Built-in TimingMode Options
 
 See the following table for default `TimingMode` options.
 
 | Pattern | Ease In, Ease Out | Ease In | Ease Out | Description |
 | --------------- | ----- | -- | --- | ----------- |
-| **Linear**      | `linear` | - | - | Constant motion with no acceleration or deceleration. |
-| **Sine**        | `easeInOutSine` | `easeInSine` | `easeOutSine` | Gentle start and end, with accelerated motion in the middle. |
-| **Circular**        | `easeInOutCirc` | `easeInCirc` | `easeOutCirc` | Smooth start and end, faster acceleration in the middle, circular motion. |
-| **Cubic**       | `easeInOutCubic` | `easeInCubic` | `easeOutCubic` | Gradual acceleration and deceleration, smooth motion throughout. |
-| **Quadratic**        | `easeInOutQuad` | `easeInQuad` | `easeOutQuad` | Smooth acceleration and deceleration, starts and ends slowly, faster in the middle. |
-| **Quartic**     | `easeInOutQuart` | `easeInQuart` | `easeOutQuart` | Slower start and end, increased acceleration in the middle. |
-| **Quintic**     | `easeInOutQuint` | `easeInQuint` | `easeOutQuint` | Very gradual start and end, smoother acceleration in the middle. |
-| **Exponential**        | `easeInOutExpo` | `easeInExpo` | `easeOutExpo` | Very slow start, exponential acceleration, slow end. |
-| **Back**        | `easeInOutBack` | `easeInBack` | `easeOutBack` | Starts slowly, overshoots slightly, settles into final position. |
-| **Bounce**      | `easeInOutBounce` | `easeInBounce` | `easeOutBounce` | Bouncy effect at the start or end, with multiple rebounds. |
-| **Elastic**     | `easeInOutElastic` | `easeInElastic` | `easeOutElastic` | Stretchy motion with overshoot and multiple oscillations. |
+| **Linear** | `linear` | - | - | Constant motion with no acceleration or deceleration. |
+| **Sine** | `easeInOutSine` | `easeInSine` | `easeOutSine` | Gentle start and end, with accelerated motion in the middle. |
+| **Circular** | `easeInOutCirc` | `easeInCirc` | `easeOutCirc` | Smooth start and end, faster acceleration in the middle, circular motion. |
+| **Cubic** | `easeInOutCubic` | `easeInCubic` | `easeOutCubic` | Gradual acceleration and deceleration, smooth motion throughout. |
+| **Quadratic** | `easeInOutQuad` | `easeInQuad` | `easeOutQuad` | Smooth acceleration and deceleration, starts and ends slowly, faster in the middle. |
+| **Quartic** | `easeInOutQuart` | `easeInQuart` | `easeOutQuart` | Slower start and end, increased acceleration in the middle. |
+| **Quintic** | `easeInOutQuint` | `easeInQuint` | `easeOutQuint` | Very gradual start and end, smoother acceleration in the middle. |
+| **Exponential** | `easeInOutExpo` | `easeInExpo` | `easeOutExpo` | Very slow start, exponential acceleration, slow end. |
+| **Back** | `easeInOutBack` | `easeInBack` | `easeOutBack` | Starts slowly, overshoots slightly, settles into final position. |
+| **Bounce** | `easeInOutBounce` | `easeInBounce` | `easeOutBounce` | Bouncy effect at the start or end, with multiple rebounds. |
+| **Elastic** | `easeInOutElastic` | `easeInElastic` | `easeOutElastic` | Stretchy motion with overshoot and multiple oscillations. |
 
 ### Default Timing Modes
 
-The `.easeIn()`, `.easeOut()`, `.easeInOut()`, and `.linear()` methods on `Action` instances will set the timing mode of that action to the global default timing mode for that curve type.
+The `.easeIn()`, `.easeOut()`, `.easeInOut()`, and `.linear()` mutator methods on `Action` instances will set the timing mode of that action to the global default timing mode for that curve type.
 
-| Global setting | Default value | Helper |
+| TimingMode mutator | Global setting | Default value |
 | :--- | :--- | :--- |
-| `Action.DefaultTimingModeEaseIn` | `TimingMode.easeInSine` | `action.easeIn()` |
-| `Action.DefaultTimingModeEaseOut` | `TimingMode.easeOutSine` | `action.easeOut()` |
-| `Action.DefaultTimingModeEaseInOut` | `TimingMode.easeInOutSine` | `action.easeInOut()` |
-| _(n/a)_ | `TimingMode.linear` | `action.linear()` |
+| `action.easeIn()` | `Action.DefaultTimingModeEaseIn` | `TimingMode.easeInSine` |
+| `action.easeOut()` | `Action.DefaultTimingModeEaseOut` | `TimingMode.easeOutSine` |
+| `action.easeInOut()` | `Action.DefaultTimingModeEaseInOut` | `TimingMode.easeInOutSine` |
+| `action.linear()` | _(n/a)_ | `TimingMode.linear` |
 
-Custom default timing modes can be set like so:
+Global default timing modes can be set like so:
 
 ```ts
-// Configure defaults:
+// set default
 Action.DefaultTimingModeEaseIn = TimingMode.easeInQuad;
-Action.DefaultTimingModeEaseOut = TimingMode.easeOutCirc;
-Action.DefaultTimingModeEaseInOut = TimingMode.easeInOutExpo;
 
-// Use defaults:
-myNode.run(myAction.easeIn()); // myAction.timingMode === TimingMode.easeInQuad
+// apply
+myNode.run(myAction.easeIn());
+
+myAction.timingMode
+// TimingMode.easeInQuad
 ```
 
 ## Creating Custom Actions
