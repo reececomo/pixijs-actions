@@ -5,8 +5,8 @@
 | | |
 | ------ | ------ |
 | 🔮 Simple, declarative API | 🎬 Based on [Cocos2d](https://docs.cocos2d-x.org/cocos2d-x/v3/en/actions/getting_started.html)/[SKActions](https://developer.apple.com/documentation/spritekit/getting_started_with_actions) |
-| 🚀 35+ [built-in actions](#action-initializers)<br/>30+ [smoothing modes](#timing-modes) | 🔀 Reuseable, chainable & reversible |
-| 🍃 Zero dependencies | ⌚ Full speed/pausing control |
+| 🚀 35+ [built-in actions](#action-initializers), 30+ [timing modes](#timing-modes) | 🔀 Reuseable, chainable & reversible |
+| 🍃 No dependencies & tree-shakeable | ⌚ Full speed/pausing control |
 | 🤏 `~4.3kb` minzipped | ✨ Supports PixiJS 8+, 7+, 6.3+ |
 
 
