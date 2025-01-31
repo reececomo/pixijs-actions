@@ -112,6 +112,8 @@ declare global {
 }
 
 export {};
+import { Spritesheet, Texture } from 'pixi.js';
+
 declare abstract class Action {
 	/** The duration required to complete an action. */
 	readonly duration: TimeInterval;
@@ -183,10 +185,15 @@ declare abstract class Action {
 	 * @see {Action.DefaultTimingModeEaseInOut}
 	 */
 	easeInOut(): this;
-	/** (optional) */
+	/**
+	 * (optional)
+	 * @throws an error thrown here will abort adding the action to a target
+	 */
 	protected onSetupTicker(target: TargetNode, ticker: IActionTicker): any;
 	/** (optional) */
 	protected onTickerDidReset(ticker: IActionTicker): any;
+	/** (optional) */
+	protected onTickerRemoved(target: TargetNode, ticker: IActionTicker): void;
 	/**
 	 * Creates an action that reverses the behavior of another action.
 	 *
@@ -204,7 +211,7 @@ declare abstract class Action {
 	 * @param ticker The action ticker running this update.
 	 * @param deltaTime The amount of time elapsed in this tick. This number is scaled by both speed of target and any parent actions.
 	 */
-	protected abstract onTick(target: TargetNode, t: number, dt: number, ticker: IActionTicker, deltaTime: number): void;
+	protected abstract onTick<Target extends TargetNode>(target: Target, t: number, dt: number, ticker: IActionTicker, deltaTime: number): void;
 }
 /**
  * Create, configure, and run actions in PixiJS.
@@ -486,6 +493,33 @@ declare abstract class _ extends Action {
 	 * This action is reversible.
 	 */
 	static fadeAlphaBy(alpha: number, duration: TimeInterval): Action;
+	/**
+	 * Creates an action that animates changes to a sprite’s texture.
+	 *
+	 * Note: Target must be a Sprite.
+	 *
+	 * This action is reversible.
+	 *
+	 * @param textures - Array of textures
+	 * @param timePerFrame - Time to display each texture in seconds (default: 1/60)
+	 * @param resize - Whether to resize the sprite to match each new texture (default: false)
+	 * @param restore - When the action completes or is removed, whether to restore the sprite's texture to the texture it had before the action ran (default: true)
+	 */
+	static animate(textures: Texture[], timePerFrame?: TimeInterval, resize?: boolean, restore?: boolean): Action;
+	/**
+	 * Creates an action that animates changes to a sprite’s texture using textures from a spritesheet.
+	 *
+	 * Note: Target must be a Sprite.
+	 *
+	 * This action is reversible.
+	 *
+	 * @param spritesheet - A spritesheet containing textures to animate
+	 * @param timePerFrame - Time to display each texture in seconds (default: 1/60)
+	 * @param resize - Whether to resize the sprite to match each new texture (default: false)
+	 * @param restore - When the action completes or is removed, whether to restore the sprite's texture to the texture it had before the action ran (default: true)
+	 * @param sortByKey - Whether spritesheet textures should be sorted by key (default: true)
+	 */
+	static animate(sheet: Spritesheet, timePerFrame?: TimeInterval, resize?: boolean, restore?: boolean, sortKeys?: boolean): Action;
 	/**
 	 * Creates an action that hides a node.
 	 *

@@ -111,13 +111,21 @@ export abstract class Action {
   // ----------------- Action Ticker Methods: -----------------
   //
 
-  /** (optional) */
+  /**
+   * (optional)
+   * @throws an error thrown here will abort adding the action to a target
+   */
   protected onSetupTicker(target: TargetNode, ticker: IActionTicker): any {
     return undefined;
   }
 
   /** (optional) */
   protected onTickerDidReset(ticker: IActionTicker): any {
+    return undefined;
+  }
+
+  /** (optional) */
+  protected onTickerRemoved(target: TargetNode, ticker: IActionTicker): void {
     return undefined;
   }
 
@@ -139,8 +147,8 @@ export abstract class Action {
    * @param ticker The action ticker running this update.
    * @param deltaTime The amount of time elapsed in this tick. This number is scaled by both speed of target and any parent actions.
    */
-  protected abstract onTick(
-    target: TargetNode,
+  protected abstract onTick<Target extends TargetNode>(
+    target: Target,
     t: number,
     dt: number,
     ticker: IActionTicker,

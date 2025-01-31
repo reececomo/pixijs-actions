@@ -101,16 +101,20 @@ export class ActionTicker {
    *
    * This cleans up any references to target too.
    */
-  protected static _removeActionTicker(actionTicker: ActionTicker): void {
-    const tickers = this._tickers.get(actionTicker.target);
+  protected static _removeActionTicker(ticker: ActionTicker, propagate = true): void {
+    const tickers = this._tickers.get(ticker.target);
     if (tickers === undefined) {
       return; // No change.
     }
 
-    tickers.delete(actionTicker.key ?? actionTicker);
+    if (propagate) {
+      (ticker.action as any).onTickerRemoved?.(ticker.target, ticker);
+    }
+
+    tickers.delete(ticker.key ?? ticker);
 
     if (tickers.size === 0) {
-      this._tickers.delete(actionTicker.target);
+      this._tickers.delete(ticker.target);
     }
   }
 
@@ -225,7 +229,14 @@ export class ActionTicker {
       this.timingMode = this.action.timingMode;
 
       // Perform first time setup:
-      this.data = (this.action as any).onSetupTicker(this.target, this);
+      try {
+        this.data = (this.action as any).onSetupTicker(this.target, this);
+      }
+      catch (error) {
+        ActionTicker._removeActionTicker(this, false); // invalid target, failed on launch
+        throw error; // rethrow
+      }
+
       this._isSetup = true;
     }
 

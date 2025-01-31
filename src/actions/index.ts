@@ -7,4 +7,5 @@ export * from './move';
 export * from './rotate';
 export * from './scale';
 export * from './speed';
+export * from './sprite';
 export * from './transparency';
