@@ -17,10 +17,10 @@
 ```ts
 // Define an action
 const spinAndRemove = Action.sequence([
-  Action.rotateByDegrees(360, 0.2).easeInOut(),
-  Action.fadeOut(0.2).easeIn(),
-  Action.removeFromParent(),
+  Action.rotateByDegrees(360, 0.2).easeIn(),
+  Action.fadeOut(0.2),
   Action.run(() => console.info('✨ done!'))
+  Action.destroy({ children: true }),
 ]);
 
 // Run an action
@@ -212,15 +212,16 @@ Most actions implement specific predefined animations that are ready to use. If 
 | `Action.unhide()` | Set a node's `visible` property to `true`. | Yes |
 | `Action.hide()` | Set a node's `visible` property to `false`. | Yes |
 |***Removing a Node from the Canvas***|||
+| `Action.destroy(options?)` | Remove and destroy a node and its actions. |  _†Identical_ |
 | `Action.removeFromParent()` | Remove a node from its parent. | _†Identical_ |
 |***Running Actions on Children***|||
-| `Action.runOnChild(nameOrLabel, action)` | Add an action to a child node. | Yes |
+| `Action.runOnChild(childLabel, action)` | Add an action to a child node. | Yes |
 |***Delaying Actions***|||
 | `Action.waitForDuration(duration)` | Idle for a specified period of time. | _†Identical_ |
 | `Action.waitForDurationWithRange(duration, range)` | Idle for a randomized period of time. | _†Identical_ |
 |***Triggers and Custom Actions***|||
-| `Action.run(callback)` | Execute a block (i.e. trigger another action). | _†Identical_ |
-| `Action.customAction(duration, stepHandler)` | Execute a custom stepping function over the action duration. | _†Identical_ |
+| `Action.run(callback)` | Execute a custom function. | _†Identical_ |
+| `Action.customAction(duration, callback)` | Execute a custom stepping function over the action duration. | _†Identical_ |
 |***Manipulating the Action Speed of a Node***|||
 | `Action.speedBy(delta, duration)` | Change how fast a node executes its actions by a relative value. | Yes |
 | `Action.speedTo(speed, duration)` | Set how fast a node executes actions to a specified value. |  _*No_ |
@@ -451,6 +452,27 @@ mySprite.run(
 );
 ```
 
+## Container Lifecycle
+
+As soon as a node is destroyed, all actions on the node are canceled (including chained actions like `Action.group()` and `Action.sequence()`).
+
+### Destructive Actions
+
+The **destroy(…)** action will remove a node from the scene graph, canceling any other remaining or in-progress animations.
+
+```ts
+const killAndRemoveAnimation = Action.sequence([
+  Action.group([
+    Action.rotateByDegrees( 360, 1.0 ).easeIn(),
+    Action.fadeOut( 1.0 )
+  ]),
+  Action.destroy(true),
+  Action.run(() => console.info('✨ done!')) // 🚨 Unreachable!
+]);
+
+mySprite.run( killAndRemoveAnimation );
+```
+
 ### Contributions
 
-**PixiJS Actions** was originally forked from [srpatel](https://github.com/srpatel)'s awesome [pixi-actions](https://github.com/srpatel/pixi-actions) library, but became a hard fork when we changed approach.
+**PixiJS Actions** was originally based on [srpatel](https://github.com/srpatel)'s awesome [pixi-actions](https://github.com/srpatel/pixi-actions) library.
