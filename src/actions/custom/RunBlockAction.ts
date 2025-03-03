@@ -2,7 +2,7 @@ import { Action } from '../../lib/Action';
 
 export class RunBlockAction extends Action {
   public constructor(
-    protected readonly block: () => void
+    protected readonly block: (target: TargetNode) => void
   ) {
     super(0);
   }
@@ -11,7 +11,7 @@ export class RunBlockAction extends Action {
     return this;
   }
 
-  protected onTick(): void {
-    this.block();
+  protected onTick(target: TargetNode): void {
+    this.block(target);
   }
 }

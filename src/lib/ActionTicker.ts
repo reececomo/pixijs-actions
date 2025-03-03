@@ -243,8 +243,7 @@ export class ActionTicker {
     const target = this.target;
     const action = this.action;
 
-    // If action no longer valid, or target not on the stage
-    // we garbage collect its actions.
+    // If action no longer valid, we garbage collect its runners.
     if (target == null || target.destroyed) {
       ActionTicker._removeActionTicker(this);
 

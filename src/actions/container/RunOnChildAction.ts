@@ -3,13 +3,13 @@ import { Action } from '../../lib/Action';
 export class RunOnChildAction extends Action {
   public constructor(
     protected readonly action: Action,
-    protected readonly nameOrLabel: string,
+    protected readonly label: string,
   ) {
     super(0);
   }
 
   public reversed(): Action {
-    return new RunOnChildAction(this.action.reversed(), this.nameOrLabel)
+    return new RunOnChildAction(this.action.reversed(), this.label)
       .setTimingMode(this.timingMode)
       .setSpeed(this.speed);
   }
@@ -22,11 +22,11 @@ export class RunOnChildAction extends Action {
     let child: any;
 
     if ('getChildByLabel' in target as any) {
-      child = (target as any).getChildByLabel(this.nameOrLabel); // PixiJS v8
+      child = (target as any).getChildByLabel(this.label); // pixi.js V8+
     }
     else {
       child = target.children
-        .find((child: any) => child.label === this.nameOrLabel || child.name === this.nameOrLabel);
+        .find((child: any) => child.label === this.label || child.name === this.label);
     }
 
     if (child) {
@@ -34,6 +34,6 @@ export class RunOnChildAction extends Action {
       return;
     }
 
-    throw new ReferenceError(`The target did not have a child matching '${this.nameOrLabel}'.`);
+    throw new ReferenceError(`The target did not have a child matching '${this.label}'.`);
   }
 }

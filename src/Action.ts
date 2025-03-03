@@ -12,7 +12,6 @@ import {
   GroupAction,
   MoveByAction,
   MoveToAction,
-  RemoveFromParentAction,
   RepeatAction,
   RepeatForeverAction,
   RotateByAction,
@@ -31,6 +30,8 @@ import { TimingModeFn } from './TimingMode';
 import { Spritesheet, Texture } from 'pixi.js';
 
 const DEG_TO_RAD = Math.PI / 180;
+
+type DestroyOptions = Parameters<TargetNode["destroy"]>[0];
 
 /**
  * Create, configure, and run actions in PixiJS.
@@ -562,6 +563,18 @@ export abstract class _ extends Action {
   }
 
   /**
+   * Creates an action that removes all internal references, listeners and actions,
+   * as well as removes children from the display list.
+   *
+   * This action has an instantaneous duration.
+   *
+   * This action is not reversible; the reverse of this action is the same action.
+   */
+  public static destroy(options?: DestroyOptions): Action {
+    return this.run(target => target.destroy(options));
+  }
+
+  /**
    * Creates an action that removes the node from its parent.
    *
    * This action has an instantaneous duration.
@@ -569,7 +582,7 @@ export abstract class _ extends Action {
    * This action is not reversible; the reverse of this action is the same action.
    */
   public static removeFromParent(): Action {
-    return new RemoveFromParentAction();
+    return this.run(target => target.parent?.removeChild(target));
   }
 
   //
@@ -586,8 +599,8 @@ export abstract class _ extends Action {
    * This action is reversible; it tells the child to execute the reverse of the action specified by
    * the action parameter.
    */
-  public static runOnChild(nameOrLabel: string, action: Action): Action {
-    return new RunOnChildAction(action, nameOrLabel);
+  public static runOnChild(childLabel: string, action: Action): Action {
+    return new RunOnChildAction(action, childLabel);
   }
 
   //
@@ -601,7 +614,7 @@ export abstract class _ extends Action {
    *
    * This action is not reversible; the reverse action executes the same block.
    */
-  public static run(fn: () => void): Action {
+  public static run(fn: (target: TargetNode) => void): Action {
     return new RunBlockAction(fn);
   }
 

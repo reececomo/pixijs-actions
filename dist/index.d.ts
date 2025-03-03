@@ -539,6 +539,15 @@ declare abstract class _ extends Action {
 	 */
 	static unhide(): Action;
 	/**
+	 * Creates an action that removes all internal references, listeners and actions,
+	 * as well as removes children from the display list.
+	 *
+	 * This action has an instantaneous duration.
+	 *
+	 * This action is not reversible; the reverse of this action is the same action.
+	 */
+	static destroy(options?: DestroyOptions): Action;
+	/**
 	 * Creates an action that removes the node from its parent.
 	 *
 	 * This action has an instantaneous duration.
@@ -556,7 +565,7 @@ declare abstract class _ extends Action {
 	 * This action is reversible; it tells the child to execute the reverse of the action specified by
 	 * the action parameter.
 	 */
-	static runOnChild(nameOrLabel: string, action: Action): Action;
+	static runOnChild(childLabel: string, action: Action): Action;
 	/**
 	 * Creates an action that executes a block.
 	 *
@@ -564,7 +573,7 @@ declare abstract class _ extends Action {
 	 *
 	 * This action is not reversible; the reverse action executes the same block.
 	 */
-	static run(fn: () => void): Action;
+	static run(fn: (target: TargetNode) => void): Action;
 	/**
 	 * Creates an action that executes a stepping function over its duration.
 	 *
@@ -633,6 +642,7 @@ export interface IActionTicker {
 	tick(deltaTime: number): number;
 	reset(): void;
 }
+export type DestroyOptions = Parameters<TargetNode["destroy"]>[0];
 /**
  * Any timing mode function.
  *
