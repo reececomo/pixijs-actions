@@ -206,8 +206,7 @@ Most actions implement specific predefined animations that are ready to use. If 
 | `Action.fadeAlphaBy(delta, duration)` | Fade the alpha by a relative value. | Yes |
 | `Action.fadeAlphaTo(alpha, duration)` | Fade the alpha to a specified value. |  _*No_ |
 |***Animating a Sprite by Changing its Texture***|||
-| `Action.animate(textures, timePerFrame?, resize?, restore?)` | Animate a sprite by changing its texture. | Yes |
-| `Action.animate(spritesheet, timePerFrame?, resize?, restore?, sortKeys?)` | Animate a sprite by changing its texture, using textures from a spritesheet. | Yes |
+| `Action.animate(options)` | Animate a sprite by changing its texture. | Yes |
 |***Controlling a Node's Visibility***|||
 | `Action.unhide()` | Set a node's `visible` property to `true`. | Yes |
 | `Action.hide()` | Set a node's `visible` property to `false`. | Yes |

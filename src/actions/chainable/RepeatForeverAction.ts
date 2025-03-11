@@ -24,6 +24,7 @@ export class RepeatForeverAction extends Action {
 
     const childTicker = new ActionTicker(undefined, target, this.action);
     childTicker.timingMode = (x: number) => ticker.timingMode(childTicker.timingMode(x));
+    childTicker.autoDestroy = false; // manually destroy
 
     return {
       childTicker
@@ -49,6 +50,12 @@ export class RepeatForeverAction extends Action {
   }
 
   protected onTickerDidReset(ticker: IActionTicker): any {
+    if ( !ticker.data ) return;
     ticker.data.childTicker.reset();
+  }
+
+  protected onTickerRemoved(target: TargetNode, ticker: IActionTicker): void {
+    if ( !ticker.data ) return;
+    ticker.data.childTicker.destroy();
   }
 }

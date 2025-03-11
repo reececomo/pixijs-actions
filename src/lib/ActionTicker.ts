@@ -116,6 +116,8 @@ export class ActionTicker {
     if (tickers.size === 0) {
       this._tickers.delete(ticker.target);
     }
+
+    if (ticker.autoDestroy) ticker.destroy();
   }
 
   //
@@ -158,6 +160,13 @@ export class ActionTicker {
    * Used by chainable actions.
    */
   public isDone: boolean = false;
+
+  /**
+   * Whether the action ticker destroys when removed.
+   *
+   * Repeatable actions should set this to false.
+   */
+  public autoDestroy: boolean = true;
 
   /**
    * Whether the action ticker will mark the action as done when time
@@ -268,7 +277,9 @@ export class ActionTicker {
     }
 
     const b = this.easedTimeDistance;
+
     this._elapsed += scaledDeltaTime;
+
     const t = this.easedTimeDistance;
     const dt = t - b;
 
@@ -280,7 +291,9 @@ export class ActionTicker {
       // Remove completed action.
       ActionTicker._removeActionTicker(this);
 
-      return this._elapsed > this.scaledDuration ? this._elapsed - this.scaledDuration : 0;
+      return this._elapsed > this.scaledDuration
+        ? this._elapsed - this.scaledDuration
+        : 0;
     }
 
     return -1; // relinquish no time
@@ -296,6 +309,16 @@ export class ActionTicker {
     this.isDone = false;
     this._isSetup = false;
     (this.action as any).onTickerDidReset(this);
+  }
+
+  /**
+   * Destroy ticker and clean up references.
+   */
+  public destroy(): void {
+    this.key = undefined;
+    this.data = undefined;
+    this.target = undefined;
+    this.isDone = true;
   }
 }
 

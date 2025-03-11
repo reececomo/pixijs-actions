@@ -25,6 +25,7 @@ export class RepeatAction extends Action {
 
     const childTicker = new ActionTicker(undefined, target, this.action);
     childTicker.timingMode = (x: number) => ticker.timingMode(childTicker.timingMode(x));
+    childTicker.autoDestroy = false;
 
     return {
       childTicker,
@@ -47,6 +48,7 @@ export class RepeatAction extends Action {
     if (remainingDeltaTime > 0 || childTicker.scaledDuration === 0) {
       if (++ticker.data.n >= this.repeats) {
         ticker.isDone = true;
+        ticker.autoDestroy = true;
         return;
       }
 
@@ -56,7 +58,13 @@ export class RepeatAction extends Action {
   }
 
   protected onTickerDidReset(ticker: IActionTicker): any {
+    if ( !ticker.data ) return;
     ticker.data.childTicker.reset();
     ticker.data.n = 0;
+  }
+
+  protected onTickerRemoved(target: TargetNode, ticker: IActionTicker): void {
+    if ( !ticker.data ) return;
+    ticker.data.childTicker.destroy();
   }
 }

@@ -11,6 +11,7 @@ export interface IActionTicker {
 
   // State:
   autoComplete: boolean;
+  autoDestroy: boolean;
   isDone: boolean;
   data: any;
 

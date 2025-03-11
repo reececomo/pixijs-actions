@@ -2,6 +2,7 @@ import { Action } from './lib/Action';
 import { ActionTicker } from './lib/ActionTicker';
 import {
   AnimateAction,
+  AnimateOptions,
   CustomAction,
   DelayAction,
   FadeAlphaToAction,
@@ -48,11 +49,23 @@ export abstract class _ extends Action {
   //
 
   /**
+   * Default `timePerFrame` in seconds for `Action.animate(…)`.
+   *
+   * @default 1/60
+   */
+  public static get DefaultAnimateTimePerFrame(): TimeInterval {
+    return Action._defaultAnimateTimePerFrame;
+  }
+  public static set DefaultAnimateTimePerFrame(value: TimeInterval) {
+    Action._defaultAnimateTimePerFrame = value;
+  }
+
+  /**
    * Default timing mode used for ease-in pacing.
    *
    * Set this to update the default `easeIn()` timing mode.
    *
-   * @see TimingMode.easeInSine - Default value.
+   * @default TimingMode.easeInSine
    */
   public static get DefaultTimingModeEaseIn(): TimingModeFn {
     return Action._defaultTimingModeEaseIn;
@@ -66,7 +79,7 @@ export abstract class _ extends Action {
    *
    * Set this to update the default `easeOut()` timing mode.
    *
-   * @see TimingMode.easeOutSine - Default value.
+   * @default TimingMode.easeOutSine
    */
   public static get DefaultTimingModeEaseOut(): TimingModeFn {
     return Action._defaultTimingModeEaseOut;
@@ -80,7 +93,7 @@ export abstract class _ extends Action {
    *
    * Set this to update the default `easeInOut()` timing mode.
    *
-   * @see TimingMode.easeInOutSine - Default value.
+   * @default TimingMode.easeInOutSine
    */
   public static get DefaultTimingModeEaseInOut(): TimingModeFn {
     return Action._defaultTimingModeEaseInOut;
@@ -502,36 +515,39 @@ export abstract class _ extends Action {
    * Note: Target must be a Sprite.
    *
    * This action is reversible.
-   *
-   * @param textures - Array of textures
-   * @param timePerFrame - Time to display each texture in seconds (default: 1/60)
-   * @param resize - Whether to resize the sprite to match each new texture (default: false)
-   * @param restore - When the action completes or is removed, whether to restore the sprite's texture to the texture it had before the action ran (default: true)
    */
-  public static animate(textures: Texture[], timePerFrame?: TimeInterval, resize?: boolean, restore?: boolean): Action;
-  /**
-   * Creates an action that animates changes to a sprite’s texture using textures from a spritesheet.
-   *
-   * Note: Target must be a Sprite.
-   *
-   * This action is reversible.
-   *
-   * @param spritesheet - A spritesheet containing textures to animate
-   * @param timePerFrame - Time to display each texture in seconds (default: 1/60)
-   * @param resize - Whether to resize the sprite to match each new texture (default: false)
-   * @param restore - When the action completes or is removed, whether to restore the sprite's texture to the texture it had before the action ran (default: true)
-   * @param sortByKey - Whether spritesheet textures should be sorted by key (default: true)
-   */
-  public static animate(sheet: Spritesheet, timePerFrame?: TimeInterval, resize?: boolean, restore?: boolean, sortKeys?: boolean): Action;
-  public static animate(v: Texture[] | Spritesheet, timePerFrame: TimeInterval = 1/60, resize = false, restore = true, sortByKey = true): Action {
-    if (!Array.isArray(v)) {
-      const keys = Object.keys(v.textures);
-      if (sortByKey) keys.sort();
-      const textures = keys.map((key) => v.textures[key]);
-      return this.animate(textures, timePerFrame, resize, restore);
+  public static animate(options: AnimateOptions): Action;
+  /**  @deprecated Use `Action.animate( AnimateOptions }` syntax instead. */
+  public static animate(
+    textures: Texture[],
+    timePerFrame?: TimeInterval,
+    resize?: boolean,
+    restore?: boolean
+  ): Action;
+  /**  @deprecated Use `Action.animate( AnimateOptions }` syntax instead. */
+  public static animate(
+    sheet: Spritesheet,
+    timePerFrame?: TimeInterval,
+    resize?: boolean,
+    restore?: boolean,
+    sortKeys?: boolean
+  ): Action;
+  public static animate(
+    v: Texture[] | Spritesheet | AnimateOptions,
+    timePerFrame?: TimeInterval,
+    resize?: boolean,
+    restore?: boolean,
+    sortKeys?: boolean
+  ): Action {
+    if (Array.isArray(v)) {
+      return this.animate({ frames: v, timePerFrame, resize, restore });
     }
 
-    return new AnimateAction(v, timePerFrame, resize, restore);
+    if ("resolution" in v) {
+      return this.animate({ spritesheet: v, timePerFrame, resize, restore, sortKeys });
+    }
+
+    return new AnimateAction(v);
   }
 
   //

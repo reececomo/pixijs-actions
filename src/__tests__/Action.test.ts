@@ -627,7 +627,7 @@ describe('Action', () => {
       expect(childNode.hasActions()).toBe(false);
     });
 
-    it('errors with TypeError when target cannot have children', () => {
+    it('errors with ReferenceError when target has no children (or cannot have children)', () => {
       const parentNode = new Container();
       (parentNode as any).children = undefined; // Simulate PixiJS v8
 
@@ -637,7 +637,7 @@ describe('Action', () => {
 
       const errors = simulateTime(0.5);
       expect(errors.length).toBe(1);
-      expect(errors[0]).toBeInstanceOf(TypeError);
+      expect(errors[0]).toBeInstanceOf(ReferenceError);
 
       expect(parentNode.hasActions()).toBe(false);
     });

@@ -122,6 +122,7 @@ declare abstract class Action {
 	/** A setting that controls the speed curve of an animation. */
 	timingMode: TimingModeFn;
 	log: boolean;
+	protected static _defaultAnimateTimePerFrame: TimeInterval;
 	protected static _defaultTimingModeEaseIn: (x: number) => number;
 	protected static _defaultTimingModeEaseOut: (x: number) => number;
 	protected static _defaultTimingModeEaseInOut: (x: number) => number;
@@ -223,11 +224,18 @@ declare abstract class Action {
  */
 declare abstract class _ extends Action {
 	/**
+	 * Default `timePerFrame` in seconds for `Action.animate(…)`.
+	 *
+	 * @default 1/60
+	 */
+	static get DefaultAnimateTimePerFrame(): TimeInterval;
+	static set DefaultAnimateTimePerFrame(value: TimeInterval);
+	/**
 	 * Default timing mode used for ease-in pacing.
 	 *
 	 * Set this to update the default `easeIn()` timing mode.
 	 *
-	 * @see TimingMode.easeInSine - Default value.
+	 * @default TimingMode.easeInSine
 	 */
 	static get DefaultTimingModeEaseIn(): TimingModeFn;
 	static set DefaultTimingModeEaseIn(value: TimingModeFn);
@@ -236,7 +244,7 @@ declare abstract class _ extends Action {
 	 *
 	 * Set this to update the default `easeOut()` timing mode.
 	 *
-	 * @see TimingMode.easeOutSine - Default value.
+	 * @default TimingMode.easeOutSine
 	 */
 	static get DefaultTimingModeEaseOut(): TimingModeFn;
 	static set DefaultTimingModeEaseOut(value: TimingModeFn);
@@ -245,7 +253,7 @@ declare abstract class _ extends Action {
 	 *
 	 * Set this to update the default `easeInOut()` timing mode.
 	 *
-	 * @see TimingMode.easeInOutSine - Default value.
+	 * @default TimingMode.easeInOutSine
 	 */
 	static get DefaultTimingModeEaseInOut(): TimingModeFn;
 	static set DefaultTimingModeEaseInOut(value: TimingModeFn);
@@ -499,26 +507,11 @@ declare abstract class _ extends Action {
 	 * Note: Target must be a Sprite.
 	 *
 	 * This action is reversible.
-	 *
-	 * @param textures - Array of textures
-	 * @param timePerFrame - Time to display each texture in seconds (default: 1/60)
-	 * @param resize - Whether to resize the sprite to match each new texture (default: false)
-	 * @param restore - When the action completes or is removed, whether to restore the sprite's texture to the texture it had before the action ran (default: true)
 	 */
+	static animate(options: AnimateOptions): Action;
+	/**  @deprecated Use `Action.animate( AnimateOptions }` syntax instead. */
 	static animate(textures: Texture[], timePerFrame?: TimeInterval, resize?: boolean, restore?: boolean): Action;
-	/**
-	 * Creates an action that animates changes to a sprite’s texture using textures from a spritesheet.
-	 *
-	 * Note: Target must be a Sprite.
-	 *
-	 * This action is reversible.
-	 *
-	 * @param spritesheet - A spritesheet containing textures to animate
-	 * @param timePerFrame - Time to display each texture in seconds (default: 1/60)
-	 * @param resize - Whether to resize the sprite to match each new texture (default: false)
-	 * @param restore - When the action completes or is removed, whether to restore the sprite's texture to the texture it had before the action ran (default: true)
-	 * @param sortByKey - Whether spritesheet textures should be sorted by key (default: true)
-	 */
+	/**  @deprecated Use `Action.animate( AnimateOptions }` syntax instead. */
 	static animate(sheet: Spritesheet, timePerFrame?: TimeInterval, resize?: boolean, restore?: boolean, sortKeys?: boolean): Action;
 	/**
 	 * Creates an action that hides a node.
@@ -637,11 +630,51 @@ export interface IActionTicker {
 	readonly timingMode: TimingModeFn;
 	readonly timeDistance: number;
 	autoComplete: boolean;
+	autoDestroy: boolean;
 	isDone: boolean;
 	data: any;
 	tick(deltaTime: number): number;
 	reset(): void;
 }
+export type AnimateOptions = (AnimateTextureOptions | AnimateSpritesheetOptions) & {
+	/**
+	 * Time to display each texture in seconds.
+	 *
+	 * @default Action.DefaultAnimateTimePerFrame
+	 */
+	timePerFrame?: number;
+	/**
+	 * Whether to resize the sprite width and height to match each texture.
+	 *
+	 * @default false
+	 */
+	resize?: boolean;
+	/**
+	 * When the action completes or is removed, whether to restore the sprite's
+	 * texture to the texture it had before the action ran.
+	 *
+	 * @default false
+	 */
+	restore?: boolean;
+};
+export type AnimateSpritesheetOptions = {
+	/**
+	 * A spritesheet containing textures to animate.
+	 */
+	spritesheet: Spritesheet;
+	/**
+	 * Whether spritesheet frames are sorted on key.
+	 *
+	 * @default true
+	 */
+	sortKeys?: boolean;
+};
+export type AnimateTextureOptions = {
+	/**
+	 * Array of textures to animate.
+	 */
+	frames: Texture[];
+};
 export type DestroyOptions = Parameters<TargetNode["destroy"]>[0];
 /**
  * Any timing mode function.

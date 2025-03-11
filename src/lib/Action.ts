@@ -6,6 +6,7 @@ export abstract class Action {
 
   // ----- Default Timing Modes: -----
 
+  protected static _defaultAnimateTimePerFrame: TimeInterval = 1/60;
   protected static _defaultTimingModeEaseIn = TimingMode.easeInSine;
   protected static _defaultTimingModeEaseOut = TimingMode.easeOutSine;
   protected static _defaultTimingModeEaseInOut = TimingMode.easeInOutSine;

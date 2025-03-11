@@ -15,23 +15,21 @@ export class RunOnChildAction extends Action {
   }
 
   protected onTick(target: TargetNode): void {
-    if (target.children === undefined || !Array.isArray(target.children)) {
-      throw new TypeError('The target did not have children.');
-    }
+    if (target.children && Array.isArray(target.children)) {
+      let child: any;
 
-    let child: any;
+      if ('getChildByLabel' in target as any) {
+        child = (target as any).getChildByLabel(this.label); // pixi.js V8+
+      }
+      else {
+        child = target.children
+          .find((child: any) => child.label === this.label || child.name === this.label);
+      }
 
-    if ('getChildByLabel' in target as any) {
-      child = (target as any).getChildByLabel(this.label); // pixi.js V8+
-    }
-    else {
-      child = target.children
-        .find((child: any) => child.label === this.label || child.name === this.label);
-    }
-
-    if (child) {
-      child.run(this.action);
-      return;
+      if (child) {
+        child.run(this.action);
+        return;
+      }
     }
 
     throw new ReferenceError(`The target did not have a child matching '${this.label}'.`);
