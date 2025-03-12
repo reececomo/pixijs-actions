@@ -19,7 +19,11 @@ export class GroupAction extends Action {
     ticker.autoComplete = false;
 
     return {
-      childTickers: this.actions.map(action => new ActionTicker(undefined, target, action))
+      childTickers: this.actions.map(action => {
+        const ticker = new ActionTicker(undefined, target, action);
+        ticker.autoDestroy = false;
+        return ticker;
+      })
     };
   }
 
@@ -46,6 +50,12 @@ export class GroupAction extends Action {
   }
 
   protected onTickerDidReset(ticker: IActionTicker): any {
+    if (!ticker.data) return;
     ticker.data.childTickers.forEach((ticker: IActionTicker) => ticker.reset());
+  }
+
+  protected onTickerRemoved(target: TargetNode, ticker: IActionTicker): any {
+    if (!ticker.data) return;
+    ticker.data.childTickers.forEach((ticker: IActionTicker) => ticker.destroy());
   }
 }

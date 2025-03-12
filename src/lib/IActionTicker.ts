@@ -18,4 +18,5 @@ export interface IActionTicker {
   // Methods:
   tick(deltaTime: number): number;
   reset(): void;
+  destroy(): void;
 }

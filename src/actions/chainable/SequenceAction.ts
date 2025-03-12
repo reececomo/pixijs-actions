@@ -20,8 +20,11 @@ export class SequenceAction extends Action {
     ticker.autoComplete = false;
 
     return {
-      childTickers: this._squashedActions()
-        .map(action => new ActionTicker(undefined, target, action))
+      childTickers: this._squashedActions().map(action => {
+        const ticker = new ActionTicker(undefined, target, action);
+        ticker.autoDestroy = false;
+        return ticker;
+      })
     };
   }
 
@@ -50,7 +53,13 @@ export class SequenceAction extends Action {
   }
 
   protected onTickerDidReset(ticker: IActionTicker): any {
+    if (!ticker.data) return;
     ticker.data.childTickers.forEach((ticker: IActionTicker) => ticker.reset());
+  }
+
+  protected onTickerRemoved(target: TargetNode, ticker: IActionTicker): any {
+    if (!ticker.data) return;
+    ticker.data.childTickers.forEach((ticker: IActionTicker) => ticker.destroy());
   }
 
   // ----- Implementation: -----

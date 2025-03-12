@@ -50,12 +50,12 @@ export class RepeatForeverAction extends Action {
   }
 
   protected onTickerDidReset(ticker: IActionTicker): any {
-    if ( !ticker.data ) return;
+    if (!ticker.data) return;
     ticker.data.childTicker.reset();
   }
 
   protected onTickerRemoved(target: TargetNode, ticker: IActionTicker): void {
-    if ( !ticker.data ) return;
+    if (!ticker.data) return;
     ticker.data.childTicker.destroy();
   }
 }

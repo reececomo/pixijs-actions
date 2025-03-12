@@ -58,13 +58,13 @@ export class RepeatAction extends Action {
   }
 
   protected onTickerDidReset(ticker: IActionTicker): any {
-    if ( !ticker.data ) return;
+    if (!ticker.data) return;
     ticker.data.childTicker.reset();
     ticker.data.n = 0;
   }
 
   protected onTickerRemoved(target: TargetNode, ticker: IActionTicker): void {
-    if ( !ticker.data ) return;
+    if (!ticker.data) return;
     ticker.data.childTicker.destroy();
   }
 }

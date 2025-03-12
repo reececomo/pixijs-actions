@@ -635,6 +635,7 @@ export interface IActionTicker {
 	data: any;
 	tick(deltaTime: number): number;
 	reset(): void;
+	destroy(): void;
 }
 export type AnimateOptions = (AnimateTextureOptions | AnimateSpritesheetOptions) & {
 	/**
