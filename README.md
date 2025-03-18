@@ -20,7 +20,6 @@ const spinAndRemove = Action.sequence([
   Action.rotateByDegrees(360, 0.2).easeIn(),
   Action.fadeOut(0.2),
   Action.run(() => console.info('✨ done!'))
-  Action.destroy({ children: true }),
 ]);
 
 // Run an action
