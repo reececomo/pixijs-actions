@@ -26,16 +26,29 @@ export class ActionTicker {
   public static tickAll(deltaTimeMs: number, onErrorHandler?: (error: any) => void): void {
     const deltaTime = deltaTimeMs * 0.001;
 
-    for (const [target, tickers] of this._tickers.entries()) {
-      const [isPaused, speed] = _getTargetState(target);
+    let _leaf: TargetNode;
+    let _isPaused: boolean;
+    let _speed: number;
 
-      if (isPaused || speed <= 0) {
+    for (const [target, tickers] of this._tickers) {
+      // Calculate global isPaused and speed
+      _leaf = target;
+      _isPaused = target.isPaused;
+      _speed = target.speed;
+
+      while (!_isPaused && _leaf.parent != null) {
+        _leaf = _leaf.parent;
+        _isPaused = _leaf.isPaused;
+        _speed *= _leaf.speed;
+      }
+
+      if (_isPaused || _speed <= 0 || !tickers) {
         continue;
       }
 
       for (const actionTicker of tickers.values()) {
         try {
-          actionTicker.tick(deltaTime * speed);
+          actionTicker.tick(deltaTime * _speed);
         }
         catch (error) {
           // Report individual action errors.
@@ -89,7 +102,12 @@ export class ActionTicker {
 
   /** Remove all actions for a specific target. */
   public static removeAllTargetActions(target: TargetNode): void {
-    this._tickers.delete(target);
+    const actionTickers = this._tickers.get(target);
+    if (!actionTickers) return;
+
+    for (const ticker of [...actionTickers.values()]) {
+      this._removeActionTicker(ticker);
+    }
   }
 
   //
@@ -102,22 +120,26 @@ export class ActionTicker {
    * This cleans up any references to target too.
    */
   protected static _removeActionTicker(ticker: ActionTicker, propagate = true): void {
-    const tickers = this._tickers.get(ticker.target);
+    const target = ticker.target;
+
+    const tickers = this._tickers.get(target);
     if (tickers === undefined) {
       return; // No change.
     }
 
     if (propagate) {
-      (ticker.action as any).onTickerRemoved?.(ticker.target, ticker);
+      (ticker.action as any).onTickerRemoved?.(target, ticker);
     }
 
     tickers.delete(ticker.key ?? ticker);
 
-    if (tickers.size === 0) {
-      this._tickers.delete(ticker.target);
+    if (ticker.autoDestroy) {
+      ticker.destroy();
     }
 
-    if (ticker.autoDestroy) ticker.destroy();
+    if (tickers.size === 0) {
+      this._tickers.delete(target);
+    }
   }
 
   //
@@ -320,21 +342,4 @@ export class ActionTicker {
     this.target = undefined;
     this.isDone = true;
   }
-}
-
-/**
- * Get the global action processing state of a descendent target.
- */
-function _getTargetState(target: TargetNode): [isPaused: boolean, speed: number] {
-  let leaf = target;
-  let isPaused = leaf.isPaused;
-  let speed = leaf.speed;
-
-  while (!isPaused && leaf.parent != null) {
-    isPaused = leaf.parent.isPaused;
-    speed *= leaf.parent.speed;
-    leaf = leaf.parent;
-  }
-
-  return [isPaused, speed];
 }
