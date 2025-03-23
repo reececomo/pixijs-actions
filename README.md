@@ -7,7 +7,7 @@
 | 🔮 Simple, declarative API | 🎬 Based on [Cocos2d](https://docs.cocos2d-x.org/cocos2d-x/v3/en/actions/getting_started.html)/[SKActions](https://developer.apple.com/documentation/spritekit/getting_started_with_actions) |
 | 🚀 35+ [built-in actions](#action-initializers), 30+ [timing modes](#timing-modes) | 🔀 Reuseable, chainable & reversible |
 | 🍃 No dependencies & tree-shakeable | ⌚ Full speed/pausing control |
-| 🤏 `~4.3kb` minzipped | ✨ Supports PixiJS 8+, 7+, 6.3+ |
+| 🤏 <5kB minzipped | ✨ Supports PixiJS 8+, 7+, 6.3+ |
 
 
 ## Sample Usage
@@ -205,7 +205,8 @@ Most actions implement specific predefined animations that are ready to use. If 
 | `Action.fadeAlphaBy(delta, duration)` | Fade the alpha by a relative value. | Yes |
 | `Action.fadeAlphaTo(alpha, duration)` | Fade the alpha to a specified value. |  _*No_ |
 |***Animating a Sprite by Changing its Texture***|||
-| `Action.animate(options)` | Animate a sprite by changing its texture. | Yes |
+| `Action.animate({frames, …})` | Animate a sprite by changing its texture. See options. | Yes |
+| `Action.animate({spritesheet, …})` | Animate a sprite by changing its texture using a spritesheet's frames. See options. | Yes |
 |***Controlling a Node's Visibility***|||
 | `Action.unhide()` | Set a node's `visible` property to `true`. | Yes |
 | `Action.hide()` | Set a node's `visible` property to `false`. | Yes |
