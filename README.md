@@ -16,14 +16,14 @@
 
 ```ts
 // Define an action
-const spinAndRemove = Action.sequence([
+const spinAction = Action.sequence([
   Action.rotateByDegrees(360, 0.2).easeIn(),
   Action.fadeOut(0.2),
   Action.run(() => console.info('✨ done!'))
 ]);
 
 // Run an action
-mySprite.run(spinAndRemove);
+mySprite.run(spinAction);
 ```
 
 ## Getting Started with PixiJS Actions
