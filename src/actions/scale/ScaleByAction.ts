@@ -18,8 +18,8 @@ export class ScaleByAction extends Action {
 
   protected onSetupTicker(target: TargetNode): any {
     return {
-      dx: target.scale.x * this.x - target.scale.x,
-      dy: target.scale.y * this.y - target.scale.y
+      dx: target.scale.x * (this.x - target.scale.x),
+      dy: target.scale.y * (this.y - target.scale.y)
     };
   }
 
