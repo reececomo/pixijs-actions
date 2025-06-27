@@ -16,17 +16,10 @@ export class ScaleByAction extends Action {
       .setSpeed(this.speed);
   }
 
-  protected onSetupTicker(target: TargetNode): any {
-    return {
-      dx: target.scale.x * (this.x - target.scale.x),
-      dy: target.scale.y * (this.y - target.scale.y)
-    };
-  }
-
   protected onTick(target: TargetNode, t: number, dt: number, ticker: IActionTicker): void {
     target.scale.set(
-      target.scale.x + ticker.data.dx * dt,
-      target.scale.y + ticker.data.dy * dt,
+      target.scale.x + this.x * dt,
+      target.scale.y + this.y * dt,
     );
   }
 }
