@@ -20,8 +20,9 @@ export function registerPixiJSActionsMixin(container: any): void {
       : ActionTicker.runAction(undefined, this, action);
   };
 
-  prototype.runWithKey = function (action: Action, key: string): void {
-    ActionTicker.runAction(key, this, action);
+  prototype.runWithKey = function (_0: Action | string, _1: Action | string): void {
+    if (typeof _1 === "string") ActionTicker.runAction(_1, this, _0 as Action);
+    else ActionTicker.runAction(_0 as string, this, _1);
   };
 
   prototype.runAsPromise = function (action: Action): Promise<void> {
