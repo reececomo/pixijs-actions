@@ -95,8 +95,8 @@ describe('keyed actions', () => {
     expect(node.action('myKey')).toBe(action);
     expect(node.hasActions()).toBe(true);
 
-    // Run again
-    node.runWithKey(action, 'myKey');
+    // Run again, with opposite argument order
+    node.runWithKey('myKey', action);
 
     simulateTime(5.0);
     expect(node.position.x).toBeCloseTo(10.0);
@@ -534,7 +534,7 @@ describe('Action', () => {
       expect(node.scale.x).toBe(1); // Sanity check.
       expect(node.scale.y).toBe(1);
 
-      node.run(Action.scaleTo(2, 1.5, 1.0));
+      node.run(Action.scaleBy(2, 1.5, 1.0));
       simulateTime(1.0);
       expect(node.scale.x).toBeCloseTo(2);
       expect(node.scale.y).toBeCloseTo(1.5);

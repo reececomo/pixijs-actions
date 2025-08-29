@@ -16,14 +16,18 @@
 
 ```ts
 // Define an action
-const spinAction = Action.sequence([
-  Action.rotateByDegrees(360, 0.2).easeIn(),
-  Action.fadeOut(0.2),
-  Action.run(() => console.info('✨ done!'))
+const spinAndRemoveAction = Action.sequence([
+  Action.group([
+    Action.fadeOut(0.2),
+    Action.scaleTo(0, 0.2).easeInOut(),
+    Action.rotateByDegrees(-360, 0.2).easeIn(),
+  ]),
+  Action.run(() => console.info('✨ done!')),
+  Action.destroy(false),
 ]);
 
 // Run an action
-mySprite.run(spinAction);
+myContainer.run(spinAndRemoveAction);
 ```
 
 ## Getting Started with PixiJS Actions
@@ -66,7 +70,7 @@ import { Action, registerPixiJSActionsMixin } from 'pixijs-actions';
 registerPixiJSActionsMixin(PIXI.Container);
 
 // register `Action.tick(...)` with shared ticker
-Ticker.shared.add(ticker => Action.tick(ticker.elapsedMS));
+Ticker.shared.add((ticker) => Action.tick(ticker.elapsedMS));
 ```
 
 > [!TIP]
@@ -107,7 +111,7 @@ Nodes are extended with a few new methods and properties to make it easy to inte
 | :----- | :------ |
 | `run(action)` | Run an action. |
 | `run(action, completion)` | Run an action with a completion handler. |
-| `runWithKey(action, withKey)` | Run an action, and store it so it can be retrieved later. |
+| `runWithKey(key, action)` | Run an action, and store it so it can be retrieved later. |
 | `runAsPromise(action): Promise<void>` | Run an action as a promise. |
 | `action(forKey): Action \| undefined` | Return an action associated with a specified key. |
 | `hasActions(): boolean` | Return a boolean indicating whether the node is executing actions. |
@@ -119,10 +123,13 @@ Nodes are extended with a few new methods and properties to make it easy to inte
 ```ts
 // Repeat an action forever!
 const spin = Action.repeatForever(Action.rotateBy(5, 1.0));
-mySprite.runWithKey(spin, 'spinForever');
+mySprite.runWithKey("spinForever", spin);
 
 // Or remove it later.
-mySprite.removeAction('spinForever');
+mySprite.removeAction("spinForever");
+
+// Or destroy a node to clear all of its actions.
+mySprite.destroy(false);
 ```
 
 ### Pausing All Actions
@@ -134,29 +141,27 @@ mySprite.isPaused = true;
 
 ### Manipulating Action Speed
 
-Speed can be manipulated on both actions and nodes.
+Speed can be manipulated on both actions and nodes to create complex interactions.
 
 ```ts
-const moveAction = Action.moveByX(10, 4.0);
-moveAction.speed = 2.0;
-// moveAction will now take only 2 seconds instead of 4.
+const myMoveAction = Action.moveByX(10, 4.0);
+const myRepeatAction = Action.repeat(myMoveAction, 5);
+// myRepeatAction will complete in 20.0 seconds
 
-const repeatAction = Action.repeat(moveAction, 5);
-repeatAction.speed = 2.0;
-// Each moveAction will only take 1 second, for a total of 5 seconds.
+myMoveAction.setSpeed(2);
+myRepeatAction.setSpeed(2);
+// myRepeatAction will now complete in 5.0 seconds.
 
-mySprite.run(moveAction);
-mySprite.speed = 2.0;
-// mySprite is running at 2x speed!
-// The entire action should now take ~2.5 seconds.
+myContainer.speed = 2;
+myContainer.runAction(myRepeatAction);
+// myContainer will complete myRepeatAction in 2.5 seconds.
 
-mySprite.parent!.speed = 1 / 4;
-// Now we've slowed down mySprite's parent.
-// The entire action will now take ~10 seconds.
+myContainer.parent.speed = 0.25;
+// myContainer will now complete myRepeatAction in 10.0 seconds.
 ```
 
 > [!NOTE]
-> Changes to nodes' `speed` will take effect immediately, however changes to an `Action` initializer's `speed` or `timingMode` will not affect any actions that have already begun running.
+> Changes to nodes' `speed` will take effect immediately, however changes to an `Action` initializer's `speed` or `timingMode` will not affect any actions that have already started.
 
 ## Action Initializers
 
@@ -205,11 +210,11 @@ Most actions implement specific predefined animations that are ready to use. If 
 | `Action.fadeAlphaBy(delta, duration)` | Fade the alpha by a relative value. | Yes |
 | `Action.fadeAlphaTo(alpha, duration)` | Fade the alpha to a specified value. |  _*No_ |
 |***Animating a Sprite by Changing its Texture***|||
-| `Action.animate({frames, …})` | Animate a sprite by changing its texture. See options. | Yes |
-| `Action.animate({spritesheet, …})` | Animate a sprite by changing its texture using a spritesheet's frames. See options. | Yes |
+| `Action.animate({ frames, timePerFrame?, resize?, restore? })` | Animate a sprite by changing its texture. See options. | Yes |
+| `Action.animate({ spritesheet, timePerFrame?, resize?, restore?, sortKeys? })` | Animate a sprite by changing its texture an entire spritesheet as frames. See options. | Yes |
 |***Controlling a Node's Visibility***|||
-| `Action.unhide()` | Set a node's `visible` property to `true`. | Yes |
-| `Action.hide()` | Set a node's `visible` property to `false`. | Yes |
+| `Action.hide()` | Set `visible` to `false`. | Yes |
+| `Action.unhide()` | Set `visible` to `true`. | Yes |
 |***Removing a Node from the Canvas***|||
 | `Action.destroy(options?)` | Remove and destroy a node and its actions. |  _†Identical_ |
 | `Action.removeFromParent()` | Remove a node from its parent. | _†Identical_ |
@@ -402,10 +407,10 @@ const rainbowColors = Action.customAction(5.0, (target, t, dt) => {
 });
 
 // Start rainbow effect
-mySprite.runWithKey(Action.repeatForever(rainbowColors), 'rainbow');
+mySprite.runWithKey("rainbow", Action.repeatForever(rainbowColors));
 
 // Stop rainbow effect
-mySprite.removeAction('rainbow');
+mySprite.removeAction("rainbow");
 ```
 
 > **Step functions:**

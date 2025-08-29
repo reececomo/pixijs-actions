@@ -39,8 +39,9 @@ declare module 'pixi.js' {
      * already running, it is removed before the new action is added.
      *
      * @param action The action to perform.
-     * @param withKey A unique key used to identify the action.
+     * @param key A unique key used to identify the action.
      */
+    runWithKey(key: string, action: Action): void;
     runWithKey(action: Action, key: string): void;
 
     /**
