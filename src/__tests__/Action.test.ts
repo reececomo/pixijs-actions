@@ -528,6 +528,32 @@ describe('Action', () => {
     });
   });
 
+  describe('scaleToX()', () => {
+    it('can be initialized with (x, duration)', () => {
+      const node = new Container();
+      expect(node.scale.x).toBe(1); // Sanity check.
+      expect(node.scale.y).toBe(1);
+
+      node.run(Action.scaleToX(2, 1.0));
+      simulateTime(1.0);
+      expect(node.scale.x).toBeCloseTo(2);
+      expect(node.scale.y).toBeCloseTo(1);
+    });
+  });
+
+  describe('scaleToY()', () => {
+    it('can be initialized with (y, duration)', () => {
+      const node = new Container();
+      expect(node.scale.x).toBe(1); // Sanity check.
+      expect(node.scale.y).toBe(1);
+
+      node.run(Action.scaleToY(2, 1.0));
+      simulateTime(1.0);
+      expect(node.scale.x).toBeCloseTo(1);
+      expect(node.scale.y).toBeCloseTo(2);
+    });
+  });
+
   describe('scaleBy()', () => {
     it('can be initialized with (x, y, duration)', () => {
       const node = new Container();
@@ -560,6 +586,32 @@ describe('Action', () => {
       simulateTime(1.0);
       expect(node.scale.x).toBeCloseTo(2);
       expect(node.scale.y).toBeCloseTo(1.5);
+    });
+  });
+
+  describe('scaleByX()', () => {
+    it('can be initialized with (x, duration)', () => {
+      const node = new Container();
+      expect(node.scale.x).toBe(1); // Sanity check.
+      expect(node.scale.y).toBe(1);
+
+      node.run(Action.scaleByX(2, 1.0));
+      simulateTime(1.0);
+      expect(node.scale.x).toBeCloseTo(2);
+      expect(node.scale.y).toBeCloseTo(1);
+    });
+  });
+
+  describe('scaleByY()', () => {
+    it('can be initialized with (x, duration)', () => {
+      const node = new Container();
+      expect(node.scale.x).toBe(1); // Sanity check.
+      expect(node.scale.y).toBe(1);
+
+      node.run(Action.scaleByY(2, 1.0));
+      simulateTime(1.0);
+      expect(node.scale.x).toBeCloseTo(1);
+      expect(node.scale.y).toBeCloseTo(2);
     });
   });
 

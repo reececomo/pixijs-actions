@@ -415,7 +415,7 @@ export abstract class _ extends Action {
    * This action is reversible.
    */
   public static scaleByX(x: number, duration: TimeInterval): Action {
-    return this.scaleBy(x, 0, duration);
+    return this.scaleBy(x, 1, duration);
   }
 
   /**
@@ -424,7 +424,7 @@ export abstract class _ extends Action {
    * This action is reversible.
    */
   public static scaleByY(y: number, duration: TimeInterval): Action {
-    return this.scaleBy(0, y, duration);
+    return this.scaleBy(1, y, duration);
   }
 
   /**
