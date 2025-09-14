@@ -62,9 +62,7 @@ export class FollowPathAction extends Action {
       this.asOffset,
       this.orientToPath,
       this.fixedSpeed,
-    )
-      .setTimingMode(this.timingMode)
-      .setSpeed(this.speed);
+    )._copyFrom(this);
   }
 
   protected onSetupTicker(target: any): any {

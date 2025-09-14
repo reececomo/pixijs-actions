@@ -1,6 +1,5 @@
 import { Action } from '../../lib/Action';
 import { IActionTicker } from '../../lib/IActionTicker';
-import { DelayAction } from '../delay';
 
 export class ScaleToAction extends Action {
   public constructor(
@@ -12,7 +11,7 @@ export class ScaleToAction extends Action {
   }
 
   public reversed(): Action {
-    return new DelayAction(this.scaledDuration);
+    return new ScaleToAction(this.x, this.y, this.duration)._copyFrom(this);
   }
 
   protected onSetupTicker(target: TargetNode): any {
@@ -23,9 +22,20 @@ export class ScaleToAction extends Action {
   }
 
   protected onTick(target: TargetNode, t: number, dt: number, ticker: IActionTicker): void {
-    target.scale.set(
-      this.x === undefined ? target.scale.x : ticker.data.startX + (this.x - ticker.data.startX) * t,
-      this.y === undefined ? target.scale.y : ticker.data.startY + (this.y - ticker.data.startY) * t
-    );
+    const scale = target.scale;
+    const data = ticker.data;
+
+    if (this.x != null && this.y != null) {
+      scale.set(
+        data.startX + (this.x - data.startX) * t,
+        data.startY + (this.y - data.startY) * t
+      );
+    }
+    else if (this.x != null) {
+      scale.x = data.startX + (this.x - data.startX) * t;
+    }
+    else {
+      scale.y = data.startY + (this.y - data.startY) * t;
+    }
   }
 }

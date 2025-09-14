@@ -9,9 +9,7 @@ export class RotateByAction extends Action {
   }
 
   public reversed(): Action {
-    return new RotateByAction(-this.rotation, this.duration)
-      .setTimingMode(this.timingMode)
-      .setSpeed(this.speed);
+    return new RotateByAction(-this.rotation, this.duration)._copyFrom(this);
   }
 
   protected onTick(target: TargetNode, t: number, dt: number): void {

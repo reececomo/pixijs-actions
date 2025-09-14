@@ -15,9 +15,7 @@ export class RepeatAction extends Action {
   }
 
   public reversed(): Action {
-    return new RepeatAction(this.action.reversed(), this.repeats)
-      .setTimingMode(this.timingMode)
-      .setSpeed(this.speed);
+    return new RepeatAction(this.action.reversed(), this.repeats)._copyFrom(this);
   }
 
   protected onSetupTicker(target: TargetNode, ticker: IActionTicker): any {

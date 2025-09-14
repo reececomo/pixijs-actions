@@ -9,9 +9,7 @@ export class FadeByAction extends Action {
   }
 
   public reversed(): Action {
-    return new FadeByAction(-this.alpha, this.duration)
-      .setTimingMode(this.timingMode)
-      .setSpeed(this.speed);
+    return new FadeByAction(-this.alpha, this.duration)._copyFrom(this);
   }
 
   protected onTick(target: TargetNode, t: number, dt: number): void {

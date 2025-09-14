@@ -11,9 +11,7 @@ export class SequenceAction extends Action {
   }
 
   public reversed(): Action {
-    return new SequenceAction(this.actions.map(action => action.reversed()).reverse())
-      .setTimingMode(this.timingMode)
-      .setSpeed(this.speed);
+    return new SequenceAction(this.actions.map(action => action.reversed()).reverse())._copyFrom(this);
   }
 
   protected onSetupTicker(target: TargetNode, ticker: IActionTicker): any {

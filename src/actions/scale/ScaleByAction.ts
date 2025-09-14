@@ -11,9 +11,7 @@ export class ScaleByAction extends Action {
   }
 
   public reversed(): Action {
-    return new ScaleByAction(-this.x, -this.y, this.duration)
-      .setTimingMode(this.timingMode)
-      .setSpeed(this.speed);
+    return new ScaleByAction(-this.x, -this.y, this.duration)._copyFrom(this);
   }
 
   protected onSetupTicker(target: TargetNode): any {
@@ -24,9 +22,12 @@ export class ScaleByAction extends Action {
   }
 
   protected onTick(target: TargetNode, t: number, dt: number, ticker: IActionTicker): void {
-    target.scale.set(
-      target.scale.x + ticker.data.dx * dt,
-      target.scale.y + ticker.data.dy * dt,
+    const scale = target.scale;
+    const data = ticker.data;
+
+    scale.set(
+      scale._x + data.dx * dt,
+      scale._y + data.dy * dt,
     );
   }
 }

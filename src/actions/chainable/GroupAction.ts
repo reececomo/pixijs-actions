@@ -10,9 +10,7 @@ export class GroupAction extends Action {
   }
 
   public reversed(): Action {
-    return new GroupAction(this.actions.map(action => action.reversed()))
-      .setTimingMode(this.timingMode)
-      .setSpeed(this.speed);
+    return new GroupAction(this.actions.map(action => action.reversed()))._copyFrom(this);
   }
 
   protected onSetupTicker(target: TargetNode, ticker: IActionTicker): any {

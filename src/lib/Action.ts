@@ -55,6 +55,18 @@ export abstract class Action {
     return this;
   }
 
+  /**
+   * Applies the base properties (timingMode, speed) from another action initializer to
+   * this action.
+   *
+   * This function mutates the underlying action.
+   */
+  public _copyFrom(action: Action): this {
+    this.timingMode = action.timingMode;
+    this.speed = action.speed;
+    return this;
+  }
+
   //
   // ----------------- Default TimingMode Shortcuts: -----------------
   //

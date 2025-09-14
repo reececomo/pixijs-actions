@@ -1,6 +1,5 @@
 import { Action } from '../../lib/Action';
 import { IActionTicker } from '../../lib/IActionTicker';
-import { DelayAction } from '../delay';
 
 export class ScaleToSizeAction extends Action {
   public constructor(
@@ -12,7 +11,7 @@ export class ScaleToSizeAction extends Action {
   }
 
   public reversed(): Action {
-    return new DelayAction(this.scaledDuration);
+    return new ScaleToSizeAction(this.width, this.height, this.duration)._copyFrom(this);
   }
 
   protected onSetupTicker(target: SizedTargetNode): any {
@@ -27,7 +26,9 @@ export class ScaleToSizeAction extends Action {
   }
 
   protected onTick(target: SizedTargetNode, t: number, dt: number, ticker: IActionTicker): void {
-    target.width = ticker.data.width + (this.width - ticker.data.width) * t;
-    target.height = ticker.data.height + (this.height - ticker.data.height) * t;
+    const data = ticker.data;
+
+    target.width = data.width + (this.width - data.width) * t;
+    target.height = data.height + (this.height - data.height) * t;
   }
 }

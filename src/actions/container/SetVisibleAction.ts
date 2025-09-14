@@ -8,9 +8,7 @@ export class SetVisibleAction extends Action {
   }
 
   public reversed(): Action {
-    return new SetVisibleAction(!this.visible)
-      .setTimingMode(this.timingMode)
-      .setSpeed(this.speed);
+    return new SetVisibleAction(!this.visible)._copyFrom(this);
   }
 
   protected onTick(target: TargetNode): void {

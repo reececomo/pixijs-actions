@@ -10,9 +10,7 @@ export class MoveByAction extends Action {
   }
 
   public reversed(): Action {
-    return new MoveByAction(-this.x, -this.y, this.duration)
-      .setTimingMode(this.timingMode)
-      .setSpeed(this.speed);
+    return new MoveByAction(-this.x, -this.y, this.duration)._copyFrom(this);
   }
 
   protected onTick(target: TargetNode, t: number, dt: number): void {

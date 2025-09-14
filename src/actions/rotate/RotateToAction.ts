@@ -1,6 +1,5 @@
 import { Action } from '../../lib/Action';
 import { IActionTicker } from '../../lib/IActionTicker';
-import { DelayAction } from '../delay';
 
 export class RotateToAction extends Action {
   public constructor(
@@ -11,7 +10,7 @@ export class RotateToAction extends Action {
   }
 
   public reversed(): Action {
-    return new DelayAction(this.scaledDuration);
+    return new RotateToAction(this.rotation, this.duration)._copyFrom(this);
   }
 
   protected onSetupTicker(target: TargetNode): any {

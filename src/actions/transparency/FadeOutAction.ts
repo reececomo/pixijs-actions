@@ -7,8 +7,6 @@ export class FadeOutAction extends FadeAlphaToAction {
   }
 
   public reversed(): Action {
-    return new FadeAlphaToAction(1, this.duration)
-      .setTimingMode(this.timingMode)
-      .setSpeed(this.speed);
+    return new FadeAlphaToAction(1, this.duration)._copyFrom(this);
   }
 }

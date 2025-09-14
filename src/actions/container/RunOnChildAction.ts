@@ -9,9 +9,7 @@ export class RunOnChildAction extends Action {
   }
 
   public reversed(): Action {
-    return new RunOnChildAction(this.action.reversed(), this.label)
-      .setTimingMode(this.timingMode)
-      .setSpeed(this.speed);
+    return new RunOnChildAction(this.action.reversed(), this.label)._copyFrom(this);
   }
 
   protected onTick(target: TargetNode): void {
