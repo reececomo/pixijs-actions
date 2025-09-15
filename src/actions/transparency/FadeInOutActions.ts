@@ -1,9 +1,6 @@
 import { Action } from '../../lib/Action';
 import { FadeAlphaToAction } from './FadeAlphaToAction';
 
-export * from './FadeAlphaByAction';
-export * from './FadeAlphaToAction';
-
 export class FadeInAction extends FadeAlphaToAction {
   public constructor(duration: number) {
     super(1, duration);

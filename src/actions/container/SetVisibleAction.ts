@@ -1,14 +1,15 @@
 import { Action } from '../../lib/Action';
 
 export class SetVisibleAction extends Action {
-  public constructor(
-    protected readonly visible: boolean,
-  ) {
+  protected readonly visible: boolean;
+
+  public constructor(visible: boolean) {
     super(0);
+    this.visible = visible;
   }
 
   public reversed(): Action {
-    return new SetVisibleAction(!this.visible)._copyFrom(this);
+    return new SetVisibleAction(!this.visible)._apply(this);
   }
 
   protected onTick(target: TargetNode): void {

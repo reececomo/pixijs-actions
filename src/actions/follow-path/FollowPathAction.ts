@@ -8,17 +8,23 @@ export class FollowPathAction extends Action {
   protected readonly lastIndex: number;
   protected readonly segmentLengths!: number[];
   protected readonly segmentWeights!: number[];
+  protected readonly asOffset: boolean;
+  protected readonly orientToPath: boolean;
+  protected readonly fixedSpeed: boolean;
 
   public constructor(
     path: VectorLike[],
     duration: number,
-    protected readonly asOffset: boolean,
-    protected readonly orientToPath: boolean,
-    protected readonly fixedSpeed: boolean,
+    asOffset: boolean,
+    orientToPath: boolean,
+    fixedSpeed: boolean,
   ) {
     super(duration);
     this.path = path;
     this.lastIndex = path.length - 1;
+    this.asOffset = asOffset;
+    this.orientToPath = orientToPath;
+    this.fixedSpeed = fixedSpeed;
 
     // Precalculate segment lengths, if needed.
     if (orientToPath || fixedSpeed) {
@@ -62,7 +68,7 @@ export class FollowPathAction extends Action {
       this.asOffset,
       this.orientToPath,
       this.fixedSpeed,
-    )._copyFrom(this);
+    )._apply(this);
   }
 
   protected onSetupTicker(target: any): any {

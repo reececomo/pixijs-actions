@@ -2,21 +2,27 @@ import { Action } from '../../lib/Action';
 import { IActionTicker } from '../../lib/IActionTicker';
 
 export class ScaleToSizeAction extends Action {
+  protected readonly width: number;
+  protected readonly height: number;
+
   public constructor(
-    protected readonly width: number,
-    protected readonly height: number,
+    width: number,
+    height: number,
     duration: TimeInterval,
   ) {
     super(duration);
+
+    this.width = width;
+    this.height = height;
   }
 
   public reversed(): Action {
-    return new ScaleToSizeAction(this.width, this.height, this.duration)._copyFrom(this);
+    return new ScaleToSizeAction(this.width, this.height, this.duration)._apply(this);
   }
 
   protected onSetupTicker(target: SizedTargetNode): any {
     if (typeof target.width !== 'number' || typeof target.height !== 'number') {
-      throw new TypeError("The target must have numeric 'width' and 'height'.");
+      throw new TypeError("Target must have 'width' and 'height'.");
     }
 
     return {
@@ -25,9 +31,12 @@ export class ScaleToSizeAction extends Action {
     };
   }
 
-  protected onTick(target: SizedTargetNode, t: number, dt: number, ticker: IActionTicker): void {
-    const data = ticker.data;
-
+  protected onTick(
+    target: SizedTargetNode,
+    t: number,
+    dt: number,
+    { data }: IActionTicker
+  ): void {
     target.width = data.width + (this.width - data.width) * t;
     target.height = data.height + (this.height - data.height) * t;
   }

@@ -1,16 +1,22 @@
 import { Action } from '../../lib/Action';
 
 export class MoveByAction extends Action {
+  protected readonly x: number;
+  protected readonly y: number;
+
   public constructor(
-    protected readonly x: number,
-    protected readonly y: number,
+    x: number,
+    y: number,
     duration: number,
   ) {
     super(duration);
+
+    this.x = x;
+    this.y = y;
   }
 
   public reversed(): Action {
-    return new MoveByAction(-this.x, -this.y, this.duration)._copyFrom(this);
+    return new MoveByAction(-this.x, -this.y, this.duration)._apply(this);
   }
 
   protected onTick(target: TargetNode, t: number, dt: number): void {

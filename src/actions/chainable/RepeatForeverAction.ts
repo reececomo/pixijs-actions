@@ -3,18 +3,21 @@ import { IActionTicker } from '../../lib/IActionTicker';
 import { ActionTicker } from '../../lib/ActionTicker';
 
 export class RepeatForeverAction extends Action {
-  public constructor(
-    protected readonly action: Action
-  ) {
-    super(Infinity);
+  protected readonly action: Action;
 
+  public constructor(action: Action) {
     if (action.scaledDuration <= 0) {
       throw new TypeError('The action to be repeated must have a non-instantaneous duration.');
     }
+
+    super(Infinity);
+
+    this.action = action;
   }
 
   public reversed(): Action {
-    return new RepeatForeverAction(this.action.reversed())._copyFrom(this);
+    const reversedAction = this.action.reversed();
+    return new RepeatForeverAction(reversedAction)._apply(this);
   }
 
   protected onSetupTicker(target: TargetNode, ticker: IActionTicker): any {

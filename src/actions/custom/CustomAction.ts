@@ -1,11 +1,13 @@
 import { Action } from '../../lib/Action';
 
+export type StepFunction = (target: TargetNode, t: number, dt: number) => void;
+
 export class CustomAction extends Action {
-  public constructor(
-    duration: TimeInterval,
-    protected readonly stepFn: (target: TargetNode, t: number, dt: number) => void
-  ) {
+  protected readonly stepFn: StepFunction;
+
+  public constructor(duration: TimeInterval, stepFn: StepFunction) {
     super(duration);
+    this.stepFn = stepFn;
   }
 
   protected onTick(target: TargetNode, t: number, dt: number): void {
@@ -13,6 +15,6 @@ export class CustomAction extends Action {
   }
 
   public reversed(): Action {
-    return this;
+    return new CustomAction(this.duration, this.stepFn)._apply(this);
   }
 }

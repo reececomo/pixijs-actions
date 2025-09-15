@@ -2,16 +2,22 @@ import { Action } from '../../lib/Action';
 import { IActionTicker } from '../../lib/IActionTicker';
 
 export class MoveToAction extends Action {
+  protected readonly x: number | null;
+  protected readonly y: number | null;
+
   public constructor(
-    protected readonly x: number | undefined,
-    protected readonly y: number | undefined,
+    x: number | null,
+    y: number | null,
     duration: TimeInterval,
   ) {
     super(duration);
+
+    this.x = x;
+    this.y = y;
   }
 
   public reversed(): Action {
-    return new MoveToAction(this.x, this.y, this.duration)._copyFrom(this);
+    return new MoveToAction(this.x, this.y, this.duration)._apply(this);
   }
 
   protected onSetupTicker(target: TargetNode): any {
@@ -22,9 +28,12 @@ export class MoveToAction extends Action {
   }
 
   protected onTick(target: TargetNode, t: number, dt: number, ticker: IActionTicker): void {
-    target.position.set(
-      this.x === undefined ? target.position.x : ticker.data.startX + (this.x - ticker.data.startX) * t,
-      this.y === undefined ? target.position.y : ticker.data.startY + (this.y - ticker.data.startY) * t
+    const position = target.position;
+    const data = ticker.data;
+
+    position.set(
+      this.x == null ? position._x : data.startX + (this.x - data.startX) * t,
+      this.y == null ? position._y : data.startY + (this.y - data.startY) * t
     );
   }
 }

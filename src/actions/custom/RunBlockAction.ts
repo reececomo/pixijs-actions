@@ -1,17 +1,20 @@
 import { Action } from '../../lib/Action';
 
+export type BlockFunction = (target: TargetNode) => void;
+
 export class RunBlockAction extends Action {
-  public constructor(
-    protected readonly block: (target: TargetNode) => void
-  ) {
+  protected readonly fn: (target: TargetNode) => void;
+
+  public constructor(fn: BlockFunction) {
     super(0);
+    this.fn = fn;
   }
 
   public reversed(): Action {
-    return this;
+    return new RunBlockAction(this.fn)._apply(this);
   }
 
   protected onTick(target: TargetNode): void {
-    this.block(target);
+    this.fn(target);
   }
 }

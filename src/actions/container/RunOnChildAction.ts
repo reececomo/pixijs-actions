@@ -1,35 +1,43 @@
 import { Action } from '../../lib/Action';
 
 export class RunOnChildAction extends Action {
-  public constructor(
-    protected readonly action: Action,
-    protected readonly label: string,
-  ) {
+  protected readonly action: Action;
+  protected readonly label: string;
+
+  public constructor(action: Action, label: string) {
     super(0);
+
+    this.action = action;
+    this.label = label;
   }
 
   public reversed(): Action {
-    return new RunOnChildAction(this.action.reversed(), this.label)._copyFrom(this);
+    const reversedAction = this.action.reversed();
+    return new RunOnChildAction(reversedAction, this.label)._apply(this);
   }
 
   protected onTick(target: TargetNode): void {
-    if (target.children && Array.isArray(target.children)) {
-      let child: any;
+    const child = this._getChildByLabel(target, this.label);
+    if (!child) throw new ReferenceError(`Target did not have child '${this.label}'.`);
+    child.run(this.action);
+  }
 
-      if ('getChildByLabel' in target as any) {
-        child = (target as any).getChildByLabel(this.label); // pixi.js V8+
-      }
-      else {
-        child = target.children
-          .find((child: any) => child.label === this.label || child.name === this.label);
-      }
-
-      if (child) {
-        child.run(this.action);
-        return;
-      }
+  private _getChildByLabel(target: TargetNode, label: string): TargetNode | undefined {
+    if (!target.children || !Array.isArray(target.children)) {
+      return undefined;
     }
 
-    throw new ReferenceError(`The target did not have a child matching '${this.label}'.`);
+    let child: any;
+
+    if ('getChildByLabel' in target as any) {
+      child = (target as any).getChildByLabel(label);
+    }
+    else {
+      child = target.children.find((child: any) =>
+        child.label === label || child.name === label
+      );
+    }
+
+    return child;
   }
 }
