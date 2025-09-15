@@ -9,7 +9,7 @@ export class SetVisibleAction extends Action {
   }
 
   public reversed(): Action {
-    return new SetVisibleAction(!this.visible)._apply(this);
+    return new SetVisibleAction(!this.visible)._mutate(this);
   }
 
   protected onTick(target: TargetNode): void {

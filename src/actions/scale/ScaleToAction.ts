@@ -2,8 +2,8 @@ import { Action } from '../../lib/Action';
 import { IActionTicker } from '../../lib/IActionTicker';
 
 export class ScaleToAction extends Action {
-  protected readonly x: number | null;
-  protected readonly y: number | null;
+  protected readonly x1: number | null;
+  protected readonly y1: number | null;
 
   public constructor(
     x: number | null,
@@ -12,19 +12,16 @@ export class ScaleToAction extends Action {
   ) {
     super(duration);
 
-    this.x = x;
-    this.y = y;
+    this.x1 = x;
+    this.y1 = y;
   }
 
   public reversed(): Action {
-    return new ScaleToAction(this.x, this.y, this.duration)._apply(this);
+    return new ScaleToAction(this.x1, this.y1, this.duration)._mutate(this);
   }
 
-  protected onSetupTicker(target: TargetNode): any {
-    return {
-      startX: target.scale.x,
-      startY: target.scale.y
-    };
+  protected onSetupTicker({ scale }: TargetNode): any {
+    return { x0: scale._x, y0: scale._y };
   }
 
   protected onTick(
@@ -34,8 +31,8 @@ export class ScaleToAction extends Action {
     { data }: IActionTicker
   ): void {
     scale.set(
-      this.x == null ? scale._x : data.startX + (this.x - data.startX) * t,
-      this.y == null ? scale._y : data.startY + (this.y - data.startY) * t
+      this.x1 == null ? scale._x : data.x0 + (this.x1 - data.x0) * t,
+      this.y1 == null ? scale._y : data.y0 + (this.y1 - data.y0) * t
     );
   }
 }

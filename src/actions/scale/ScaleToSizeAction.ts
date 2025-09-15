@@ -17,7 +17,7 @@ export class ScaleToSizeAction extends Action {
   }
 
   public reversed(): Action {
-    return new ScaleToSizeAction(this.width, this.height, this.duration)._apply(this);
+    return new ScaleToSizeAction(this.width, this.height, this.duration)._mutate(this);
   }
 
   protected onSetupTicker(target: SizedTargetNode): any {

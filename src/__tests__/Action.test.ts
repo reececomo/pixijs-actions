@@ -318,7 +318,7 @@ describe('Action Chaining', () => {
     });
 
     it('is compatible with repeatForever()', () => {
-      const myCustomAction = Action.customAction(5.0, (target, t) => {
+      const myCustomAction = Action.custom(5.0, (target, t) => {
         target.position.x = 5.0 * t;
       });
 
@@ -969,9 +969,9 @@ describe('Action', () => {
     });
   });
 
-  describe('customAction()', () => {
+  describe('custom()', () => {
     it('runs a stepping function', () => {
-      const myCustomAction = Action.customAction(5.0, (target, t, dt) => {
+      const myCustomAction = Action.custom(5.0, (target, t, dt) => {
         target.position.x = 5.0 * t;
         target.position.y += 5.0 * dt;
       });

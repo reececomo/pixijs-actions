@@ -38,7 +38,23 @@ export abstract class Action {
     this.duration = duration;
   }
 
-  /** Duration of the action after its local speed scalar is applied. */
+  /**
+   * Whether action completes instantly.
+   */
+  public get isInstant(): boolean {
+    return this.duration === 0;
+  }
+
+  /**
+   * Whether action never completes.
+   */
+  public get isInfinite(): boolean {
+    return Math.abs(this.duration) === Infinity;
+  }
+
+  /**
+   * Duration of the action, factoring in local speed.
+   */
   public get scaledDuration(): number {
     return this.duration / this.speed;
   }
@@ -70,7 +86,7 @@ export abstract class Action {
    *
    * This function mutates the underlying action.
    */
-  public _apply(action: Action): this {
+  public _mutate(action: Action): this {
     this.timingMode = action.timingMode;
     this.speed = action.speed;
     return this;

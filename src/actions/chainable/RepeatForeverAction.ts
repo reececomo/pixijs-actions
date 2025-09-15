@@ -17,7 +17,7 @@ export class RepeatForeverAction extends Action {
 
   public reversed(): Action {
     const reversedAction = this.action.reversed();
-    return new RepeatForeverAction(reversedAction)._apply(this);
+    return new RepeatForeverAction(reversedAction)._mutate(this);
   }
 
   protected onSetupTicker(target: TargetNode, ticker: IActionTicker): any {

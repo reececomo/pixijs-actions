@@ -68,7 +68,7 @@ export class FollowPathAction extends Action {
       this.asOffset,
       this.orientToPath,
       this.fixedSpeed,
-    )._apply(this);
+    )._mutate(this);
   }
 
   protected onSetupTicker(target: any): any {

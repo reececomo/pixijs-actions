@@ -15,6 +15,6 @@ export class CustomAction extends Action {
   }
 
   public reversed(): Action {
-    return new CustomAction(this.duration, this.stepFn)._apply(this);
+    return new CustomAction(this.duration, this.stepFn)._mutate(this);
   }
 }

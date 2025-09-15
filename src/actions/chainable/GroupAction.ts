@@ -13,7 +13,7 @@ export class GroupAction extends Action {
 
   public reversed(): Action {
     const reversedActions = this.actions.map(action => action.reversed());
-    return new GroupAction(reversedActions)._apply(this);
+    return new GroupAction(reversedActions)._mutate(this);
   }
 
   protected onSetupTicker(target: TargetNode, ticker: IActionTicker): any {

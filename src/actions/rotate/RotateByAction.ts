@@ -13,7 +13,7 @@ export class RotateByAction extends Action {
   }
 
   public reversed(): Action {
-    return new RotateByAction(-this.rotation, this.duration)._apply(this);
+    return new RotateByAction(-this.rotation, this.duration)._mutate(this);
   }
 
   protected onTick(target: TargetNode, t: number, dt: number): void {

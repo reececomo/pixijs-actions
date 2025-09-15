@@ -2,7 +2,7 @@ import { Action } from '../../lib/Action';
 import { IActionTicker } from '../../lib/IActionTicker';
 
 export class RotateToAction extends Action {
-  protected readonly rotation: number;
+  protected readonly r1: number;
 
   public constructor(
     rotation: number,
@@ -10,20 +10,23 @@ export class RotateToAction extends Action {
   ) {
     super(duration);
 
-    this.rotation = rotation;
+    this.r1 = rotation;
   }
 
   public reversed(): Action {
-    return new RotateToAction(this.rotation, this.duration)._apply(this);
+    return new RotateToAction(this.r1, this.duration)._mutate(this);
   }
 
-  protected onSetupTicker(target: TargetNode): any {
-    return {
-      startRotation: target.rotation
-    };
+  protected onSetupTicker({ rotation }: TargetNode): any {
+    return { r0: rotation };
   }
 
-  protected onTick(target: TargetNode, t: number, dt: number, ticker: IActionTicker): void {
-    target.rotation = ticker.data.startRotation + (this.rotation - ticker.data.startRotation) * t;
+  protected onTick(
+    target: TargetNode,
+    t: number,
+    dt: number,
+    { data }: IActionTicker,
+  ): void {
+    target.rotation = data.r0 + (this.r1 - data.r0) * t;
   }
 }

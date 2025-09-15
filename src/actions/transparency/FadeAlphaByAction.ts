@@ -12,7 +12,7 @@ export class FadeByAction extends Action {
   }
 
   public reversed(): Action {
-    return new FadeByAction(-this.alpha, this.duration)._apply(this);
+    return new FadeByAction(-this.alpha, this.duration)._mutate(this);
   }
 
   protected onTick(target: TargetNode, t: number, dt: number): void {

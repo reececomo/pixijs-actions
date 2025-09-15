@@ -11,7 +11,7 @@ export class RunBlockAction extends Action {
   }
 
   public reversed(): Action {
-    return new RunBlockAction(this.fn)._apply(this);
+    return new RunBlockAction(this.fn)._mutate(this);
   }
 
   protected onTick(target: TargetNode): void {

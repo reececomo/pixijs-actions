@@ -243,8 +243,7 @@ export abstract class _ extends Action {
   /**
    * Creates an action that moves a node to a new position.
    *
-   * This action is not reversible; the reverse of this action has the same duration but does not
-   * move the node.
+   * This action is not reversible; the reverse of this action is the same action.
    */
   public static moveTo(position: VectorLike, duration: TimeInterval): Action;
   public static moveTo(x: number, y: number, duration: TimeInterval): Action;
@@ -257,21 +256,19 @@ export abstract class _ extends Action {
   /**
    * Creates an action that moves a node horizontally.
    *
-   * This action is not reversible; the reverse of this action has the same duration but does not
-   * move the node.
+   * This action is not reversible; the reverse of this action is the same action.
    */
   public static moveToX(x: number, duration: TimeInterval): Action {
-    return new MoveToAction(x, undefined, duration);
+    return new MoveToAction(x, null, duration);
   }
 
   /**
    * Creates an action that moves a node vertically.
    *
-   * This action is not reversible; the reverse of this action has the same duration but does not
-   * move the node.
+   * This action is not reversible; the reverse of this action is the same action.
    */
   public static moveToY(y: number, duration: TimeInterval): Action {
-    return new MoveToAction(undefined, y, duration);
+    return new MoveToAction(null, y, duration);
   }
 
   //
@@ -349,8 +346,7 @@ export abstract class _ extends Action {
   /**
    * Creates an action that rotates the node to an absolute value (in radians).
    *
-   * This action is not reversible; the reverse of this action has the same duration but does not
-   * change anything.
+   * This action is not reversible; the reverse of this action is the same action.
    */
   public static rotateTo(rotation: number, duration: TimeInterval): Action {
     return new RotateToAction(rotation, duration);
@@ -359,8 +355,7 @@ export abstract class _ extends Action {
   /**
    * Creates an action that rotates the node to an absolute value (in degrees).
    *
-   * This action is not reversible; the reverse of this action has the same duration but does not
-   * change anything.
+   * This action is not reversible; the reverse of this action is the same action.
    */
   public static rotateToDegrees(degrees: number, duration: TimeInterval): Action {
     return this.rotateTo(degrees * DEG_TO_RAD, duration);
@@ -382,8 +377,7 @@ export abstract class _ extends Action {
   /**
    * Creates an action that changes how fast the node executes actions.
    *
-   * This action is not reversible; the reverse of this action has the same duration but does not
-   * change anything.
+   * This action is not reversible; the reverse of this action is the same action.
    */
   public static speedTo(speed: number, duration: TimeInterval): Action {
     return new SpeedToAction(speed, duration);
@@ -403,7 +397,7 @@ export abstract class _ extends Action {
   public static scaleBy(dx: number, dy: number, duration: TimeInterval): Action;
   public static scaleBy(a: number | VectorLike, b: number | TimeInterval, c?: TimeInterval): Action {
     return typeof a === 'number'
-      ? c === undefined
+      ? c == null
         ? new ScaleByAction(a, a, b)
         : new ScaleByAction(a, b, c)
       : new ScaleByAction(a.x, a.y, b);
@@ -430,15 +424,14 @@ export abstract class _ extends Action {
   /**
    * Creates an action that changes the x and y scale values of a node.
    *
-   * This action is not reversible; the reverse of this action has the same duration but does not
-   * change anything.
+   * This action is not reversible; the reverse of this action is the same action.
    */
   public static scaleTo(scale: number, duration: TimeInterval): Action;
   public static scaleTo(size: SizeLike, duration: TimeInterval): Action;
   public static scaleTo(x: number, y: number, duration: TimeInterval): Action;
   public static scaleTo(a: number | SizeLike, b: number | TimeInterval, c?: TimeInterval): Action {
     return typeof a === 'number'
-      ? c === undefined
+      ? c == null
         ? new ScaleToAction(a, a, b)
         : new ScaleToAction(a, b, c)
       : new ScaleToSizeAction(a.width, a.height, b);
@@ -447,21 +440,19 @@ export abstract class _ extends Action {
   /**
    * Creates an action that changes the y scale values of a node.
    *
-   * This action is not reversible; the reverse of this action has the same duration but does not
-   * change anything.
+   * This action is not reversible; the reverse of this action is the same action.
    */
   public static scaleToX(x: number, duration: TimeInterval): Action {
-    return new ScaleToAction(x, undefined, duration);
+    return new ScaleToAction(x, null, duration);
   }
 
   /**
    * Creates an action that changes the x scale values of a node.
    *
-   * This action is not reversible; the reverse of this action has the same duration but does not
-   * change anything.
+   * This action is not reversible; the reverse of this action is the same action.
    */
   public static scaleToY(y: number, duration: TimeInterval): Action {
-    return new ScaleToAction(undefined, y, duration);
+    return new ScaleToAction(null, y, duration);
   }
 
   //
@@ -489,8 +480,7 @@ export abstract class _ extends Action {
   /**
    * Creates an action that adjusts the alpha value of a node to a new value.
    *
-   * This action is not reversible; the reverse of this action has the same duration but does not
-   * change anything.
+   * This action is not reversible; the reverse of this action is the same action.
    */
   public static fadeAlphaTo(alpha: number, duration: TimeInterval): Action {
     return new FadeAlphaToAction(alpha, duration);
@@ -628,10 +618,18 @@ export abstract class _ extends Action {
    *
    * This action takes place instantaneously.
    *
-   * This action is not reversible; the reverse action executes the same block.
+   * This action is not reversible; the reverse action executes the same block function.
    */
-  public static run(fn: (target: TargetNode) => void): Action {
-    return new RunBlockAction(fn);
+  public static run(blockFn: (target: TargetNode) => void): Action {
+    return new RunBlockAction(blockFn);
+  }
+
+  /** @deprecated Use `Action.custom(duration, stepFn)` instead. */
+  public static customAction(
+    duration: number,
+    stepFn: (target: TargetNode, t: number, dt: number) => void
+  ): Action {
+    return this.custom(duration, stepFn);
   }
 
   /**
@@ -641,9 +639,12 @@ export abstract class _ extends Action {
    * the target and the elasped time as a scalar between 0 and 1 (which is passed through the timing
    * mode function).
    *
-   * This action is not reversible; the reverse action executes the same block.
+   * This action is not reversible; the reverse action executes the same stepping function.
    */
-  public static customAction(duration: number, stepFn: (target: TargetNode, t: number, dt: number) => void): Action {
+  public static custom(
+    duration: number,
+    stepFn: (target: TargetNode, t: number, dt: number) => void
+  ): Action {
     return new CustomAction(duration, stepFn);
   }
 

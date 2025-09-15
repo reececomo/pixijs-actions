@@ -13,7 +13,7 @@ export class RunOnChildAction extends Action {
 
   public reversed(): Action {
     const reversedAction = this.action.reversed();
-    return new RunOnChildAction(reversedAction, this.label)._apply(this);
+    return new RunOnChildAction(reversedAction, this.label)._mutate(this);
   }
 
   protected onTick(target: TargetNode): void {

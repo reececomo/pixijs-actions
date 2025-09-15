@@ -5,6 +5,6 @@ export class DelayAction extends Action {
   }
 
   public reversed(): Action {
-    return new DelayAction(this.duration)._apply(this);
+    return new DelayAction(this.duration)._mutate(this);
   }
 }

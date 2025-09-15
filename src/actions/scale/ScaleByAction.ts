@@ -17,7 +17,7 @@ export class ScaleByAction extends Action {
   }
 
   public reversed(): Action {
-    return new ScaleByAction(1/this.x, 1/this.y, this.duration)._apply(this);
+    return new ScaleByAction(1/this.x, 1/this.y, this.duration)._mutate(this);
   }
 
   protected onSetupTicker({ scale }: TargetNode): any {

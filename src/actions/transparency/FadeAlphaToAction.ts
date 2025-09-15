@@ -2,22 +2,22 @@ import { Action } from '../../lib/Action';
 import { IActionTicker } from '../../lib/IActionTicker';
 
 export class FadeAlphaToAction extends Action {
-  protected readonly alpha1: number;
+  protected readonly a1: number;
 
   public constructor(
     alpha: number,
     duration: TimeInterval,
   ) {
     super(duration);
-    this.alpha1 = alpha;
+    this.a1 = alpha;
   }
 
   public reversed(): Action {
-    return new FadeAlphaToAction(this.alpha1, this.duration)._apply(this);
+    return new FadeAlphaToAction(this.a1, this.duration)._mutate(this);
   }
 
-  protected onSetupTicker(target: TargetNode): any {
-    return { alpha0: target.alpha };
+  protected onSetupTicker({ alpha }: TargetNode): any {
+    return { a0: alpha };
   }
 
   protected onTick(
@@ -26,6 +26,6 @@ export class FadeAlphaToAction extends Action {
     dt: number,
     { data }: IActionTicker
   ): void {
-    target.alpha = data.alpha0 + (this.alpha1 - data.alpha0) * t;
+    target.alpha = data.a0 + (this.a1 - data.a0) * t;
   }
 }

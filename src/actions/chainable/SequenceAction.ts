@@ -14,7 +14,7 @@ export class SequenceAction extends Action {
 
   public reversed(): Action {
     const reversedActions = this.actions.map(action => action.reversed()).reverse();
-    return new SequenceAction(reversedActions)._apply(this);
+    return new SequenceAction(reversedActions)._mutate(this);
   }
 
   protected onSetupTicker(target: TargetNode, ticker: IActionTicker): any {

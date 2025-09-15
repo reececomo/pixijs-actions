@@ -116,25 +116,35 @@ export {};
 import { Spritesheet, Texture } from 'pixi.js';
 
 declare abstract class Action {
-	/** The duration required to complete an action. */
-	readonly duration: TimeInterval;
-	/** A speed factor that modifies how fast an action runs. */
-	speed: number;
-	/** A setting that controls the speed curve of an animation. */
-	timingMode: TimingModeFn;
 	log: boolean;
 	protected static _defaultAnimateTimePerFrame: TimeInterval;
 	protected static _defaultTimingModeEaseIn: (x: number) => number;
 	protected static _defaultTimingModeEaseOut: (x: number) => number;
 	protected static _defaultTimingModeEaseInOut: (x: number) => number;
-	protected constructor(
-	/** The duration required to complete an action. */
-	duration: TimeInterval, 
-	/** A speed factor that modifies how fast an action runs. */
-	speed?: number, 
-	/** A setting that controls the speed curve of an animation. */
-	timingMode?: TimingModeFn);
-	/** Duration of the action after its local speed scalar is applied. */
+	/**
+	 * The duration required to complete an action.
+	 */
+	readonly duration: TimeInterval;
+	/**
+	 * A speed factor that modifies how fast an action runs.
+	 */
+	speed: number;
+	/**
+	 * A setting that controls the speed curve of an animation.
+	 */
+	timingMode: TimingModeFn;
+	protected constructor(duration: TimeInterval);
+	/**
+	 * Whether action completes instantly.
+	 */
+	get isInstant(): boolean;
+	/**
+	 * Whether action never completes.
+	 */
+	get isInfinite(): boolean;
+	/**
+	 * Duration of the action, factoring in local speed.
+	 */
 	get scaledDuration(): number;
 	/**
 	 * Set the action's speed scale. Default: `1.0`.
@@ -150,6 +160,12 @@ declare abstract class Action {
 	 * @see {TimingMode}
 	 */
 	setTimingMode(timingMode: TimingModeFn): this;
+	/**
+	 * Apply the base properties from another action to this action.
+	 *
+	 * This function mutates the underlying action.
+	 */
+	_mutate(action: Action): this;
 	/**
 	 * Default `timingMode`. Sets the speed curve of the action to linear pacing. Linear pacing causes
 	 * an animation to occur evenly over its duration.
@@ -350,23 +366,20 @@ declare abstract class _ extends Action {
 	/**
 	 * Creates an action that moves a node to a new position.
 	 *
-	 * This action is not reversible; the reverse of this action has the same duration but does not
-	 * move the node.
+	 * This action is not reversible; the reverse of this action is the same action.
 	 */
 	static moveTo(position: VectorLike, duration: TimeInterval): Action;
 	static moveTo(x: number, y: number, duration: TimeInterval): Action;
 	/**
 	 * Creates an action that moves a node horizontally.
 	 *
-	 * This action is not reversible; the reverse of this action has the same duration but does not
-	 * move the node.
+	 * This action is not reversible; the reverse of this action is the same action.
 	 */
 	static moveToX(x: number, duration: TimeInterval): Action;
 	/**
 	 * Creates an action that moves a node vertically.
 	 *
-	 * This action is not reversible; the reverse of this action has the same duration but does not
-	 * move the node.
+	 * This action is not reversible; the reverse of this action is the same action.
 	 */
 	static moveToY(y: number, duration: TimeInterval): Action;
 	/**
@@ -410,15 +423,13 @@ declare abstract class _ extends Action {
 	/**
 	 * Creates an action that rotates the node to an absolute value (in radians).
 	 *
-	 * This action is not reversible; the reverse of this action has the same duration but does not
-	 * change anything.
+	 * This action is not reversible; the reverse of this action is the same action.
 	 */
 	static rotateTo(rotation: number, duration: TimeInterval): Action;
 	/**
 	 * Creates an action that rotates the node to an absolute value (in degrees).
 	 *
-	 * This action is not reversible; the reverse of this action has the same duration but does not
-	 * change anything.
+	 * This action is not reversible; the reverse of this action is the same action.
 	 */
 	static rotateToDegrees(degrees: number, duration: TimeInterval): Action;
 	/**
@@ -430,8 +441,7 @@ declare abstract class _ extends Action {
 	/**
 	 * Creates an action that changes how fast the node executes actions.
 	 *
-	 * This action is not reversible; the reverse of this action has the same duration but does not
-	 * change anything.
+	 * This action is not reversible; the reverse of this action is the same action.
 	 */
 	static speedTo(speed: number, duration: TimeInterval): Action;
 	/**
@@ -457,8 +467,7 @@ declare abstract class _ extends Action {
 	/**
 	 * Creates an action that changes the x and y scale values of a node.
 	 *
-	 * This action is not reversible; the reverse of this action has the same duration but does not
-	 * change anything.
+	 * This action is not reversible; the reverse of this action is the same action.
 	 */
 	static scaleTo(scale: number, duration: TimeInterval): Action;
 	static scaleTo(size: SizeLike, duration: TimeInterval): Action;
@@ -466,15 +475,13 @@ declare abstract class _ extends Action {
 	/**
 	 * Creates an action that changes the y scale values of a node.
 	 *
-	 * This action is not reversible; the reverse of this action has the same duration but does not
-	 * change anything.
+	 * This action is not reversible; the reverse of this action is the same action.
 	 */
 	static scaleToX(x: number, duration: TimeInterval): Action;
 	/**
 	 * Creates an action that changes the x scale values of a node.
 	 *
-	 * This action is not reversible; the reverse of this action has the same duration but does not
-	 * change anything.
+	 * This action is not reversible; the reverse of this action is the same action.
 	 */
 	static scaleToY(y: number, duration: TimeInterval): Action;
 	/**
@@ -492,8 +499,7 @@ declare abstract class _ extends Action {
 	/**
 	 * Creates an action that adjusts the alpha value of a node to a new value.
 	 *
-	 * This action is not reversible; the reverse of this action has the same duration but does not
-	 * change anything.
+	 * This action is not reversible; the reverse of this action is the same action.
 	 */
 	static fadeAlphaTo(alpha: number, duration: TimeInterval): Action;
 	/**
@@ -565,9 +571,11 @@ declare abstract class _ extends Action {
 	 *
 	 * This action takes place instantaneously.
 	 *
-	 * This action is not reversible; the reverse action executes the same block.
+	 * This action is not reversible; the reverse action executes the same block function.
 	 */
-	static run(fn: (target: TargetNode) => void): Action;
+	static run(blockFn: (target: TargetNode) => void): Action;
+	/** @deprecated Use `Action.custom(duration, stepFn)` instead. */
+	static customAction(duration: number, stepFn: (target: TargetNode, t: number, dt: number) => void): Action;
 	/**
 	 * Creates an action that executes a stepping function over its duration.
 	 *
@@ -575,9 +583,9 @@ declare abstract class _ extends Action {
 	 * the target and the elasped time as a scalar between 0 and 1 (which is passed through the timing
 	 * mode function).
 	 *
-	 * This action is not reversible; the reverse action executes the same block.
+	 * This action is not reversible; the reverse action executes the same stepping function.
 	 */
-	static customAction(duration: number, stepFn: (target: TargetNode, t: number, dt: number) => void): Action;
+	static custom(duration: number, stepFn: (target: TargetNode, t: number, dt: number) => void): Action;
 	private constructor();
 }
 /**
