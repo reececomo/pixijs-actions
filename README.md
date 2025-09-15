@@ -1,147 +1,115 @@
-# 🎬 pixijs-actions &nbsp;[![NPM version](https://img.shields.io/npm/v/pixijs-actions.svg)](https://www.npmjs.com/package/pixijs-actions) [![Minzipped](https://badgen.net/bundlephobia/minzip/pixijs-actions@latest)](https://bundlephobia.com/package/pixijs-actions) [![NPM Downloads](https://img.shields.io/npm/dt/pixijs-actions.svg)](https://www.npmjs.com/package/pixijs-actions) [![Tests](https://github.com/reececomo/pixijs-actions/actions/workflows/tests.yml/badge.svg)](https://github.com/reececomo/pixijs-actions/actions/workflows/tests.yml) [![License](https://badgen.net/npm/license/pixijs-actions)](https://github.com/reececomo/pixijs-actions/blob/main/LICENSE)
+# PixiJS Actions &nbsp; [![MIT License](https://badgen.net/npm/license/pixijs-actions)](https://github.com/reececomo/pixijs-actions/blob/main/LICENSE) [![NPM version](https://img.shields.io/npm/v/pixijs-actions.svg)](https://www.npmjs.com/package/pixijs-actions) [![Minzipped](https://badgen.net/bundlephobia/minzip/pixijs-actions@latest)](https://bundlephobia.com/package/pixijs-actions) [![Tests](https://github.com/reececomo/pixijs-actions/actions/workflows/tests.yml/badge.svg)](https://github.com/reececomo/pixijs-actions/actions/workflows/tests.yml) [![NPM Downloads](https://img.shields.io/npm/dt/pixijs-actions.svg)](https://www.npmjs.com/package/pixijs-actions)
 
-⚡ Powerful, high-performance animations for PixiJS
+🎬 Lightweight, powerful animation composer for PixiJS (based on [Cocos2d](https://docs.cocos2d-x.org/cocos2d-x/v3/en/actions/getting_started.html)/[SKActions](https://developer.apple.com/documentation/spritekit/getting_started_with_actions)).
 
 | | |
 | ------ | ------ |
-| 🔮 Simple, declarative API | 🎬 Based on [Cocos2d](https://docs.cocos2d-x.org/cocos2d-x/v3/en/actions/getting_started.html)/[SKActions](https://developer.apple.com/documentation/spritekit/getting_started_with_actions) |
-| 🚀 35+ [built-in actions](#action-initializers), 30+ [timing modes](#timing-modes) | 🔀 Reuseable, chainable & reversible |
-| 🍃 No dependencies & tree-shakeable | ⌚ Full speed/pausing control |
-| 🤏 <5kB minzipped | ✨ Supports PixiJS 8+, 7+, 6.3+ |
+| 🎯 35+ built-in [Actions](#action-initializers), 30+ [TimingModes](#timing-modes) | 🧩 Simple, declarative API |
+| 🎬 Supports custom actions/timing modes | 🧑‍🍳 Chainable & reuseable recipes |
+| 🍃 Zero dependencies | ⏱️ Speed, timing and pause support |
+| 🤏 <5kB minzipped | 💻 Compatible with PixiJS v6, v7 and v8+ |
 
 
-## Sample Usage
-
-*Create, configure, and run animations & actions.*
+## Usage
 
 ```ts
-// Define an action
-const spinAndRemoveAction = Action.sequence([
-  Action.group([
-    Action.fadeOut(0.2),
-    Action.scaleTo(0, 0.2).easeInOut(),
-    Action.rotateByDegrees(-360, 0.2).easeIn(),
-  ]),
-  Action.run(() => console.info('✨ done!')),
-  Action.destroy(false),
-]);
+// simple:
+mySprite.run(Action.fadeIn(1.5));
 
-// Run an action
-myContainer.run(spinAndRemoveAction);
+// compose and combine actions:
+const rotateAction = Action.sequence([
+  Action.rotateByDegrees(180, 0.5),
+  Action.rotateByDegrees(-180, 0.5)
+]).easeInOut()
+
+mySprite.run(Action.repeatForever(rotateAction));
 ```
 
-## Getting Started with PixiJS Actions
+## Install
 
-*Everything you need to quickly build beautiful animations.*
+**1.** Install
 
-**PixiJS Actions** is based off the idiomatic and expressive [**SKActions API**](https://developer.apple.com/documentation/spritekit/getting_started_with_actions), extending `Container` to add first-class support for running and managing actions.
-
-The core concepts are:
-
-1. **Nodes:** _Any container (e.g. `Container`, `Sprite`, `Graphics`)_
-2. **Actions:** _Stateless, reusable recipes_ (e.g. animations, triggers, and more)
-3. **TimingMode & speed:** _Controls for the speed & smoothness of actions and animations_
-
-> [!NOTE]
-> _See [Timing Modes](#timing-modes) and [Manipulating Action Speed](#manipulating-action-speed) for more information._
-
-
-## Installation
-
-*Quick start guide.*
-
-**1.** Install the latest `pixijs-actions` package:
+#### NPM
 
 ```sh
-# npm
-npm install pixijs-actions -D
+npm install pixijs-actions --save-dev
+```
 
-# yarn
+#### Yarn
+
+```sh
 yarn add pixijs-actions --dev
 ```
 
-**2.** Register the mixin & ticker:
+**2.** Register/start the mixin
 
 ```ts
-import * as PIXI from 'pixi.js';
-import { Action, registerPixiJSActionsMixin } from 'pixijs-actions';
+import { registerPixiJSActionsMixin, Action } from 'pixijs-actions';
 
-// register container mixin
+// register
 registerPixiJSActionsMixin(PIXI.Container);
 
-// register `Action.tick(...)` with shared ticker
-Ticker.shared.add((ticker) => Action.tick(ticker.elapsedMS));
+// start
+Ticker.shared.add(ticker => Action.tick(ticker.deltaMS));
 ```
 
-> [!TIP]
-> **PixiJS 7 / 6.3+:**
-> 
-> ```ts
-> Ticker.shared.add(() => Action.tick(Ticker.shared.elapsedMS));
-> // or
-> Ticker.shared.add((dt) => Action.tick(dt));
-> ```
-
 > [!NOTE]
-> _If not using a PixiJS ticker, then just put `Action.tick(elapsedMs)` in the appropriate equivalent place (i.e. your `requestAnimationFrame()` render loop)._
+> _If not using PixiJS ticker, put `Action.tick(deltaMs)` in your `requestAnimationFrame()` loop._
+
+> [!TIP]
+> **PixiJS v7/6 Ticker?** _Use:_ `Ticker.shared.add(dt => Action.tick(dt))`
 
 **3.** Done!
 
 ✨ You are now ready to run your first action!
 
-## Running Actions
+## Running actions
 
-*Running actions in your canvas.*
-
-```ts
-// Hide me instantly!
-mySprite.run(Action.hide(), () => {
-  console.log('where did I go?');
-});
-```
-
-Nodes are extended with a few new methods and properties to make it easy to interact with actions.
+Containers are extended with the following properties and methods:
 
 | Property | Description |
 | :----- | :------ |
-| `speed` | A speed modifier applied to all actions executed by the node and its descendants. Defaults to `1.0`. |
-| `isPaused` | A boolean value that determines whether actions on the node and its descendants are processed. Defaults to `false`. |
+| `speed` | A speed modifier applied to all actions executed by the container and its children. Defaults to `1.0`. |
+| `isPaused` | A boolean value that determines whether actions on the container and its children are processed. Defaults to `false`. |
 
 | Method | Description |
 | :----- | :------ |
 | `run(action)` | Run an action. |
-| `run(action, completion)` | Run an action with a completion handler. |
 | `runWithKey(key, action)` | Run an action, and store it so it can be retrieved later. |
 | `runAsPromise(action): Promise<void>` | Run an action as a promise. |
+| `hasActions(): boolean` | Whether the container is executing actions. |
 | `action(forKey): Action \| undefined` | Return an action associated with a specified key. |
-| `hasActions(): boolean` | Return a boolean indicating whether the node is executing actions. |
-| `removeAllActions(): void` | End and removes all actions from the node. |
 | `removeAction(forKey): void` | Remove an action associated with a specified key. |
+| `removeAllActions(): void` | End and removes all actions from the container. |
 
-### Running Identifiable Actions
+### Running identifiable actions
+
+You may use `container.runWithKey(key, action)` to run unique, identifiable actions.
+
+Actions run with the same action key will cancel and replace one another.
 
 ```ts
-// Repeat an action forever!
-const spin = Action.repeatForever(Action.rotateBy(5, 1.0));
-mySprite.runWithKey("spinForever", spin);
+const spinForever = Action.repeatForever(Action.rotateBy(Math.PI, 1.0));
 
-// Or remove it later.
-mySprite.removeAction("spinForever");
+// Run an action
+mySprite.runWithKey("mySpin", spinForever);
 
-// Or destroy a node to clear all of its actions.
-mySprite.destroy(false);
+// Replace an existing action
+mySprite.runWithKey("mySpin", spinForever.reverse());
+
+// Remove an action entirely
+mySprite.removeAction("mySpin");
 ```
 
-### Pausing All Actions
+### Pause container actions
 
 ```ts
-mySprite.isPaused = true;
-// All actions will stop running.
+mySprite.isPaused = true; // all actions on mySprite are now paused
 ```
 
 ### Manipulating Action Speed
 
-Speed can be manipulated on both actions and nodes to create complex interactions.
+Speed can be manipulated on both actions and containers to create complex interactions.
 
 ```ts
 const myMoveAction = Action.moveByX(10, 4.0);
@@ -161,7 +129,8 @@ myContainer.parent.speed = 0.25;
 ```
 
 > [!NOTE]
-> Changes to nodes' `speed` will take effect immediately, however changes to an `Action` initializer's `speed` or `timingMode` will not affect any actions that have already started.
+> Modifying an action initializer's `speed` or `timingMode` will not affect in-progress actions.
+> However changes to a container's `speed` apply immediately.
 
 ## Action Initializers
 
@@ -181,34 +150,34 @@ Most actions implement specific predefined animations that are ready to use. If 
 | `Action.moveBy(dx, dy, duration)` | Move a node by relative values. | Yes |
 | `Action.moveByX(dx, duration)` | Move a node horizontally by a relative value. | Yes |
 | `Action.moveByY(dy, duration)` | Move a node vertically by a relative value. | Yes |
-| `Action.moveTo(position, duration)` | Move a node to a specified position `{ x, y }` (e.g. `PIXI.Point`, `PIXI.Container`). |  _*No_ |
-| `Action.moveTo(x, y, duration)` | Move a node to a specified position. |  _*No_ |
-| `Action.moveToX(x, duration)` | Move a node to a specified horizontal position. |  _*No_ |
-| `Action.moveToY(y, duration)` | Move a node to a specified vertical position. |  _*No_ |
+| `Action.moveTo(position, duration)` | Move a node to a specified position `{ x, y }` (e.g. `PIXI.Point`, `PIXI.Container`). |  _†Identical_ |
+| `Action.moveTo(x, y, duration)` | Move a node to a specified position. |  _†Identical_ |
+| `Action.moveToX(x, duration)` | Move a node to a specified horizontal position. |  _†Identical_ |
+| `Action.moveToY(y, duration)` | Move a node to a specified vertical position. |  _†Identical_ |
 |***Animating a Node's Position Along a Custom Path***|||
 | `Action.follow(path, duration)` | Move a node along a path, optionally orienting the node to the path. |  Yes | Yes |
 | `Action.followAtSpeed(path, speed)` | Move a node along a path at a specified speed, optionally orienting the node to the path. |  Yes |
 |***Animating the Rotation of a Node***|||
 | `Action.rotateBy(delta, duration)` | Rotate a node by a relative value (in radians). | Yes |
 | `Action.rotateByDegrees(delta, duration)` | Rotate a node by a relative value (in degrees). | Yes |
-| `Action.rotateTo(radians, duration)` | Rotate a node to a specified value (in radians). |  _*No_ |
-| `Action.rotateToDegrees(degrees, duration)` | Rotate a node to a specified value (in degrees). | _*No_ |
+| `Action.rotateTo(radians, duration)` | Rotate a node to a specified value (in radians). |  _†Identical_ |
+| `Action.rotateToDegrees(degrees, duration)` | Rotate a node to a specified value (in degrees). | _†Identical_ |
 |***Animating the Scaling of a Node***|||
 | `Action.scaleBy(vector, duration)` | Scale a node by a relative vector `{ x, y }` (e.g. `PIXI.Point`). | Yes |
 | `Action.scaleBy(scale, duration)` | Scale a node by a relative value. | Yes |
 | `Action.scaleBy(dx, dy, duration)` | Scale a node in each axis by relative values. | Yes |
 | `Action.scaleByX(dx, duration)` | Scale a node horizontally by a relative value. | Yes |
 | `Action.scaleByY(dy, duration)` | Scale a node vertically by a relative value. | Yes |
-| `Action.scaleTo(size, duration)` | Scale a node to achieve a specified size `{ width, height }` (e.g. `PIXI.ISize`, `PIXI.Container`). |  _*No_ |
-| `Action.scaleTo(scale, duration)` | Scale a node to a specified value. |  _*No_ |
-| `Action.scaleTo(x, y, duration)` | Scale a node in each axis to specified values. |  _*No_ |
-| `Action.scaleToX(x, duration)` | Scale a node horizontally to a specified value. |  _*No_ |
-| `Action.scaleToY(y, duration)` | Scale a node vertically to a specified value. |  _*No_ |
+| `Action.scaleTo(size, duration)` | Scale a node to achieve a specified size `{ width, height }` (e.g. `PIXI.ISize`, `PIXI.Container`). | _†Identical_ |
+| `Action.scaleTo(scale, duration)` | Scale a node to a specified value. |  _†Identical_ |
+| `Action.scaleTo(x, y, duration)` | Scale a node in each axis to specified values. |  _†Identical_ |
+| `Action.scaleToX(x, duration)` | Scale a node horizontally to a specified value. |  _†Identical_ |
+| `Action.scaleToY(y, duration)` | Scale a node vertically to a specified value. |  _†Identical_ |
 |***Animating the Transparency of a Node***|||
 | `Action.fadeIn(duration)` | Fade the alpha to `1.0`. | Yes |
 | `Action.fadeOut(duration)` | Fade the alpha to `0.0`. | Yes |
 | `Action.fadeAlphaBy(delta, duration)` | Fade the alpha by a relative value. | Yes |
-| `Action.fadeAlphaTo(alpha, duration)` | Fade the alpha to a specified value. |  _*No_ |
+| `Action.fadeAlphaTo(alpha, duration)` | Fade the alpha to a specified value. | _†Identical_ |
 |***Animating a Sprite by Changing its Texture***|||
 | `Action.animate({ frames, timePerFrame?, resize?, restore? })` | Animate a sprite by changing its texture. See options. | Yes |
 | `Action.animate({ spritesheet, timePerFrame?, resize?, restore?, sortKeys? })` | Animate a sprite by changing its texture an entire spritesheet as frames. See options. | Yes |
@@ -228,13 +197,9 @@ Most actions implement specific predefined animations that are ready to use. If 
 | `Action.customAction(duration, callback)` | Execute a custom stepping function over the action duration. | _†Identical_ |
 |***Manipulating the Action Speed of a Node***|||
 | `Action.speedBy(delta, duration)` | Change how fast a node executes its actions by a relative value. | Yes |
-| `Action.speedTo(speed, duration)` | Set how fast a node executes actions to a specified value. |  _*No_ |
+| `Action.speedTo(speed, duration)` | Set how fast a node executes actions to a specified value. | _†Identical_ |
 
-> [!IMPORTANT]
-> #### Reversing Actions
-> Every action initializer has a `.reversed()` method which will return a new action. Some actions are **not reversible**, and these cases are noted in the table above:
-> - _**†Identical**_ &mdash; The reversed action is identical to the original action.
-> - _**\*No**_ &mdash; The reversed action will idle for the equivalent duration.
+> _**†Identical**_ &mdash; The reversed action is identical to the original action.
 
 ### Action Chaining
 
