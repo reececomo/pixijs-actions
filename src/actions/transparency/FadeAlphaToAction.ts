@@ -1,26 +1,31 @@
 import { Action } from '../../lib/Action';
 import { IActionTicker } from '../../lib/IActionTicker';
-import { DelayAction } from '../delay';
 
 export class FadeAlphaToAction extends Action {
+  protected readonly a1: number;
+
   public constructor(
-    protected readonly alpha: number,
-    duration: TimeInterval
+    alpha: number,
+    duration: TimeInterval,
   ) {
     super(duration);
+    this.a1 = alpha;
   }
 
   public reversed(): Action {
-    return new DelayAction(this.scaledDuration);
+    return new FadeAlphaToAction(this.a1, this.duration)._mutate(this);
   }
 
-  protected onSetupTicker(target: TargetNode): any {
-    return {
-      startAlpha: target.alpha
-    };
+  protected onSetupTicker({ alpha }: TargetNode): any {
+    return { a0: alpha };
   }
 
-  protected onTick(target: TargetNode, t: number, dt: number, ticker: IActionTicker): void {
-    target.alpha = ticker.data.startAlpha + (this.alpha - ticker.data.startAlpha) * t;
+  protected onTick(
+    target: TargetNode,
+    t: number,
+    dt: number,
+    { data }: IActionTicker
+  ): void {
+    target.alpha = data.a0 + (this.a1 - data.a0) * t;
   }
 }

@@ -1,17 +1,19 @@
 import { Action } from '../../lib/Action';
 
 export class RotateByAction extends Action {
+  protected readonly rotation: number;
+
   public constructor(
-    protected readonly rotation: number,
+    rotation: number,
     duration: TimeInterval,
   ) {
     super(duration);
+
+    this.rotation = rotation;
   }
 
   public reversed(): Action {
-    return new RotateByAction(-this.rotation, this.duration)
-      .setTimingMode(this.timingMode)
-      .setSpeed(this.speed);
+    return new RotateByAction(-this.rotation, this.duration)._mutate(this);
   }
 
   protected onTick(target: TargetNode, t: number, dt: number): void {

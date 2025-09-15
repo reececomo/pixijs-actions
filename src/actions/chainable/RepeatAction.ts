@@ -3,21 +3,22 @@ import { IActionTicker } from '../../lib/IActionTicker';
 import { ActionTicker } from '../../lib/ActionTicker';
 
 export class RepeatAction extends Action {
-  public constructor(
-    protected readonly action: Action,
-    protected readonly repeats: number,
-  ) {
-    super(action.scaledDuration * repeats);
+  protected readonly action: Action;
+  protected readonly repeats: number;
 
+  public constructor(action: Action, repeats: number) {
     if (!Number.isInteger(repeats) || repeats < 0) {
       throw new RangeError('The number of repeats must be a positive integer.');
     }
+
+    super(action.scaledDuration * repeats);
+    this.action = action;
+    this.repeats = repeats;
   }
 
   public reversed(): Action {
-    return new RepeatAction(this.action.reversed(), this.repeats)
-      .setTimingMode(this.timingMode)
-      .setSpeed(this.speed);
+    const reversedAction = this.action.reversed();
+    return new RepeatAction(reversedAction, this.repeats)._mutate(this);
   }
 
   protected onSetupTicker(target: TargetNode, ticker: IActionTicker): any {

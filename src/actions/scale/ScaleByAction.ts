@@ -2,31 +2,37 @@ import { Action } from '../../lib/Action';
 import { IActionTicker } from '../../lib/IActionTicker';
 
 export class ScaleByAction extends Action {
+  protected readonly x: number;
+  protected readonly y: number;
+
   public constructor(
-    protected readonly x: number,
-    protected readonly y: number,
+    x: number,
+    y: number,
     duration: TimeInterval,
   ) {
     super(duration);
+
+    this.x = x;
+    this.y = y;
   }
 
   public reversed(): Action {
-    return new ScaleByAction(-this.x, -this.y, this.duration)
-      .setTimingMode(this.timingMode)
-      .setSpeed(this.speed);
+    return new ScaleByAction(1/this.x, 1/this.y, this.duration)._mutate(this);
   }
 
-  protected onSetupTicker(target: TargetNode): any {
+  protected onSetupTicker({ scale }: TargetNode): any {
     return {
-      dx: target.scale.x * this.x - target.scale.x,
-      dy: target.scale.y * this.y - target.scale.y
+      dx: scale.x * this.x - scale.x,
+      dy: scale.y * this.y - scale.y
     };
   }
 
-  protected onTick(target: TargetNode, t: number, dt: number, ticker: IActionTicker): void {
-    target.scale.set(
-      target.scale.x + ticker.data.dx * dt,
-      target.scale.y + ticker.data.dy * dt,
-    );
+  protected onTick(
+    { scale }: TargetNode,
+    t: number,
+    dt: number,
+    { data }: IActionTicker
+  ): void {
+    scale.set(scale._x + data.dx * dt, scale._y + data.dy * dt);
   }
 }

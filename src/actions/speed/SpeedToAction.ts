@@ -1,31 +1,28 @@
 import { Action } from '../../lib/Action';
 import { IActionTicker } from '../../lib/IActionTicker';
-import { DelayAction } from '../delay';
 
 export class SpeedToAction extends Action {
-  public constructor(
-    protected readonly _speed: number,
-    duration: TimeInterval,
-  ) {
+  protected readonly s1: number;
+
+  public constructor(speed: number, duration: TimeInterval) {
     super(duration);
+    this.s1 = speed;
   }
 
   public reversed(): Action {
-    return new DelayAction(this.scaledDuration);
+    return new SpeedToAction(this.s1, this.duration)._mutate(this);
   }
 
   protected onSetupTicker(target: TargetNode): any {
-    return {
-      startSpeed: target.speed,
-    };
+    return { s0: target.speed };
   }
 
   protected onTick(
     target: TargetNode,
     t: number,
     dt: number,
-    ticker: IActionTicker
+    { data }: IActionTicker
   ): void {
-    target.speed = ticker.data.startSpeed + (this._speed - ticker.data.startSpeed) * t;
+    target.speed = data.s0 + (this.s1 - data.s0) * t;
   }
 }

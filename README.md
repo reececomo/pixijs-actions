@@ -393,11 +393,11 @@ mySprite.run(MyActions.squashAndStretch(2.0));
 
 ### Custom Action (Basic)
 
-You can use the built-in `Action.customAction(duration, stepHandler)` to provide custom actions:
+You can use the built-in `Action.custom(duration, stepFunction)` to provide custom actions:
 
 ```ts
 const rainbowColors = Action.customAction(5.0, (target, t, dt) => {
-  // Calculate color based on time "t".
+  // Calculate color based on time "t" (0 -> 1).
   const colorR = Math.sin(0.3 * t + 0) * 127 + 128;
   const colorG = Math.sin(0.3 * t + 2) * 127 + 128;
   const colorB = Math.sin(0.3 * t + 4) * 127 + 128;

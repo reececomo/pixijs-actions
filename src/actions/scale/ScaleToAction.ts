@@ -1,31 +1,38 @@
 import { Action } from '../../lib/Action';
 import { IActionTicker } from '../../lib/IActionTicker';
-import { DelayAction } from '../delay';
 
 export class ScaleToAction extends Action {
+  protected readonly x1: number | null;
+  protected readonly y1: number | null;
+
   public constructor(
-    protected readonly x: number | undefined,
-    protected readonly y: number | undefined,
+    x: number | null,
+    y: number | null,
     duration: TimeInterval,
   ) {
     super(duration);
+
+    this.x1 = x;
+    this.y1 = y;
   }
 
   public reversed(): Action {
-    return new DelayAction(this.scaledDuration);
+    return new ScaleToAction(this.x1, this.y1, this.duration)._mutate(this);
   }
 
-  protected onSetupTicker(target: TargetNode): any {
-    return {
-      startX: target.scale.x,
-      startY: target.scale.y
-    };
+  protected onSetupTicker({ scale }: TargetNode): any {
+    return { x0: scale._x, y0: scale._y };
   }
 
-  protected onTick(target: TargetNode, t: number, dt: number, ticker: IActionTicker): void {
-    target.scale.set(
-      this.x === undefined ? target.scale.x : ticker.data.startX + (this.x - ticker.data.startX) * t,
-      this.y === undefined ? target.scale.y : ticker.data.startY + (this.y - ticker.data.startY) * t
+  protected onTick(
+    { scale }: TargetNode,
+    t: number,
+    _: number,
+    { data }: IActionTicker
+  ): void {
+    scale.set(
+      this.x1 == null ? scale._x : data.x0 + (this.x1 - data.x0) * t,
+      this.y1 == null ? scale._y : data.y0 + (this.y1 - data.y0) * t
     );
   }
 }

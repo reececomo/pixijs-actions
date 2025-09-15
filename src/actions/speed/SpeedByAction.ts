@@ -1,17 +1,19 @@
 import { Action } from '../../lib/Action';
 
 export class SpeedByAction extends Action {
+  protected readonly _speed: number;
+
   public constructor(
-    protected readonly _speed: number,
+    speed: number,
     duration: TimeInterval,
   ) {
     super(duration);
+
+    this._speed = speed;
   }
 
   public reversed(): Action {
-    return new SpeedByAction(-this._speed, this.duration)
-      .setTimingMode(this.timingMode)
-      .setSpeed(this.speed);
+    return new SpeedByAction(-this._speed, this.duration)._mutate(this);
   }
 
   protected onTick(target: TargetNode, t: number, dt: number): void {

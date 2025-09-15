@@ -3,16 +3,17 @@ import { IActionTicker } from '../../lib/IActionTicker';
 import { ActionTicker } from '../../lib/ActionTicker';
 
 export class GroupAction extends Action {
-  public constructor(
-    protected readonly actions: Action[]
-  ) {
-    super(Math.max(...actions.map(action => action.scaledDuration)));
+  protected readonly actions: Action[];
+
+  public constructor(actions: Action[]) {
+    const duration = Math.max(...actions.map(action => action.scaledDuration));
+    super(duration);
+    this.actions = actions;
   }
 
   public reversed(): Action {
-    return new GroupAction(this.actions.map(action => action.reversed()))
-      .setTimingMode(this.timingMode)
-      .setSpeed(this.speed);
+    const reversedActions = this.actions.map(action => action.reversed());
+    return new GroupAction(reversedActions)._mutate(this);
   }
 
   protected onSetupTicker(target: TargetNode, ticker: IActionTicker): any {

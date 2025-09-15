@@ -15,20 +15,46 @@ export abstract class Action {
   // ----------------- Action: -----------------
   //
 
-  protected constructor(
-    /** The duration required to complete an action. */
-    public readonly duration: TimeInterval,
-    /** A speed factor that modifies how fast an action runs. */
-    public speed: number = 1,
-    /** A setting that controls the speed curve of an animation. */
-    public timingMode: TimingModeFn = TimingMode.linear,
-  ) {
+  /**
+   * The duration required to complete an action.
+   */
+  public readonly duration: TimeInterval;
+
+  /**
+   * A speed factor that modifies how fast an action runs.
+   */
+  public speed: number = 1.0;
+
+  /**
+   * A setting that controls the speed curve of an animation.
+   */
+  public timingMode: TimingModeFn = TimingMode.linear;
+
+  protected constructor(duration: TimeInterval) {
     if (duration < 0) {
       throw new RangeError('Action duration must be 0 or more.');
     }
+
+    this.duration = duration;
   }
 
-  /** Duration of the action after its local speed scalar is applied. */
+  /**
+   * Whether action completes instantly.
+   */
+  public get isInstant(): boolean {
+    return this.duration === 0;
+  }
+
+  /**
+   * Whether action never completes.
+   */
+  public get isInfinite(): boolean {
+    return Math.abs(this.duration) === Infinity;
+  }
+
+  /**
+   * Duration of the action, factoring in local speed.
+   */
   public get scaledDuration(): number {
     return this.duration / this.speed;
   }
@@ -52,6 +78,17 @@ export abstract class Action {
    */
   public setTimingMode(timingMode: TimingModeFn): this {
     this.timingMode = timingMode;
+    return this;
+  }
+
+  /**
+   * Apply the base properties from another action to this action.
+   *
+   * This function mutates the underlying action.
+   */
+  public _mutate(action: Action): this {
+    this.timingMode = action.timingMode;
+    this.speed = action.speed;
     return this;
   }
 

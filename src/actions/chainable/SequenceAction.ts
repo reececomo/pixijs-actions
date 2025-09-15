@@ -4,16 +4,17 @@ import { ActionTicker } from '../../lib/ActionTicker';
 import { TimingMode } from '../../TimingMode';
 
 export class SequenceAction extends Action {
-  public constructor(
-    protected actions: Action[]
-  ) {
-    super(actions.reduce((total, action) => total + action.scaledDuration, 0));
+  protected actions: Action[];
+
+  public constructor(actions: Action[]) {
+    const duration = actions.reduce((d, action) => d + action.scaledDuration, 0);
+    super(duration);
+    this.actions = actions;
   }
 
   public reversed(): Action {
-    return new SequenceAction(this.actions.map(action => action.reversed()).reverse())
-      .setTimingMode(this.timingMode)
-      .setSpeed(this.speed);
+    const reversedActions = this.actions.map(action => action.reversed()).reverse();
+    return new SequenceAction(reversedActions)._mutate(this);
   }
 
   protected onSetupTicker(target: TargetNode, ticker: IActionTicker): any {

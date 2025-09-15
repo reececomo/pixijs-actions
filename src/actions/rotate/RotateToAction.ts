@@ -1,26 +1,32 @@
 import { Action } from '../../lib/Action';
 import { IActionTicker } from '../../lib/IActionTicker';
-import { DelayAction } from '../delay';
 
 export class RotateToAction extends Action {
+  protected readonly r1: number;
+
   public constructor(
-    protected readonly rotation: number,
+    rotation: number,
     duration: TimeInterval,
   ) {
     super(duration);
+
+    this.r1 = rotation;
   }
 
   public reversed(): Action {
-    return new DelayAction(this.scaledDuration);
+    return new RotateToAction(this.r1, this.duration)._mutate(this);
   }
 
-  protected onSetupTicker(target: TargetNode): any {
-    return {
-      startRotation: target.rotation
-    };
+  protected onSetupTicker({ rotation }: TargetNode): any {
+    return { r0: rotation };
   }
 
-  protected onTick(target: TargetNode, t: number, dt: number, ticker: IActionTicker): void {
-    target.rotation = ticker.data.startRotation + (this.rotation - ticker.data.startRotation) * t;
+  protected onTick(
+    target: TargetNode,
+    t: number,
+    dt: number,
+    { data }: IActionTicker,
+  ): void {
+    target.rotation = data.r0 + (this.r1 - data.r0) * t;
   }
 }

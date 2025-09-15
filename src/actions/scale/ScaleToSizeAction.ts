@@ -1,23 +1,28 @@
 import { Action } from '../../lib/Action';
 import { IActionTicker } from '../../lib/IActionTicker';
-import { DelayAction } from '../delay';
 
 export class ScaleToSizeAction extends Action {
+  protected readonly width: number;
+  protected readonly height: number;
+
   public constructor(
-    protected readonly width: number,
-    protected readonly height: number,
+    width: number,
+    height: number,
     duration: TimeInterval,
   ) {
     super(duration);
+
+    this.width = width;
+    this.height = height;
   }
 
   public reversed(): Action {
-    return new DelayAction(this.scaledDuration);
+    return new ScaleToSizeAction(this.width, this.height, this.duration)._mutate(this);
   }
 
   protected onSetupTicker(target: SizedTargetNode): any {
     if (typeof target.width !== 'number' || typeof target.height !== 'number') {
-      throw new TypeError("The target must have numeric 'width' and 'height'.");
+      throw new TypeError("Target must have 'width' and 'height'.");
     }
 
     return {
@@ -26,8 +31,13 @@ export class ScaleToSizeAction extends Action {
     };
   }
 
-  protected onTick(target: SizedTargetNode, t: number, dt: number, ticker: IActionTicker): void {
-    target.width = ticker.data.width + (this.width - ticker.data.width) * t;
-    target.height = ticker.data.height + (this.height - ticker.data.height) * t;
+  protected onTick(
+    target: SizedTargetNode,
+    t: number,
+    dt: number,
+    { data }: IActionTicker
+  ): void {
+    target.width = data.width + (this.width - data.width) * t;
+    target.height = data.height + (this.height - data.height) * t;
   }
 }

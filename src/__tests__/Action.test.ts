@@ -1,5 +1,6 @@
 import { Container, Sprite } from 'pixi.js';
 import { Action, TimingMode, registerPixiJSActionsMixin } from '../index';
+import '../globals.d.ts';
 
 function simulateTime(seconds: number, steps: number = 100): Error[] {
   const errors: Error[] = [];
@@ -13,7 +14,6 @@ function simulateTime(seconds: number, steps: number = 100): Error[] {
   return errors;
 }
 
-/** Load the Container mixin first. */
 beforeAll(() => registerPixiJSActionsMixin(Container));
 
 describe('DefaultTimingMode static properties', () => {
@@ -166,8 +166,8 @@ describe('Action Chaining', () => {
       expect(node.hasActions()).toBe(false);
     });
 
-    it('successfully completes nested sequences', () => {
-      // this test secretly makes sure squashing works
+    it('completes nested sequences', () => {
+      // this test verifies internal squashing behavior works
       const action = Action.sequence([
         Action.sequence([
           Action.sequence([
@@ -228,6 +228,43 @@ describe('Action Chaining', () => {
       expect((action as any)._squashedActions().length).toBe(11);
     });
 
+    it('is reversible', () => {
+      const up = Action.sequence([
+        Action.hide(),
+        Action.rotateByDegrees(45, 0.5),
+        Action.moveByX(-35, 1.0),
+      ]);
+
+      const down = up.reversed();
+
+      const node = new Container();
+      expect(node.visible).toBe(true);
+      expect(node.rotation).toBe(0);
+      expect(node.x).toBe(0);
+
+      node.run(Action.sequence([ up, down ]));
+
+      simulateTime(0.5);
+      expect(node.visible).toBe(false);
+      expect(node.rotation).toBeCloseTo(Math.PI/4);
+      expect(node.x).toBeCloseTo(0);
+
+      simulateTime(1.0);
+      expect(node.visible).toBe(false);
+      expect(node.rotation).toBeCloseTo(Math.PI/4);
+      expect(node.x).toBeCloseTo(-35);
+
+      simulateTime(1.0);
+      expect(node.visible).toBe(false);
+      expect(node.rotation).toBeCloseTo(Math.PI/4);
+      expect(node.x).toBeCloseTo(0);
+
+      simulateTime(0.5);
+      expect(node.visible).toBe(true);
+      expect(node.rotation).toBeCloseTo(0);
+      expect(node.x).toBeCloseTo(0);
+    });
+
     it('completes regression case', () => {
       const otherNodeA = new Container();
       const otherNodeB = new Container();
@@ -280,8 +317,8 @@ describe('Action Chaining', () => {
       expect(node.hasActions()).toBe(false);
     });
 
-    it('should work with repeatForever()', () => {
-      const myCustomAction = Action.customAction(5.0, (target, t) => {
+    it('is compatible with repeatForever()', () => {
+      const myCustomAction = Action.custom(5.0, (target, t) => {
         target.position.x = 5.0 * t;
       });
 
@@ -296,7 +333,7 @@ describe('Action Chaining', () => {
       myNode.removeAllActions();
     });
 
-    it('should work with waitForDuration()', () => {
+    it('is compatible with waitForDuration()', () => {
       const otherNodeA = new Container();
       const otherNodeB = new Container();
 
@@ -316,6 +353,33 @@ describe('Action Chaining', () => {
 
       expect(myNode.action('myTriggerAction')).toBeUndefined();
       expect(myNode.hasActions()).toBe(false);
+    });
+
+    it('is reversible', () => {
+      const up = Action.group([
+        Action.hide(),
+        Action.rotateByDegrees(45, 0.5),
+        Action.moveByX(-35, 1.0),
+      ]);
+
+      const down = up.reversed();
+
+      const node = new Container();
+      expect(node.visible).toBe(true);
+      expect(node.rotation).toBe(0);
+      expect(node.x).toBe(0);
+
+      node.run(Action.sequence([ up, down ]));
+
+      simulateTime(1.0);
+      expect(node.visible).toBe(false);
+      expect(node.rotation).toBeCloseTo(Math.PI/4);
+      expect(node.x).toBeCloseTo(-35);
+
+      simulateTime(1.0);
+      expect(node.visible).toBe(true);
+      expect(node.rotation).toBeCloseTo(0);
+      expect(node.x).toBeCloseTo(0);
     });
   });
 
@@ -482,6 +546,138 @@ describe('Action Chaining', () => {
 });
 
 describe('Action', () => {
+  describe('moveTo()', () => {
+    it('can be initialized with (x, y, duration)', () => {
+      const node = new Container();
+
+      node.run(Action.moveTo(2, 1.5, 1.0));
+      simulateTime(1.0);
+      expect(node.position.x).toBeCloseTo(2);
+      expect(node.position.y).toBeCloseTo(1.5);
+    });
+
+    it('can be initialized with ({ x, y }, duration)', () => {
+      const node = new Container();
+
+      node.run(Action.moveTo({ x: 2, y: 1.5 }, 1.0));
+      simulateTime(1.0);
+      expect(node.position.x).toBeCloseTo(2);
+      expect(node.position.y).toBeCloseTo(1.5);
+    });
+  });
+
+  describe('moveToX()', () => {
+    it('can be initialized with (x, duration)', () => {
+      const node = new Container();
+
+      node.run(Action.moveToX(2, 1.0));
+      simulateTime(1.0);
+      expect(node.position.x).toBeCloseTo(2);
+      expect(node.position.y).toBe(0);
+    });
+  });
+
+  describe('moveToY()', () => {
+    it('can be initialized with (y, duration)', () => {
+      const node = new Container();
+
+      node.run(Action.moveToY(2, 1.0));
+      simulateTime(1.0);
+      expect(node.position.x).toBe(0);
+      expect(node.position.y).toBeCloseTo(2);
+    });
+  });
+
+  describe('moveBy()', () => {
+    it('can be initialized with (x, y, duration)', () => {
+      const node = new Container();
+
+      node.run(Action.moveBy(2, 1.5, 1.0));
+      simulateTime(1.0);
+      expect(node.position.x).toBeCloseTo(2);
+      expect(node.position.y).toBeCloseTo(1.5);
+    });
+
+    it('can be initialized with ({ x, y }, duration)', () => {
+      const node = new Container();
+
+      node.run(Action.moveBy({ x: 2, y: 1.5 }, 1.0));
+      simulateTime(1.0);
+      expect(node.position.x).toBeCloseTo(2);
+      expect(node.position.y).toBeCloseTo(1.5);
+    });
+
+    it('is reversible', () => {
+      const node = new Container();
+      const up = Action.moveBy({ x: 2, y: 1.5 }, 0.5);
+      const down = up.reversed();
+
+      node.run(Action.sequence([ up, down ]));
+
+      simulateTime(0.5);
+      expect(node.position.x).toBeCloseTo(2);
+      expect(node.position.y).toBeCloseTo(1.5);
+
+      simulateTime(0.5);
+      expect(node.position.x).toBeCloseTo(0);
+      expect(node.position.y).toBeCloseTo(0);
+    });
+  });
+
+  describe('moveByX()', () => {
+    it('can be initialized with (x, duration)', () => {
+      const node = new Container();
+
+      node.run(Action.moveByX(2, 1.0));
+      simulateTime(1.0);
+      expect(node.position.x).toBeCloseTo(2);
+      expect(node.position.y).toBeCloseTo(0);
+    });
+
+    it('is reversible', () => {
+      const node = new Container();
+      const up = Action.moveByX(2, 0.5);
+      const down = up.reversed();
+
+      node.run(Action.sequence([ up, down ]));
+
+      simulateTime(0.5);
+      expect(node.position.x).toBeCloseTo(2);
+      expect(node.position.y).toBe(0);
+
+      simulateTime(0.5);
+      expect(node.position.x).toBeCloseTo(0);
+      expect(node.position.y).toBe(0);
+    });
+  });
+
+  describe('moveByY()', () => {
+    it('can be initialized with (y, duration)', () => {
+      const node = new Container();
+
+      node.run(Action.moveByY(2, 1.0));
+      simulateTime(1.0);
+      expect(node.position.x).toBeCloseTo(0);
+      expect(node.position.y).toBeCloseTo(2);
+    });
+
+    it('is reversible', () => {
+      const node = new Container();
+      const up = Action.moveByY(2, 0.5);
+      const down = up.reversed();
+
+      node.run(Action.sequence([ up, down ]));
+
+      simulateTime(0.5);
+      expect(node.position.x).toBe(0);
+      expect(node.position.y).toBeCloseTo(2);
+
+      simulateTime(0.5);
+      expect(node.position.x).toBe(0);
+      expect(node.position.y).toBeCloseTo(0);
+    });
+  });
+
   describe('scaleTo()', () => {
     it('can be initialized with (x, y, duration)', () => {
       const node = new Container();
@@ -586,6 +782,22 @@ describe('Action', () => {
       simulateTime(1.0);
       expect(node.scale.x).toBeCloseTo(2);
       expect(node.scale.y).toBeCloseTo(1.5);
+    });
+
+    it('is reversible', () => {
+      const node = new Container();
+      const up = Action.scaleBy({ x: 2, y: 1.5 }, 0.5);
+      const down = up.reversed();
+
+      node.run(Action.sequence([ up, down ]));
+
+      simulateTime(0.5);
+      expect(node.scale.x).toBeCloseTo(2);
+      expect(node.scale.y).toBeCloseTo(1.5);
+
+      simulateTime(0.5);
+      expect(node.scale.x).toBeCloseTo(1);
+      expect(node.scale.y).toBeCloseTo(1);
     });
   });
 
@@ -741,11 +953,25 @@ describe('Action', () => {
       expect(myNode.speed).toBeCloseTo(2);
       expect(myNode.hasActions()).toBe(false);
     });
+
+    it('is reversible', () => {
+      const node = new Container();
+      const up = Action.speedBy(2, 0.5);
+      const down = up.reversed();
+
+      node.run(Action.sequence([ up, down ]));
+
+      simulateTime(0.5);
+      expect(node.speed).not.toBeCloseTo(1); // speedBy affects its own value
+
+      simulateTime(0.5);
+      expect(node.speed).toBeCloseTo(1); // but catches up correctly on the return trip
+    });
   });
 
-  describe('customAction()', () => {
-    it('runs arbitrary code', () => {
-      const myCustomAction = Action.customAction(5.0, (target, t, dt) => {
+  describe('custom()', () => {
+    it('runs a stepping function', () => {
+      const myCustomAction = Action.custom(5.0, (target, t, dt) => {
         target.position.x = 5.0 * t;
         target.position.y += 5.0 * dt;
       });

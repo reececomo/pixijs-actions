@@ -1,8 +1,7 @@
 import { Action } from "./Action";
 import { TimingModeFn } from "../TimingMode";
 
-const EPSILON = 0.0000000001;
-const EPSILON_1 = 1 - EPSILON;
+const EPSILON_1 = 1 - 1e-10;
 
 /**
  * An internal utility class that runs (or "ticks") stateless
@@ -147,6 +146,23 @@ export class ActionTicker {
   //
 
   /**
+   * Unique key when running action on a target.
+   *
+   * Cancels existing actions.
+   */
+  public key?: string;
+
+  /**
+   * The container receiving the action.
+   */
+  public target: TargetNode;
+
+  /**
+   * The action to apply.
+   */
+  public action: Action;
+
+  /**
    * Relative speed of the action ticker.
    *
    * Copy-on-run: Copies the action's `speed` when the action is run.
@@ -204,47 +220,34 @@ export class ActionTicker {
   // ----- Private properties: -----
   //
 
-  /** Time elapsed in the action. */
-  protected _elapsed: number = 0.0;
-
   /**
-   * Whether the action ticker has been setup.
+   * Whether the action ticker has initialized.
    *
    * Triggered on the first iteration to copy-on-run the attributes
    * from the action to the ticker.
    */
-  protected _isSetup = false;
+  protected _init = false;
+
+  /**
+   * Time elapsed in the action.
+   */
+  protected _elapsed: number = 0;
 
   //
   // ----- Constructor: -----
   //
 
   public constructor(
-    public key: string | undefined,
-    public target: TargetNode,
-    public action: Action,
+    key: string | undefined,
+    target: TargetNode,
+    action: Action,
   ) {
+    this.key = key;
+    this.target = target;
+    this.action = action;
     this.speed = action.speed;
     this.scaledDuration = action.scaledDuration;
     this.timingMode = action.timingMode;
-  }
-
-  //
-  // ----- Accessors: -----
-  //
-
-  /** The relative time elapsed between 0 and 1. */
-  public get timeDistance(): number {
-    return this.scaledDuration === 0 ? 1 : Math.min(1, this._elapsed / this.scaledDuration);
-  }
-
-  /**
-   * The relative time elapsed between 0 and 1, eased by the timing mode function.
-   *
-   * Can be a value beyond 0 or 1 depending on the timing mode function.
-   */
-  protected get easedTimeDistance(): number {
-    return this.timingMode(this.timeDistance);
   }
 
   //
@@ -253,7 +256,7 @@ export class ActionTicker {
 
   /** @returns Any unused time delta. Negative value means action is still in progress. */
   public tick(deltaTime: number): number {
-    if (!this._isSetup) {
+    if (!this._init) {
       // Copy action attributes:
       this.speed = this.action.speed;
       this.scaledDuration = this.action.duration;
@@ -268,7 +271,7 @@ export class ActionTicker {
         throw error; // rethrow
       }
 
-      this._isSetup = true;
+      this._init = true;
     }
 
     const target = this.target;
@@ -284,7 +287,7 @@ export class ActionTicker {
     const scaledDeltaTime = deltaTime * this.speed;
 
     // Instantaneous actions:
-    if (this.scaledDuration === 0) {
+    if (action.isInstant) {
       (action as any).onTick(this.target, 1.0, 1.0, this, scaledDeltaTime);
       this.isDone = true;
 
@@ -294,20 +297,25 @@ export class ActionTicker {
       return deltaTime; // relinquish the full time.
     }
 
-    if (deltaTime === 0 && this.timeDistance < EPSILON_1) {
+    const td0 = Math.max(0, Math.min(1, this._elapsed / this.scaledDuration));
+
+    if (deltaTime === 0 && td0 < EPSILON_1) {
       return -1; // Early exit, no progress.
     }
 
-    const b = this.easedTimeDistance;
+    const t0 = this.timingMode(td0);
 
     this._elapsed += scaledDeltaTime;
 
-    const t = this.easedTimeDistance;
-    const dt = t - b;
+    const td1 = Math.max(0, Math.min(1, this._elapsed / this.scaledDuration));
+    const t1 = this.timingMode(td1);
+    const dt = t1 - t0;
 
-    (action as any).onTick(this.target, t, dt, this, scaledDeltaTime);
+    (action as any).onTick(this.target, t1, dt, this, scaledDeltaTime);
 
-    if (this.isDone || (this.autoComplete && this.timeDistance >= EPSILON_1)) {
+    if (
+      this.isDone || (this.autoComplete && td1 >= EPSILON_1)
+    ) {
       this.isDone = true;
 
       // Remove completed action.
@@ -318,7 +326,8 @@ export class ActionTicker {
         : 0;
     }
 
-    return -1; // relinquish no time
+    // relinquish no time
+    return -1;
   }
 
   /**
@@ -327,9 +336,9 @@ export class ActionTicker {
    * Used by chainable actions to reset their child action's tickers.
    */
   public reset(): void {
-    this._elapsed = 0.0;
+    this._init = false;
+    this._elapsed = 0;
     this.isDone = false;
-    this._isSetup = false;
     (this.action as any).onTickerDidReset(this);
   }
 
