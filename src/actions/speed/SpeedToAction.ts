@@ -10,14 +10,14 @@ export class SpeedToAction extends Action {
   }
 
   public reversed(): Action {
-    return new SpeedToAction(this.s1, this.duration)._mutate(this);
+    return new SpeedToAction(this.s1, this.duration)._apply(this);
   }
 
-  protected onSetupTicker(target: TargetNode): any {
+  public _onTickerInit(target: TargetNode): any {
     return { s0: target.speed };
   }
 
-  protected onTick(
+  public _onTickerTick(
     target: TargetNode,
     t: number,
     dt: number,

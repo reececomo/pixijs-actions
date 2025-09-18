@@ -1,15 +1,16 @@
 import { Action } from "./Action";
-import { TimingModeFn } from "../TimingMode";
+import { TimingFunction } from "../Timing";
 
-const EPSILON_1 = 1 - 1e-10;
+const EPSILON_1 = 1 - 1e-15;
 
 /**
  * An internal utility class that runs (or "ticks") stateless
  * actions for the duration of their lifespan.
  */
 export class ActionTicker {
-
-  /** All currently executing actions. */
+  /**
+   * All currently executing actions.
+   */
   protected static _tickers: Map<TargetNode, Map<string | ActionTicker, ActionTicker>> = new Map();
 
   //
@@ -48,6 +49,10 @@ export class ActionTicker {
       for (const actionTicker of tickers.values()) {
         try {
           actionTicker.tick(deltaTime * _speed);
+
+          if (actionTicker.isDone) {
+            this._removeActionTicker(actionTicker);
+          }
         }
         catch (error) {
           // Report individual action errors.
@@ -75,7 +80,7 @@ export class ActionTicker {
       this._tickers.set(target, new Map());
     }
 
-    const actionTicker = new ActionTicker(key, target, action);
+    const actionTicker = new ActionTicker(target, action, key);
 
     // Replaces any existing, identical-keyed actions on insert.
     this._tickers.get(target).set(key ?? actionTicker, actionTicker);
@@ -109,6 +114,13 @@ export class ActionTicker {
     }
   }
 
+  /** Remove all actions for every target. */
+  public static removeAll(): void {
+    for (const target of this._tickers.keys()) {
+      this.removeAllTargetActions(target);
+    }
+  }
+
   //
   // ----- Internal helpers: -----
   //
@@ -120,25 +132,24 @@ export class ActionTicker {
    */
   protected static _removeActionTicker(ticker: ActionTicker, propagate = true): void {
     const target = ticker.target;
+    const targetTickers = this._tickers.get(target);
 
-    const tickers = this._tickers.get(target);
-    if (tickers === undefined) {
+    if (targetTickers === undefined) {
       return; // No change.
     }
 
     if (propagate) {
-      (ticker.action as any).onTickerRemoved?.(target, ticker);
+      ticker.action._onTickerRemoved?.(target, ticker);
     }
 
-    tickers.delete(ticker.key ?? ticker);
+    targetTickers.delete(ticker.key ?? ticker);
 
-    if (ticker.autoDestroy) {
-      ticker.destroy();
-    }
-
-    if (tickers.size === 0) {
+    // if no more actions then remove target from map
+    if (targetTickers.size === 0) {
       this._tickers.delete(target);
     }
+
+    ticker.destroy();
   }
 
   //
@@ -172,49 +183,30 @@ export class ActionTicker {
   /**
    * Relative speed of the action ticker.
    *
-   * Copy-on-run: Copies the action's `timingMode` when the action is run.
+   * Copy-on-run: Copies the action's `timing` when the action is run.
    */
-  public timingMode: TimingModeFn;
+  public timing: TimingFunction;
 
   /**
    * Expected duration of the action ticker.
    *
-   * Copy-on-run: Copies the action's `scaledDuration` when the action is run.
+   * Copy-on-run: Copies the action's scaled duration when the action is run.
    */
-  public scaledDuration: number;
+  public duration: number;
 
   /**
    * Any instance data that will live for the duration of the ticker.
    *
-   * @see {Action.onSetupTicker()}
+   * @see {Action._onTickerSetup()}
    */
   public data: any;
 
   /**
    * Whether the action has completed.
    *
-   * Needs to be manually updated when `this.autoComplete = false`.
-   *
    * Used by chainable actions.
    */
   public isDone: boolean = false;
-
-  /**
-   * Whether the action ticker destroys when removed.
-   *
-   * Repeatable actions should set this to false.
-   */
-  public autoDestroy: boolean = true;
-
-  /**
-   * Whether the action ticker will mark the action as done when time
-   * `this._elapsed >= this.scaledDuration`.
-   *
-   * Disable to manually control when `isDone` is triggered.
-   *
-   * Used by chainable actions.
-   */
-  public autoComplete: boolean = true;
 
   //
   // ----- Private properties: -----
@@ -238,96 +230,103 @@ export class ActionTicker {
   //
 
   public constructor(
-    key: string | undefined,
     target: TargetNode,
     action: Action,
+    key?: string,
   ) {
     this.key = key;
     this.target = target;
     this.action = action;
     this.speed = action.speed;
-    this.scaledDuration = action.scaledDuration;
-    this.timingMode = action.timingMode;
+    this.duration = action.scaledDuration;
+    this.timing = action.timing;
   }
 
   //
   // ----- Methods: -----
   //
 
-  /** @returns Any unused time delta. Negative value means action is still in progress. */
+  /**
+   * @param deltaTime Maximum amount of time to increment forward.
+   * @returns Any unused time delta. Negative value means action is still in progress.
+   */
   public tick(deltaTime: number): number {
+    const action = this.action;
+    const target = this.target;
+
     if (!this._init) {
-      // Copy action attributes:
-      this.speed = this.action.speed;
-      this.scaledDuration = this.action.duration;
-      this.timingMode = this.action.timingMode;
+      // Copy-on-run attributes:
+      this.speed = action.speed;
+      this.timing = action.timing;
+      this.duration = action.scaledDuration;
 
       // Perform first time setup:
       try {
-        this.data = (this.action as any).onSetupTicker(this.target, this);
+        this.data = action._onTickerInit(target, this);
       }
       catch (error) {
-        ActionTicker._removeActionTicker(this, false); // invalid target, failed on launch
-        throw error; // rethrow
+        // remove action if failed on launch
+        ActionTicker._removeActionTicker(this, false);
+
+        // rethrow
+        throw error;
       }
 
       this._init = true;
     }
 
-    const target = this.target;
-    const action = this.action;
+    // If target no longer valid, we garbage collect its runners.
+    if (target.destroyed || target == null) {
+      this.isDone = true;
 
-    // If action no longer valid, we garbage collect its runners.
-    if (target == null || target.destroyed) {
-      ActionTicker._removeActionTicker(this);
+      ActionTicker.removeAllTargetActions(target);
 
       return;
     }
 
     const scaledDeltaTime = deltaTime * this.speed;
+    const duration = this.duration;
 
     // Instantaneous actions:
-    if (action.isInstant) {
-      (action as any).onTick(this.target, 1.0, 1.0, this, scaledDeltaTime);
+    if (duration === 0) {
+      this._elapsed = 1;
+      action._onTickerTick(this.target, 1, 1, this, scaledDeltaTime);
+
+      // remove ticker on next tick
       this.isDone = true;
 
-      // Remove completed action.
-      ActionTicker._removeActionTicker(this);
-
-      return deltaTime; // relinquish the full time.
+      // relinquish full time
+      return deltaTime;
     }
 
-    const td0 = Math.max(0, Math.min(1, this._elapsed / this.scaledDuration));
+    const timingFn = this.timing;
 
-    if (deltaTime === 0 && td0 < EPSILON_1) {
-      return -1; // Early exit, no progress.
-    }
+    // before
+    const elapsed0 = this._elapsed;
+    const t0 = Math.max(Math.min(elapsed0 / duration, 1), 0);
+    const tScaled0 = timingFn(t0);
 
-    const t0 = this.timingMode(td0);
+    // after
+    const elapsed1 = elapsed0 + scaledDeltaTime;
+    const t1 = Math.max(Math.min(elapsed1 / duration, 1), 0);
+    const tScaled1 = timingFn(t1);
+    const tDelta = tScaled1 - tScaled0;
 
-    this._elapsed += scaledDeltaTime;
+    // apply
+    this._elapsed = elapsed1;
+    action._onTickerTick(this.target, tScaled1, tDelta, this, scaledDeltaTime);
 
-    const td1 = Math.max(0, Math.min(1, this._elapsed / this.scaledDuration));
-    const t1 = this.timingMode(td1);
-    const dt = t1 - t0;
-
-    (action as any).onTick(this.target, t1, dt, this, scaledDeltaTime);
-
-    if (
-      this.isDone || (this.autoComplete && td1 >= EPSILON_1)
-    ) {
+    // queue completed actions to auto remove
+    if (!action.hasChildren && t1 >= EPSILON_1) {
       this.isDone = true;
-
-      // Remove completed action.
-      ActionTicker._removeActionTicker(this);
-
-      return this._elapsed > this.scaledDuration
-        ? this._elapsed - this.scaledDuration
-        : 0;
     }
 
-    // relinquish no time
-    return -1;
+    // relinquish no time if still in progress left in this action
+    if (!this.isDone) {
+      return -1;
+    }
+
+    return Math.max(this._elapsed - duration, 0);
   }
 
   /**
@@ -336,10 +335,17 @@ export class ActionTicker {
    * Used by chainable actions to reset their child action's tickers.
    */
   public reset(): void {
-    this._init = false;
+    const action = this.action;
+
+    if (!action.hasChildren) {
+      // allow non-chainable actions to re-initialize
+      this._init = false;
+    }
+
     this._elapsed = 0;
     this.isDone = false;
-    (this.action as any).onTickerDidReset(this);
+
+    action._onTickerDidReset(this);
   }
 
   /**

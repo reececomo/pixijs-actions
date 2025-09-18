@@ -1,13 +1,14 @@
-import { _ as Action } from "./Action";
+import { Action } from "./lib/Action";
+import { PixiJSActions as _ } from "./Action";
 import { ActionTicker } from "./lib/ActionTicker";
 
 /**
  * Register the mixin for PIXI.Container.
  *
- * @param container A reference to `PIXI.Container`.
+ * @param containerType A reference to `PIXI.Container`.
  */
-export function registerPixiJSActionsMixin(container: any): void {
-  const prototype = container.prototype;
+export function registerPixiJSActionsMixin(containerType: any): void {
+  const prototype = containerType.prototype;
 
   // - Properties:
   prototype.speed = 1.0;
@@ -16,7 +17,7 @@ export function registerPixiJSActionsMixin(container: any): void {
   // - Methods:
   prototype.run = function (action: Action, completion?: () => void): void {
     return completion
-      ? ActionTicker.runAction(undefined, this, Action.sequence([action, Action.run(completion)]))
+      ? ActionTicker.runAction(undefined, this, _.sequence([action, _.run(completion)]))
       : ActionTicker.runAction(undefined, this, action);
   };
 

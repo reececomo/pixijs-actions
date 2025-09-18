@@ -9,10 +9,10 @@ export class SetVisibleAction extends Action {
   }
 
   public reversed(): Action {
-    return new SetVisibleAction(!this.visible)._mutate(this);
+    return new SetVisibleAction(!this.visible)._apply(this);
   }
 
-  protected onTick(target: TargetNode): void {
+  public _onTickerTick(target: TargetNode): void {
     target.visible = this.visible;
   }
 }

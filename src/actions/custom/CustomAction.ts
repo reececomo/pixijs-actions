@@ -10,11 +10,11 @@ export class CustomAction extends Action {
     this.stepFn = stepFn;
   }
 
-  protected onTick(target: TargetNode, t: number, dt: number): void {
+  public _onTickerTick(target: TargetNode, t: number, dt: number): void {
     this.stepFn(target, t, dt);
   }
 
   public reversed(): Action {
-    return new CustomAction(this.duration, this.stepFn)._mutate(this);
+    return new CustomAction(this.duration, this.stepFn)._apply(this);
   }
 }

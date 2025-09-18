@@ -14,14 +14,14 @@ export class RotateToAction extends Action {
   }
 
   public reversed(): Action {
-    return new RotateToAction(this.r1, this.duration)._mutate(this);
+    return new RotateToAction(this.r1, this.duration)._apply(this);
   }
 
-  protected onSetupTicker({ rotation }: TargetNode): any {
+  public _onTickerInit({ rotation }: TargetNode): any {
     return { r0: rotation };
   }
 
-  protected onTick(
+  public _onTickerTick(
     target: TargetNode,
     t: number,
     dt: number,

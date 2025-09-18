@@ -17,10 +17,10 @@ export class ScaleToSizeAction extends Action {
   }
 
   public reversed(): Action {
-    return new ScaleToSizeAction(this.width, this.height, this.duration)._mutate(this);
+    return new ScaleToSizeAction(this.width, this.height, this.duration)._apply(this);
   }
 
-  protected onSetupTicker(target: SizedTargetNode): any {
+  public _onTickerInit(target: SizedTargetNode): any {
     if (typeof target.width !== 'number' || typeof target.height !== 'number') {
       throw new TypeError("Target must have 'width' and 'height'.");
     }
@@ -31,7 +31,7 @@ export class ScaleToSizeAction extends Action {
     };
   }
 
-  protected onTick(
+  public _onTickerTick(
     target: SizedTargetNode,
     t: number,
     dt: number,

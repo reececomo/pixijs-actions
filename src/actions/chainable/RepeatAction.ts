@@ -2,54 +2,63 @@ import { Action } from '../../lib/Action';
 import { IActionTicker } from '../../lib/IActionTicker';
 import { ActionTicker } from '../../lib/ActionTicker';
 
+interface RepeatTickerData {
+  childTicker: IActionTicker;
+  i: number;
+}
+
 export class RepeatAction extends Action {
   protected readonly action: Action;
-  protected readonly repeats: number;
+  protected readonly count: number;
 
-  public constructor(action: Action, repeats: number) {
-    if (!Number.isInteger(repeats) || repeats < 0) {
+  public constructor(action: Action, count: number) {
+    if (!Number.isInteger(count) || count < 0) {
       throw new RangeError('The number of repeats must be a positive integer.');
     }
 
-    super(action.scaledDuration * repeats);
+    super(action.scaledDuration * count, true);
     this.action = action;
-    this.repeats = repeats;
+    this.count = count;
   }
 
   public reversed(): Action {
-    const reversedAction = this.action.reversed();
-    return new RepeatAction(reversedAction, this.repeats)._mutate(this);
+    const action = this.action.reversed();
+    return new RepeatAction(action, this.count)._apply(this);
   }
 
-  protected onSetupTicker(target: TargetNode, ticker: IActionTicker): any {
-    ticker.autoComplete = false;
+  public _onTickerInit(
+    target: TargetNode,
+    ticker: IActionTicker<RepeatTickerData>
+  ): RepeatTickerData {
+    const childTicker = new ActionTicker(target, this.action);
 
-    const childTicker = new ActionTicker(undefined, target, this.action);
-    childTicker.timingMode = (x: number) => ticker.timingMode(childTicker.timingMode(x));
-    childTicker.autoDestroy = false;
+    // inherit timing mode from this action
+    childTicker.timing = (x) => ticker.timing(childTicker.timing(x));
 
     return {
       childTicker,
-      n: 0,
+      i: 0,
     };
   }
 
-  protected onTick(
+  public _onTickerTick(
     target: TargetNode,
     t: number,
     dt: number,
-    ticker: IActionTicker,
+    ticker: IActionTicker<RepeatTickerData>,
     deltaTime: number
   ): void {
-    const childTicker: IActionTicker = ticker.data.childTicker;
-    let remainingDeltaTime = deltaTime * this.speed;
+    const childTicker = ticker.data.childTicker;
+    let remainingDeltaTime = deltaTime;
 
     remainingDeltaTime = childTicker.tick(remainingDeltaTime);
 
-    if (remainingDeltaTime > 0 || childTicker.scaledDuration === 0) {
-      if (++ticker.data.n >= this.repeats) {
+    if (remainingDeltaTime > 0 || childTicker.duration === 0) {
+      ticker.data.i += 1;
+
+      if (ticker.data.i >= this.count) {
         ticker.isDone = true;
-        ticker.autoDestroy = true;
+
         return;
       }
 
@@ -58,13 +67,13 @@ export class RepeatAction extends Action {
     }
   }
 
-  protected onTickerDidReset(ticker: IActionTicker): any {
+  public _onTickerDidReset(ticker: IActionTicker<RepeatTickerData>): any {
     if (!ticker.data) return;
     ticker.data.childTicker.reset();
-    ticker.data.n = 0;
+    ticker.data.i = 0;
   }
 
-  protected onTickerRemoved(target: TargetNode, ticker: IActionTicker): void {
+  public _onTickerRemoved(target: TargetNode, ticker: IActionTicker<RepeatTickerData>): void {
     if (!ticker.data) return;
     ticker.data.childTicker.destroy();
   }

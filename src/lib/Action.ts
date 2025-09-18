@@ -1,19 +1,10 @@
-import { TimingMode, TimingModeFn } from '../TimingMode';
+import { Timing, type TimingFunction, type TimingKey } from '../Timing';
+import { ActionSettings } from './ActionSettings';
 import { IActionTicker } from './IActionTicker';
 
 export abstract class Action {
-  public log = false;
 
-  // ----- Default Timing Modes: -----
-
-  protected static _defaultAnimateTimePerFrame: TimeInterval = 1/60;
-  protected static _defaultTimingModeEaseIn = TimingMode.easeInSine;
-  protected static _defaultTimingModeEaseOut = TimingMode.easeOutSine;
-  protected static _defaultTimingModeEaseInOut = TimingMode.easeInOutSine;
-
-  //
-  // ----------------- Action: -----------------
-  //
+  // ----- Properties: -----
 
   /**
    * The duration required to complete an action.
@@ -21,42 +12,55 @@ export abstract class Action {
   public readonly duration: TimeInterval;
 
   /**
-   * A speed factor that modifies how fast an action runs.
+   * Whether this action owns child actions.
    */
-  public speed: number = 1.0;
+  public readonly hasChildren: boolean;
 
   /**
-   * A setting that controls the speed curve of an animation.
+   * A speed factor that modifies how fast an action runs.
    */
-  public timingMode: TimingModeFn = TimingMode.linear;
+  public speed: number = 1;
 
-  protected constructor(duration: TimeInterval) {
+  /**
+   * A function that controls the speed curve of an action.
+   */
+  public timing: TimingFunction = Timing.linear;
+
+  // ----- Methods: -----
+
+  protected constructor(
+    duration: TimeInterval,
+    hasChildren: boolean = false,
+  ) {
     if (duration < 0) {
       throw new RangeError('Action duration must be 0 or more.');
     }
 
     this.duration = duration;
+    this.hasChildren = hasChildren;
   }
 
   /**
-   * Whether action completes instantly.
-   */
-  public get isInstant(): boolean {
-    return this.duration === 0;
-  }
-
-  /**
-   * Whether action never completes.
-   */
-  public get isInfinite(): boolean {
-    return Math.abs(this.duration) === Infinity;
-  }
-
-  /**
-   * Duration of the action, factoring in local speed.
+   * Duration of the action, after factoring in local speed.
+   *
+   * @internal
    */
   public get scaledDuration(): number {
     return this.duration / this.speed;
+  }
+
+  /**
+   * Adjust the timing curve of an animation.
+   *
+   * This function mutates the underlying action.
+   *
+   * @see {Timing}
+   */
+  public setTiming(timingMode: TimingFunction): this
+  public setTiming(timingModeKey: TimingKey): this
+  public setTiming(v: TimingFunction | TimingKey): this {
+    this.timing = typeof v === 'string' ? Timing[v] : v;
+    return this;
   }
 
   /**
@@ -66,18 +70,7 @@ export abstract class Action {
    */
   public setSpeed(speed: number): this {
     this.speed = speed;
-    return this;
-  }
 
-  /**
-   * Adjust the speed curve of an animation. Default: `TimingMode.linear`.
-   *
-   * This function mutates the underlying action.
-   *
-   * @see {TimingMode}
-   */
-  public setTimingMode(timingMode: TimingModeFn): this {
-    this.timingMode = timingMode;
     return this;
   }
 
@@ -85,15 +78,17 @@ export abstract class Action {
    * Apply the base properties from another action to this action.
    *
    * This function mutates the underlying action.
+   *
+   * @internal
    */
-  public _mutate(action: Action): this {
-    this.timingMode = action.timingMode;
+  public _apply(action: Action): this {
+    this.timing = action.timing;
     this.speed = action.speed;
     return this;
   }
 
   //
-  // ----------------- Default TimingMode Shortcuts: -----------------
+  // ----------------- Default Timing: -----------------
   //
 
   /**
@@ -102,10 +97,10 @@ export abstract class Action {
    *
    * This function mutates the underlying action.
    *
-   * @see {TimingMode.linear}
+   * @see {Timing.linear}
    */
   public linear(): this {
-    return this.setTimingMode(TimingMode.linear);
+    return this.setTiming(Timing.linear);
   }
 
   /**
@@ -114,10 +109,10 @@ export abstract class Action {
    *
    * This function mutates the underlying action.
    *
-   * @see {Action.DefaultTimingModeEaseIn}
+   * @see {Action.DefaultTimingEaseIn}
    */
   public easeIn(): this {
-    return this.setTimingMode(Action._defaultTimingModeEaseIn);
+    return this.setTiming(ActionSettings.timingEaseIn);
   }
 
   /**
@@ -126,10 +121,10 @@ export abstract class Action {
    *
    * This function mutates the underlying action.
    *
-   * @see {Action.DefaultTimingModeEaseOut}
+   * @see {Action.DefaultTimingEaseOut}
    */
   public easeOut(): this {
-    return this.setTimingMode(Action._defaultTimingModeEaseOut);
+    return this.setTiming(ActionSettings.timingEaseOut);
   }
 
   /**
@@ -139,10 +134,10 @@ export abstract class Action {
    *
    * This function mutates the underlying action.
    *
-   * @see {Action.DefaultTimingModeEaseInOut}
+   * @see {Action.DefaultTimingEaseInOut}
    */
   public easeInOut(): this {
-    return this.setTimingMode(Action._defaultTimingModeEaseInOut);
+    return this.setTiming(ActionSettings.timingEaseInOut);
   }
 
   //
@@ -150,20 +145,27 @@ export abstract class Action {
   //
 
   /**
-   * (optional)
+   * @internal
    * @throws an error thrown here will abort adding the action to a target
    */
-  protected onSetupTicker(target: TargetNode, ticker: IActionTicker): any {
+  public _onTickerInit(
+    target: TargetNode,
+    ticker: IActionTicker<any>,
+  ): any {
     return undefined;
   }
 
-  /** (optional) */
-  protected onTickerDidReset(ticker: IActionTicker): any {
+  /**
+   * @internal
+   */
+  public _onTickerDidReset(ticker: IActionTicker<any>): void {
     return undefined;
   }
 
-  /** (optional) */
-  protected onTickerRemoved(target: TargetNode, ticker: IActionTicker): void {
+  /**
+   * @internal
+   */
+  public _onTickerRemoved(target: TargetNode, ticker: IActionTicker<any>): void {
     return undefined;
   }
 
@@ -181,15 +183,17 @@ export abstract class Action {
    *
    * @param target The affected node.
    * @param t The elapsed progress of the action, with the timing mode function applied. Generally a scalar number between 0.0 and 1.0.
-   * @param dt Relative change in progress since the previous animation change. Use this for relative actions.
+   * @param dt Change in progress since the previous animation change. Use this for relative actions.
    * @param ticker The action ticker running this update.
    * @param deltaTime The amount of time elapsed in this tick. This number is scaled by both speed of target and any parent actions.
+   *
+   * @internal
    */
-  protected abstract onTick<Target extends TargetNode>(
+  public abstract _onTickerTick<Target extends TargetNode>(
     target: Target,
     t: number,
     dt: number,
-    ticker: IActionTicker,
-    deltaTime: number
+    ticker: IActionTicker<any>,
+    deltaTime: number,
   ): void;
 }

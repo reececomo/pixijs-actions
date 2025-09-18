@@ -1,6 +1,6 @@
 {
   "name": "pixijs-actions",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "author": "Reece Como <reece.como@gmail.com>",
   "authors": [
     "Reece Como <reece.como@gmail.com>",
@@ -9,7 +9,7 @@
   "repository": "https://github.com/reececomo/pixijs-actions",
   "homepage": "https://github.com/reececomo/pixijs-actions#readme",
   "license": "MIT",
-  "description": "Powerful, lightweight animations for PixiJS 6, 7, 8+. A TypeScript implementation of Apple's SKActions, forked from srpatel/pixijs-actions.",
+  "description": "Lightweight, powerful animation composer for PixiJS (based on Cocos2d/SKActions).",
   "main": "dist/index.cjs",
   "module": "dist/index.mjs",
   "types": "./dist/index.d.ts",
@@ -17,12 +17,12 @@
   "scripts": {
     "build:rollup": "rimraf dist && echo 'rollup (1/2):' && rollup -c --bundleConfigAsCjs",
     "build:rm-dts": "rimraf dist/*.d.ts dist/actions dist/lib",
-    "build:dts-gen": "echo 'dts-bundle-generator (2/2):' && ./node_modules/.bin/dts-bundle-generator -o dist/index.d.ts src/index.ts --sort --no-banner --export-referenced-types --external-imports pixi.js --no-check",
+    "build:dts-gen": "echo 'dts-bundle-generator (2/2):' && ./node_modules/.bin/dts-bundle-generator -o dist/index.d.ts src/index.ts --sort --export-referenced-types --no-banner --external-imports pixi.js --no-check",
     "build:export-globals": "(cat src/globals.d.ts && cat dist/index.d.ts) > tmp.d.ts && mv tmp.d.ts dist/index.d.ts",
     "build": "npm run build:rollup && npm run build:rm-dts && npm run build:dts-gen && npm run build:export-globals",
-    "coverage": "jest --runInBand --collectCoverage",
+    "coverage": "jest --no-cache --runInBand --collectCoverage",
     "lint": "eslint src --ext .ts",
-    "test": "jest --runInBand"
+    "test": "jest --no-cache"
   },
   "peerDependencies": {
     "pixi.js": "^6.3.0 || ^7.0.0 || ^8.0.0"

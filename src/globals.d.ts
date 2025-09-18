@@ -1,13 +1,7 @@
-import * as PIXI from 'pixi.js';
-
-/*
- * PixiJs Mixin:
- */
+import { Container } from 'pixi.js';
 
 declare module 'pixi.js' {
-
   export interface Container {
-
     /**
      * A boolean value that determines whether actions on the node and its descendants are processed.
      */
@@ -88,7 +82,7 @@ declare global {
   type TimeInterval = number;
 
   /** Targeted display node. */
-  type TargetNode = PIXI.Container;
+  type TargetNode = Container;
 
   /** Targeted display node with a width and height. */
   type SizedTargetNode = TargetNode & SizeLike;

@@ -10,7 +10,7 @@ export class FadeInAction extends FadeAlphaToAction {
   }
 
   public reversed(): Action {
-    return new FadeOutAction(this.duration)._mutate(this);
+    return new FadeOutAction(this.duration)._apply(this);
   }
 }
 
@@ -20,6 +20,6 @@ export class FadeOutAction extends FadeAlphaToAction {
   }
 
   public reversed(): Action {
-    return new FadeInAction(this.duration)._mutate(this);
+    return new FadeInAction(this.duration)._apply(this);
   }
 }

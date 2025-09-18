@@ -1,15 +1,18 @@
 import { Sprite, Spritesheet, Texture } from 'pixi.js';
 import { Action } from '../../lib/Action';
-import { IActionTicker } from 'src/lib/IActionTicker';
+import { IActionTicker } from '../../lib/IActionTicker';
+import { ActionSettings } from '../../lib/ActionSettings';
 
-type AnimateTextureOptions = {
+export type AnimateOptions = AnimateTextureOptions | AnimateSpritesheetOptions;
+
+export interface AnimateTextureOptions extends BaseAnimateOptions {
   /**
    * Array of textures to animate.
    */
   frames: Texture[];
 }
 
-type AnimateSpritesheetOptions = {
+export interface AnimateSpritesheetOptions extends BaseAnimateOptions {
   /**
    * A spritesheet containing textures to animate.
    */
@@ -20,9 +23,9 @@ type AnimateSpritesheetOptions = {
    * @default true
    */
   sortKeys?: boolean;
-};
+}
 
-export type AnimateOptions = (AnimateTextureOptions | AnimateSpritesheetOptions) & {
+interface BaseAnimateOptions {
   /**
    * Time to display each texture in seconds.
    *
@@ -44,7 +47,7 @@ export type AnimateOptions = (AnimateTextureOptions | AnimateSpritesheetOptions)
    * @default false
    */
   restore?: boolean;
-};
+}
 
 export class AnimateAction extends Action {
   protected readonly frames: Texture[];
@@ -71,7 +74,7 @@ export class AnimateAction extends Action {
       }
     }
 
-    const timePerFrame = options.timePerFrame || Action._defaultAnimateTimePerFrame;
+    const timePerFrame = options.timePerFrame || ActionSettings.animateTimePerFrame;
 
     super(textures.length * timePerFrame);
 
@@ -81,7 +84,7 @@ export class AnimateAction extends Action {
     this.restore = options.restore ?? false;
   }
 
-  protected onSetupTicker(target: TargetNode): any {
+  public _onTickerInit(target: TargetNode): any {
     if ("texture" in target) {
       return { restoreTexture: target.texture };
     }
@@ -89,7 +92,7 @@ export class AnimateAction extends Action {
     throw new TypeError('Target must be a Sprite.');
   }
 
-  protected onTickerRemoved(target: TargetNode, ticker: IActionTicker): void {
+  public _onTickerRemoved(target: TargetNode, ticker: IActionTicker): void {
     if ( !ticker.data ) return;
 
     if (this.restore) {
@@ -113,7 +116,7 @@ export class AnimateAction extends Action {
     });
   }
 
-  protected onTick(target: TargetNode, t: number, _dt: number): void {
+  public _onTickerTick(target: TargetNode, t: number, _dt: number): void {
     const i = Math.floor(t * this.frames.length);
     const texture = this.frames[i];
 

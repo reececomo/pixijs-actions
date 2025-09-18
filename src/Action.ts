@@ -1,4 +1,4 @@
-import { Action } from './lib/Action';
+import { Action as _ } from './lib/Action';
 import { ActionTicker } from './lib/ActionTicker';
 import {
   AnimateAction,
@@ -27,13 +27,14 @@ import {
   SpeedByAction,
   SpeedToAction,
 } from './actions';
-import { TimingModeFn } from './TimingMode';
-import { Spritesheet, Texture } from 'pixi.js';
+import { Timing, type TimingFunction, type TimingKey } from './Timing';
+import { ActionSettings } from './lib/ActionSettings';
 
 const DEG_TO_RAD = Math.PI / 180;
 
 type DestroyOptions = Parameters<TargetNode["destroy"]>[0];
 
+/* eslint-disable @typescript-eslint/no-extraneous-class */
 /**
  * Create, configure, and run actions in PixiJS.
  *
@@ -42,7 +43,7 @@ type DestroyOptions = Parameters<TargetNode["destroy"]>[0];
  * ### Setup:
  * Bind `Action.tick(deltaTimeMs)` to your renderer/shared ticker to activate actions.
  */
-export abstract class _ extends Action {
+export abstract class PixiJSActions {
 
   //
   // ----------------- Global Settings: -----------------
@@ -54,10 +55,10 @@ export abstract class _ extends Action {
    * @default 1/60
    */
   public static get DefaultAnimateTimePerFrame(): TimeInterval {
-    return Action._defaultAnimateTimePerFrame;
+    return ActionSettings.animateTimePerFrame;
   }
   public static set DefaultAnimateTimePerFrame(value: TimeInterval) {
-    Action._defaultAnimateTimePerFrame = value;
+    ActionSettings.animateTimePerFrame = value;
   }
 
   /**
@@ -65,13 +66,13 @@ export abstract class _ extends Action {
    *
    * Set this to update the default `easeIn()` timing mode.
    *
-   * @default TimingMode.easeInSine
+   * @default Timing.easeInSine
    */
-  public static get DefaultTimingModeEaseIn(): TimingModeFn {
-    return Action._defaultTimingModeEaseIn;
+  public static get DefaultTimingEaseIn(): TimingFunction {
+    return ActionSettings.timingEaseIn;
   }
-  public static set DefaultTimingModeEaseIn(value: TimingModeFn) {
-    Action._defaultTimingModeEaseIn = value;
+  public static set DefaultTimingEaseIn(v: TimingFunction | TimingKey) {
+    ActionSettings.timingEaseIn = typeof v === 'string' ? Timing[v] : v;
   }
 
   /**
@@ -79,13 +80,13 @@ export abstract class _ extends Action {
    *
    * Set this to update the default `easeOut()` timing mode.
    *
-   * @default TimingMode.easeOutSine
+   * @default Timing.easeOutSine
    */
-  public static get DefaultTimingModeEaseOut(): TimingModeFn {
-    return Action._defaultTimingModeEaseOut;
+  public static get DefaultTimingEaseOut(): TimingFunction {
+    return ActionSettings.timingEaseOut;
   }
-  public static set DefaultTimingModeEaseOut(value: TimingModeFn) {
-    Action._defaultTimingModeEaseOut = value;
+  public static set DefaultTimingEaseOut(v: TimingFunction | TimingKey) {
+    ActionSettings.timingEaseOut = typeof v === 'string' ? Timing[v] : v;
   }
 
   /**
@@ -93,13 +94,13 @@ export abstract class _ extends Action {
    *
    * Set this to update the default `easeInOut()` timing mode.
    *
-   * @default TimingMode.easeInOutSine
+   * @default Timing.easeInOutSine
    */
-  public static get DefaultTimingModeEaseInOut(): TimingModeFn {
-    return Action._defaultTimingModeEaseInOut;
+  public static get DefaultTimingEaseInOut(): TimingFunction {
+    return ActionSettings.timingEaseInOut;
   }
-  public static set DefaultTimingModeEaseInOut(value: TimingModeFn) {
-    Action._defaultTimingModeEaseInOut = value;
+  public static set DefaultTimingEaseInOut(v: TimingFunction | TimingKey) {
+    ActionSettings.timingEaseInOut = typeof v === 'string' ? Timing[v] : v;
   }
 
   //
@@ -132,7 +133,7 @@ export abstract class _ extends Action {
    * This action is reversible; it creates a new group action that contains the reverse of each
    * action specified in the group.
    */
-  public static group(actions: Action[]): Action {
+  public static group(actions: _[]): _ {
     return new GroupAction(actions);
   }
 
@@ -148,7 +149,7 @@ export abstract class _ extends Action {
    * actions. Each action in the reversed sequence is itself reversed. For example, if an action
    * sequence is {1,2,3}, the reversed sequence would be {3R,2R,1R}.
    */
-  public static sequence(actions: Action[]): Action {
+  public static sequence(actions: _[]): _ {
     return new SequenceAction(actions);
   }
 
@@ -161,7 +162,7 @@ export abstract class _ extends Action {
    * This action is reversible; it creates a new action that is the reverse of the specified action
    * and then repeats it the same number of times.
    */
-  public static repeat(action: Action, repeats: number): Action {
+  public static repeat(action: _, repeats: number): _ {
     return new RepeatAction(action, repeats);
   }
 
@@ -173,7 +174,7 @@ export abstract class _ extends Action {
    * This action is reversible; it creates a new action that is the reverse of the specified action
    * and then repeats it forever.
    */
-  public static repeatForever(action: Action): Action {
+  public static repeatForever(action: _): _ {
     return new RepeatForeverAction(action);
   }
 
@@ -186,7 +187,7 @@ export abstract class _ extends Action {
    *
    * This action is not reversible; the reverse of this action is the same action.
    */
-  public static waitForDuration(duration: TimeInterval): Action {
+  public static waitForDuration(duration: TimeInterval): _ {
     return new DelayAction(duration);
   }
 
@@ -201,7 +202,7 @@ export abstract class _ extends Action {
    *
    * This action is not reversible; the reverse of this action is the same action.
    */
-  public static waitForDurationWithRange(average: TimeInterval, rangeSize: TimeInterval): Action {
+  public static waitForDurationWithRange(average: TimeInterval, rangeSize: TimeInterval): _ {
     return new DelayAction(average + (rangeSize * Math.random() - rangeSize * 0.5));
   }
 
@@ -214,9 +215,9 @@ export abstract class _ extends Action {
    *
    * This action is reversible.
    */
-  public static moveBy(delta: VectorLike, duration: TimeInterval): Action;
-  public static moveBy(dx: number, dy: number, duration: TimeInterval): Action;
-  public static moveBy(a: number | VectorLike, b: number | TimeInterval, c?: TimeInterval): Action {
+  public static moveBy(delta: VectorLike, duration: TimeInterval): _;
+  public static moveBy(dx: number, dy: number, duration: TimeInterval): _;
+  public static moveBy(a: number | VectorLike, b: number | TimeInterval, c?: TimeInterval): _ {
     return typeof a === 'number'
       ? new MoveByAction(a, b, c)
       : new MoveByAction(a.x, a.y, b);
@@ -227,7 +228,7 @@ export abstract class _ extends Action {
    *
    * This action is reversible.
    */
-  public static moveByX(x: number, duration: TimeInterval): Action {
+  public static moveByX(x: number, duration: TimeInterval): _ {
     return this.moveBy(x, 0, duration);
   }
 
@@ -236,7 +237,7 @@ export abstract class _ extends Action {
    *
    * This action is reversible.
    */
-  public static moveByY(y: number, duration: TimeInterval): Action {
+  public static moveByY(y: number, duration: TimeInterval): _ {
     return this.moveBy(0, y, duration);
   }
 
@@ -245,9 +246,9 @@ export abstract class _ extends Action {
    *
    * This action is not reversible; the reverse of this action is the same action.
    */
-  public static moveTo(position: VectorLike, duration: TimeInterval): Action;
-  public static moveTo(x: number, y: number, duration: TimeInterval): Action;
-  public static moveTo(a: number | VectorLike, b: number | TimeInterval, c?: TimeInterval): Action {
+  public static moveTo(position: VectorLike, duration: TimeInterval): _;
+  public static moveTo(x: number, y: number, duration: TimeInterval): _;
+  public static moveTo(a: number | VectorLike, b: number | TimeInterval, c?: TimeInterval): _ {
     return typeof a === 'number'
       ? new MoveToAction(a, b, c)
       : new MoveToAction(a.x, a.y, b);
@@ -258,7 +259,7 @@ export abstract class _ extends Action {
    *
    * This action is not reversible; the reverse of this action is the same action.
    */
-  public static moveToX(x: number, duration: TimeInterval): Action {
+  public static moveToX(x: number, duration: TimeInterval): _ {
     return new MoveToAction(x, null, duration);
   }
 
@@ -267,7 +268,7 @@ export abstract class _ extends Action {
    *
    * This action is not reversible; the reverse of this action is the same action.
    */
-  public static moveToY(y: number, duration: TimeInterval): Action {
+  public static moveToY(y: number, duration: TimeInterval): _ {
     return new MoveToAction(null, y, duration);
   }
 
@@ -293,7 +294,7 @@ export abstract class _ extends Action {
     asOffset: boolean = true,
     orientToPath: boolean = true,
     fixedSpeed: boolean = true,
-  ): Action {
+  ): _ {
     const _path = FollowPathAction.getPath(path);
     return new FollowPathAction(_path, duration, asOffset, orientToPath, fixedSpeed);
   }
@@ -315,7 +316,7 @@ export abstract class _ extends Action {
     speed: number,
     asOffset: boolean = true,
     orientToPath: boolean = true,
-  ): Action {
+  ): _ {
     const _path = FollowPathAction.getPath(path);
     const _length = FollowPathAction.getLength(_path);
     return new FollowPathAction(_path, _length[0] / speed, asOffset, orientToPath, true);
@@ -330,7 +331,7 @@ export abstract class _ extends Action {
    *
    * This action is reversible.
    */
-  public static rotateBy(rotation: number, duration: TimeInterval): Action {
+  public static rotateBy(rotation: number, duration: TimeInterval): _ {
     return new RotateByAction(rotation, duration);
   }
 
@@ -339,7 +340,7 @@ export abstract class _ extends Action {
    *
    * This action is reversible.
    */
-  public static rotateByDegrees(degrees: number, duration: TimeInterval): Action {
+  public static rotateByDegrees(degrees: number, duration: TimeInterval): _ {
     return this.rotateBy(degrees * DEG_TO_RAD, duration);
   }
 
@@ -348,7 +349,7 @@ export abstract class _ extends Action {
    *
    * This action is not reversible; the reverse of this action is the same action.
    */
-  public static rotateTo(rotation: number, duration: TimeInterval): Action {
+  public static rotateTo(rotation: number, duration: TimeInterval): _ {
     return new RotateToAction(rotation, duration);
   }
 
@@ -357,7 +358,7 @@ export abstract class _ extends Action {
    *
    * This action is not reversible; the reverse of this action is the same action.
    */
-  public static rotateToDegrees(degrees: number, duration: TimeInterval): Action {
+  public static rotateToDegrees(degrees: number, duration: TimeInterval): _ {
     return this.rotateTo(degrees * DEG_TO_RAD, duration);
   }
 
@@ -370,7 +371,7 @@ export abstract class _ extends Action {
    *
    * This action is reversible.
    */
-  public static speedBy(speed: number, duration: TimeInterval): Action {
+  public static speedBy(speed: number, duration: TimeInterval): _ {
     return new SpeedByAction(speed, duration);
   }
 
@@ -379,7 +380,7 @@ export abstract class _ extends Action {
    *
    * This action is not reversible; the reverse of this action is the same action.
    */
-  public static speedTo(speed: number, duration: TimeInterval): Action {
+  public static speedTo(speed: number, duration: TimeInterval): _ {
     return new SpeedToAction(speed, duration);
   }
 
@@ -392,10 +393,10 @@ export abstract class _ extends Action {
    *
    * This action is reversible.
    */
-  public static scaleBy(scale: number, duration: TimeInterval): Action;
-  public static scaleBy(size: VectorLike, duration: TimeInterval): Action;
-  public static scaleBy(dx: number, dy: number, duration: TimeInterval): Action;
-  public static scaleBy(a: number | VectorLike, b: number | TimeInterval, c?: TimeInterval): Action {
+  public static scaleBy(scale: number, duration: TimeInterval): _;
+  public static scaleBy(size: VectorLike, duration: TimeInterval): _;
+  public static scaleBy(dx: number, dy: number, duration: TimeInterval): _;
+  public static scaleBy(a: number | VectorLike, b: number | TimeInterval, c?: TimeInterval): _ {
     return typeof a === 'number'
       ? c == null
         ? new ScaleByAction(a, a, b)
@@ -408,7 +409,7 @@ export abstract class _ extends Action {
    *
    * This action is reversible.
    */
-  public static scaleByX(x: number, duration: TimeInterval): Action {
+  public static scaleByX(x: number, duration: TimeInterval): _ {
     return this.scaleBy(x, 1, duration);
   }
 
@@ -417,7 +418,7 @@ export abstract class _ extends Action {
    *
    * This action is reversible.
    */
-  public static scaleByY(y: number, duration: TimeInterval): Action {
+  public static scaleByY(y: number, duration: TimeInterval): _ {
     return this.scaleBy(1, y, duration);
   }
 
@@ -426,10 +427,10 @@ export abstract class _ extends Action {
    *
    * This action is not reversible; the reverse of this action is the same action.
    */
-  public static scaleTo(scale: number, duration: TimeInterval): Action;
-  public static scaleTo(size: SizeLike, duration: TimeInterval): Action;
-  public static scaleTo(x: number, y: number, duration: TimeInterval): Action;
-  public static scaleTo(a: number | SizeLike, b: number | TimeInterval, c?: TimeInterval): Action {
+  public static scaleTo(scale: number, duration: TimeInterval): _;
+  public static scaleTo(size: SizeLike, duration: TimeInterval): _;
+  public static scaleTo(x: number, y: number, duration: TimeInterval): _;
+  public static scaleTo(a: number | SizeLike, b: number | TimeInterval, c?: TimeInterval): _ {
     return typeof a === 'number'
       ? c == null
         ? new ScaleToAction(a, a, b)
@@ -442,7 +443,7 @@ export abstract class _ extends Action {
    *
    * This action is not reversible; the reverse of this action is the same action.
    */
-  public static scaleToX(x: number, duration: TimeInterval): Action {
+  public static scaleToX(x: number, duration: TimeInterval): _ {
     return new ScaleToAction(x, null, duration);
   }
 
@@ -451,7 +452,7 @@ export abstract class _ extends Action {
    *
    * This action is not reversible; the reverse of this action is the same action.
    */
-  public static scaleToY(y: number, duration: TimeInterval): Action {
+  public static scaleToY(y: number, duration: TimeInterval): _ {
     return new ScaleToAction(null, y, duration);
   }
 
@@ -464,7 +465,7 @@ export abstract class _ extends Action {
    *
    * This action is reversible. The reverse is equivalent to fadeOut(duration).
    */
-  public static fadeIn(duration: TimeInterval): Action {
+  public static fadeIn(duration: TimeInterval): _ {
     return new FadeInAction(duration);
   }
 
@@ -473,7 +474,7 @@ export abstract class _ extends Action {
    *
    * This action is reversible. The reverse is equivalent to fadeIn(duration).
    */
-  public static fadeOut(duration: TimeInterval): Action {
+  public static fadeOut(duration: TimeInterval): _ {
     return new FadeOutAction(duration);
   }
 
@@ -482,7 +483,7 @@ export abstract class _ extends Action {
    *
    * This action is not reversible; the reverse of this action is the same action.
    */
-  public static fadeAlphaTo(alpha: number, duration: TimeInterval): Action {
+  public static fadeAlphaTo(alpha: number, duration: TimeInterval): _ {
     return new FadeAlphaToAction(alpha, duration);
   }
 
@@ -491,7 +492,7 @@ export abstract class _ extends Action {
    *
    * This action is reversible.
    */
-  public static fadeAlphaBy(alpha: number, duration: TimeInterval): Action {
+  public static fadeAlphaBy(alpha: number, duration: TimeInterval): _ {
     return new FadeByAction(alpha, duration);
   }
 
@@ -506,38 +507,8 @@ export abstract class _ extends Action {
    *
    * This action is reversible.
    */
-  public static animate(options: AnimateOptions): Action;
-  /**  @deprecated Use `Action.animate( AnimateOptions }` syntax instead. */
-  public static animate(
-    textures: Texture[],
-    timePerFrame?: TimeInterval,
-    resize?: boolean,
-    restore?: boolean
-  ): Action;
-  /**  @deprecated Use `Action.animate( AnimateOptions }` syntax instead. */
-  public static animate(
-    sheet: Spritesheet,
-    timePerFrame?: TimeInterval,
-    resize?: boolean,
-    restore?: boolean,
-    sortKeys?: boolean
-  ): Action;
-  public static animate(
-    v: Texture[] | Spritesheet | AnimateOptions,
-    timePerFrame?: TimeInterval,
-    resize?: boolean,
-    restore?: boolean,
-    sortKeys?: boolean
-  ): Action {
-    if (Array.isArray(v)) {
-      return this.animate({ frames: v, timePerFrame, resize, restore });
-    }
-
-    if ("resolution" in v) {
-      return this.animate({ spritesheet: v, timePerFrame, resize, restore, sortKeys });
-    }
-
-    return new AnimateAction(v);
+  public static animate(options: AnimateOptions): _ {
+    return new AnimateAction(options);
   }
 
   //
@@ -552,7 +523,7 @@ export abstract class _ extends Action {
    *
    * This action is reversible. The reversed action is equivalent to show().
    */
-  public static hide(): Action {
+  public static hide(): _ {
     return new SetVisibleAction(false);
   }
 
@@ -564,7 +535,7 @@ export abstract class _ extends Action {
    *
    * This action is reversible. The reversed action is equivalent to hide().
    */
-  public static unhide(): Action {
+  public static unhide(): _ {
     return new SetVisibleAction(true);
   }
 
@@ -576,7 +547,7 @@ export abstract class _ extends Action {
    *
    * This action is not reversible; the reverse of this action is the same action.
    */
-  public static destroy(options?: DestroyOptions): Action {
+  public static destroy(options?: DestroyOptions): _ {
     return this.run(target => target.destroy(options));
   }
 
@@ -587,7 +558,7 @@ export abstract class _ extends Action {
    *
    * This action is not reversible; the reverse of this action is the same action.
    */
-  public static removeFromParent(): Action {
+  public static removeFromParent(): _ {
     return this.run(target => target.parent?.removeChild(target));
   }
 
@@ -605,7 +576,7 @@ export abstract class _ extends Action {
    * This action is reversible; it tells the child to execute the reverse of the action specified by
    * the action parameter.
    */
-  public static runOnChild(childLabel: string, action: Action): Action {
+  public static runOnChild(childLabel: string, action: _): _ {
     return new RunOnChildAction(action, childLabel);
   }
 
@@ -620,16 +591,8 @@ export abstract class _ extends Action {
    *
    * This action is not reversible; the reverse action executes the same block function.
    */
-  public static run(blockFn: (target: TargetNode) => void): Action {
+  public static run(blockFn: (target: TargetNode) => void): _ {
     return new RunBlockAction(blockFn);
-  }
-
-  /** @deprecated Use `Action.custom(duration, stepFn)` instead. */
-  public static customAction(
-    duration: number,
-    stepFn: (target: TargetNode, t: number, dt: number) => void
-  ): Action {
-    return this.custom(duration, stepFn);
   }
 
   /**
@@ -644,13 +607,7 @@ export abstract class _ extends Action {
   public static custom(
     duration: number,
     stepFn: (target: TargetNode, t: number, dt: number) => void
-  ): Action {
+  ): _ {
     return new CustomAction(duration, stepFn);
-  }
-
-  // ----------------- Implementation: -----------------
-
-  private constructor() {
-    super(-1);
   }
 }

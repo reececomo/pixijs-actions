@@ -1,21 +1,17 @@
-import { TimingModeFn } from "../TimingMode";
+import { TimingFunction } from "../Timing";
 
-export interface IActionTicker {
-  // Action write-on-run settings:
-  readonly scaledDuration: number;
+export interface IActionTicker<TickerData = any>
+{
+  // ----- Write-on-run state: -----
+  readonly timing: TimingFunction;
+  readonly duration: number;
   readonly speed: number;
-  readonly timingMode: TimingModeFn;
 
-  // Iteration:
-  readonly timeDistance: number;
-
-  // State:
-  autoComplete: boolean;
-  autoDestroy: boolean;
+  // ----- State: -----
   isDone: boolean;
-  data: any;
+  data: TickerData;
 
-  // Methods:
+  // ----- Methods: -----
   tick(deltaTime: number): number;
   reset(): void;
   destroy(): void;

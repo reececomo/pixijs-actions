@@ -1,13 +1,7 @@
-import * as PIXI from 'pixi.js';
-
-/*
- * PixiJs Mixin:
- */
+import { Container } from 'pixi.js';
 
 declare module 'pixi.js' {
-
   export interface Container {
-
     /**
      * A boolean value that determines whether actions on the node and its descendants are processed.
      */
@@ -88,7 +82,7 @@ declare global {
   type TimeInterval = number;
 
   /** Targeted display node. */
-  type TargetNode = PIXI.Container;
+  type TargetNode = Container;
 
   /** Targeted display node with a width and height. */
   type SizedTargetNode = TargetNode & SizeLike;
@@ -116,36 +110,32 @@ export {};
 import { Spritesheet, Texture } from 'pixi.js';
 
 declare abstract class Action {
-	log: boolean;
-	protected static _defaultAnimateTimePerFrame: TimeInterval;
-	protected static _defaultTimingModeEaseIn: (x: number) => number;
-	protected static _defaultTimingModeEaseOut: (x: number) => number;
-	protected static _defaultTimingModeEaseInOut: (x: number) => number;
 	/**
 	 * The duration required to complete an action.
 	 */
 	readonly duration: TimeInterval;
 	/**
+	 * Whether this action owns child actions.
+	 */
+	readonly hasChildren: boolean;
+	/**
 	 * A speed factor that modifies how fast an action runs.
 	 */
 	speed: number;
 	/**
-	 * A setting that controls the speed curve of an animation.
+	 * A function that controls the speed curve of an action.
 	 */
-	timingMode: TimingModeFn;
-	protected constructor(duration: TimeInterval);
+	timing: TimingFunction;
+	protected constructor(duration: TimeInterval, hasChildren?: boolean);
 	/**
-	 * Whether action completes instantly.
+	 * Adjust the timing curve of an animation.
+	 *
+	 * This function mutates the underlying action.
+	 *
+	 * @see {Timing}
 	 */
-	get isInstant(): boolean;
-	/**
-	 * Whether action never completes.
-	 */
-	get isInfinite(): boolean;
-	/**
-	 * Duration of the action, factoring in local speed.
-	 */
-	get scaledDuration(): number;
+	setTiming(timingMode: TimingFunction): this;
+	setTiming(timingModeKey: TimingKey): this;
 	/**
 	 * Set the action's speed scale. Default: `1.0`.
 	 *
@@ -153,26 +143,12 @@ declare abstract class Action {
 	 */
 	setSpeed(speed: number): this;
 	/**
-	 * Adjust the speed curve of an animation. Default: `TimingMode.linear`.
-	 *
-	 * This function mutates the underlying action.
-	 *
-	 * @see {TimingMode}
-	 */
-	setTimingMode(timingMode: TimingModeFn): this;
-	/**
-	 * Apply the base properties from another action to this action.
-	 *
-	 * This function mutates the underlying action.
-	 */
-	_mutate(action: Action): this;
-	/**
 	 * Default `timingMode`. Sets the speed curve of the action to linear pacing. Linear pacing causes
 	 * an animation to occur evenly over its duration.
 	 *
 	 * This function mutates the underlying action.
 	 *
-	 * @see {TimingMode.linear}
+	 * @see {Timing.linear}
 	 */
 	linear(): this;
 	/**
@@ -181,7 +157,7 @@ declare abstract class Action {
 	 *
 	 * This function mutates the underlying action.
 	 *
-	 * @see {Action.DefaultTimingModeEaseIn}
+	 * @see {Action.DefaultTimingEaseIn}
 	 */
 	easeIn(): this;
 	/**
@@ -190,7 +166,7 @@ declare abstract class Action {
 	 *
 	 * This function mutates the underlying action.
 	 *
-	 * @see {Action.DefaultTimingModeEaseOut}
+	 * @see {Action.DefaultTimingEaseOut}
 	 */
 	easeOut(): this;
 	/**
@@ -200,18 +176,9 @@ declare abstract class Action {
 	 *
 	 * This function mutates the underlying action.
 	 *
-	 * @see {Action.DefaultTimingModeEaseInOut}
+	 * @see {Action.DefaultTimingEaseInOut}
 	 */
 	easeInOut(): this;
-	/**
-	 * (optional)
-	 * @throws an error thrown here will abort adding the action to a target
-	 */
-	protected onSetupTicker(target: TargetNode, ticker: IActionTicker): any;
-	/** (optional) */
-	protected onTickerDidReset(ticker: IActionTicker): any;
-	/** (optional) */
-	protected onTickerRemoved(target: TargetNode, ticker: IActionTicker): void;
 	/**
 	 * Creates an action that reverses the behavior of another action.
 	 *
@@ -220,16 +187,6 @@ declare abstract class Action {
 	 * action as the original action.
 	 */
 	abstract reversed(): Action;
-	/**
-	 * Update function for the action.
-	 *
-	 * @param target The affected node.
-	 * @param t The elapsed progress of the action, with the timing mode function applied. Generally a scalar number between 0.0 and 1.0.
-	 * @param dt Relative change in progress since the previous animation change. Use this for relative actions.
-	 * @param ticker The action ticker running this update.
-	 * @param deltaTime The amount of time elapsed in this tick. This number is scaled by both speed of target and any parent actions.
-	 */
-	protected abstract onTick<Target extends TargetNode>(target: Target, t: number, dt: number, ticker: IActionTicker, deltaTime: number): void;
 }
 /**
  * Create, configure, and run actions in PixiJS.
@@ -239,7 +196,7 @@ declare abstract class Action {
  * ### Setup:
  * Bind `Action.tick(deltaTimeMs)` to your renderer/shared ticker to activate actions.
  */
-declare abstract class _ extends Action {
+declare abstract class PixiJSActions {
 	/**
 	 * Default `timePerFrame` in seconds for `Action.animate(…)`.
 	 *
@@ -252,28 +209,28 @@ declare abstract class _ extends Action {
 	 *
 	 * Set this to update the default `easeIn()` timing mode.
 	 *
-	 * @default TimingMode.easeInSine
+	 * @default Timing.easeInSine
 	 */
-	static get DefaultTimingModeEaseIn(): TimingModeFn;
-	static set DefaultTimingModeEaseIn(value: TimingModeFn);
+	static get DefaultTimingEaseIn(): TimingFunction;
+	static set DefaultTimingEaseIn(v: TimingFunction | TimingKey);
 	/**
 	 * Default timing mode used for ease-out pacing.
 	 *
 	 * Set this to update the default `easeOut()` timing mode.
 	 *
-	 * @default TimingMode.easeOutSine
+	 * @default Timing.easeOutSine
 	 */
-	static get DefaultTimingModeEaseOut(): TimingModeFn;
-	static set DefaultTimingModeEaseOut(value: TimingModeFn);
+	static get DefaultTimingEaseOut(): TimingFunction;
+	static set DefaultTimingEaseOut(v: TimingFunction | TimingKey);
 	/**
 	 * Default timing mode used for ease-in, ease-out pacing.
 	 *
 	 * Set this to update the default `easeInOut()` timing mode.
 	 *
-	 * @default TimingMode.easeInOutSine
+	 * @default Timing.easeInOutSine
 	 */
-	static get DefaultTimingModeEaseInOut(): TimingModeFn;
-	static set DefaultTimingModeEaseInOut(value: TimingModeFn);
+	static get DefaultTimingEaseInOut(): TimingFunction;
+	static set DefaultTimingEaseInOut(v: TimingFunction | TimingKey);
 	/**
 	 * Tick all actions forward.
 	 *
@@ -516,10 +473,6 @@ declare abstract class _ extends Action {
 	 * This action is reversible.
 	 */
 	static animate(options: AnimateOptions): Action;
-	/**  @deprecated Use `Action.animate( AnimateOptions }` syntax instead. */
-	static animate(textures: Texture[], timePerFrame?: TimeInterval, resize?: boolean, restore?: boolean): Action;
-	/**  @deprecated Use `Action.animate( AnimateOptions }` syntax instead. */
-	static animate(sheet: Spritesheet, timePerFrame?: TimeInterval, resize?: boolean, restore?: boolean, sortKeys?: boolean): Action;
 	/**
 	 * Creates an action that hides a node.
 	 *
@@ -574,8 +527,6 @@ declare abstract class _ extends Action {
 	 * This action is not reversible; the reverse action executes the same block function.
 	 */
 	static run(blockFn: (target: TargetNode) => void): Action;
-	/** @deprecated Use `Action.custom(duration, stepFn)` instead. */
-	static customAction(duration: number, stepFn: (target: TargetNode, t: number, dt: number) => void): Action;
 	/**
 	 * Creates an action that executes a stepping function over its duration.
 	 *
@@ -586,67 +537,77 @@ declare abstract class _ extends Action {
 	 * This action is not reversible; the reverse action executes the same stepping function.
 	 */
 	static custom(duration: number, stepFn: (target: TargetNode, t: number, dt: number) => void): Action;
-	private constructor();
 }
+export declare const ActionSettings: {
+	animateTimePerFrame: number;
+	timingEaseIn: (x: number) => number;
+	timingEaseOut: (x: number) => number;
+	timingEaseInOut: (x: number) => number;
+};
 /**
- * Timing mode functions
+ * Timing functions.
  *
  * @see https://easings.net/
  * @see https://raw.githubusercontent.com/ai/easings.net/master/src/easings/easingsFunctions.ts
  */
-export declare const TimingMode: {
-	linear: (x: number) => number;
-	easeInQuad: (x: number) => number;
-	easeOutQuad: (x: number) => number;
-	easeInOutQuad: (x: number) => number;
-	easeInCubic: (x: number) => number;
-	easeOutCubic: (x: number) => number;
-	easeInOutCubic: (x: number) => number;
-	easeInQuart: (x: number) => number;
-	easeOutQuart: (x: number) => number;
-	easeInOutQuart: (x: number) => number;
-	easeInQuint: (x: number) => number;
-	easeOutQuint: (x: number) => number;
-	easeInOutQuint: (x: number) => number;
-	easeInSine: (x: number) => number;
-	easeOutSine: (x: number) => number;
-	easeInOutSine: (x: number) => number;
-	easeInExpo: (x: number) => number;
-	easeOutExpo: (x: number) => number;
-	easeInOutExpo: (x: number) => number;
-	easeInCirc: (x: number) => number;
-	easeOutCirc: (x: number) => number;
-	easeInOutCirc: (x: number) => number;
-	easeInBack: (x: number) => number;
-	easeOutBack: (x: number) => number;
-	easeInOutBack: (x: number) => number;
-	easeInElastic: (x: number) => number;
-	easeOutElastic: (x: number) => number;
-	easeInOutElastic: (x: number) => number;
-	easeInBounce: (x: number) => number;
-	easeOutBounce: (x: number) => number;
-	easeInOutBounce: (x: number) => number;
+export declare const Timing: {
+	readonly linear: (x: number) => number;
+	readonly easeInQuad: (x: number) => number;
+	readonly easeOutQuad: (x: number) => number;
+	readonly easeInOutQuad: (x: number) => number;
+	readonly easeInCubic: (x: number) => number;
+	readonly easeOutCubic: (x: number) => number;
+	readonly easeInOutCubic: (x: number) => number;
+	readonly easeInQuart: (x: number) => number;
+	readonly easeOutQuart: (x: number) => number;
+	readonly easeInOutQuart: (x: number) => number;
+	readonly easeInQuint: (x: number) => number;
+	readonly easeOutQuint: (x: number) => number;
+	readonly easeInOutQuint: (x: number) => number;
+	readonly easeInSine: (x: number) => number;
+	readonly easeOutSine: (x: number) => number;
+	readonly easeInOutSine: (x: number) => number;
+	readonly easeInExpo: (x: number) => number;
+	readonly easeOutExpo: (x: number) => number;
+	readonly easeInOutExpo: (x: number) => number;
+	readonly easeInCirc: (x: number) => number;
+	readonly easeOutCirc: (x: number) => number;
+	readonly easeInOutCirc: (x: number) => number;
+	readonly easeInBack: (x: number) => number;
+	readonly easeOutBack: (x: number) => number;
+	readonly easeInOutBack: (x: number) => number;
+	readonly easeInElastic: (x: number) => number;
+	readonly easeOutElastic: (x: number) => number;
+	readonly easeInOutElastic: (x: number) => number;
+	readonly easeInBounce: (x: number) => number;
+	readonly easeOutBounce: (x: number) => number;
+	readonly easeInOutBounce: (x: number) => number;
 };
 /**
  * Register the mixin for PIXI.Container.
  *
- * @param container A reference to `PIXI.Container`.
+ * @param containerType A reference to `PIXI.Container`.
  */
-export declare function registerPixiJSActionsMixin(container: any): void;
-export interface IActionTicker {
-	readonly scaledDuration: number;
-	readonly speed: number;
-	readonly timingMode: TimingModeFn;
-	readonly timeDistance: number;
-	autoComplete: boolean;
-	autoDestroy: boolean;
-	isDone: boolean;
-	data: any;
-	tick(deltaTime: number): number;
-	reset(): void;
-	destroy(): void;
+export declare function registerPixiJSActionsMixin(containerType: any): void;
+export interface AnimateSpritesheetOptions extends BaseAnimateOptions {
+	/**
+	 * A spritesheet containing textures to animate.
+	 */
+	spritesheet: Spritesheet;
+	/**
+	 * Whether spritesheet frames are sorted on key.
+	 *
+	 * @default true
+	 */
+	sortKeys?: boolean;
 }
-export type AnimateOptions = (AnimateTextureOptions | AnimateSpritesheetOptions) & {
+export interface AnimateTextureOptions extends BaseAnimateOptions {
+	/**
+	 * Array of textures to animate.
+	 */
+	frames: Texture[];
+}
+export interface BaseAnimateOptions {
 	/**
 	 * Time to display each texture in seconds.
 	 *
@@ -666,37 +627,20 @@ export type AnimateOptions = (AnimateTextureOptions | AnimateSpritesheetOptions)
 	 * @default false
 	 */
 	restore?: boolean;
-};
-export type AnimateSpritesheetOptions = {
-	/**
-	 * A spritesheet containing textures to animate.
-	 */
-	spritesheet: Spritesheet;
-	/**
-	 * Whether spritesheet frames are sorted on key.
-	 *
-	 * @default true
-	 */
-	sortKeys?: boolean;
-};
-export type AnimateTextureOptions = {
-	/**
-	 * Array of textures to animate.
-	 */
-	frames: Texture[];
-};
+}
+export type AnimateOptions = AnimateTextureOptions | AnimateSpritesheetOptions;
 export type DestroyOptions = Parameters<TargetNode["destroy"]>[0];
 /**
- * Any timing mode function.
- *
- * @example x => x // Linear, constant-time.
- *
- * @see {TimingMode}
+ * Timing function.
  */
-export type TimingModeFn = (x: number) => number;
+export type TimingFunction = (x: number) => number;
+/**
+ * Timing mode key.
+ */
+export type TimingKey = keyof typeof Timing;
 
 export {
-	_ as Action,
+	PixiJSActions as Action,
 };
 
 export {};

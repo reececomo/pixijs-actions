@@ -13,14 +13,14 @@ export class FadeAlphaToAction extends Action {
   }
 
   public reversed(): Action {
-    return new FadeAlphaToAction(this.a1, this.duration)._mutate(this);
+    return new FadeAlphaToAction(this.a1, this.duration)._apply(this);
   }
 
-  protected onSetupTicker({ alpha }: TargetNode): any {
+  public _onTickerInit({ alpha }: TargetNode): any {
     return { a0: alpha };
   }
 
-  protected onTick(
+  public _onTickerTick(
     target: TargetNode,
     t: number,
     dt: number,

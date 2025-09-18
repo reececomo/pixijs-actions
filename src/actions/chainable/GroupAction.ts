@@ -2,61 +2,59 @@ import { Action } from '../../lib/Action';
 import { IActionTicker } from '../../lib/IActionTicker';
 import { ActionTicker } from '../../lib/ActionTicker';
 
+interface GroupTickerData {
+  childTickers: IActionTicker[];
+}
+
 export class GroupAction extends Action {
   protected readonly actions: Action[];
 
   public constructor(actions: Action[]) {
-    const duration = Math.max(...actions.map(action => action.scaledDuration));
-    super(duration);
+    const duration = Math.max(...actions.map((action) => action.scaledDuration));
+
+    super(duration, true);
     this.actions = actions;
   }
 
   public reversed(): Action {
-    const reversedActions = this.actions.map(action => action.reversed());
-    return new GroupAction(reversedActions)._mutate(this);
+    const reversedActions = this.actions.map((action) => action.reversed());
+    return new GroupAction(reversedActions)._apply(this);
   }
 
-  protected onSetupTicker(target: TargetNode, ticker: IActionTicker): any {
-    ticker.autoComplete = false;
+  public _onTickerInit(target: TargetNode): GroupTickerData {
+    const actions = this.actions;
+    const childTickers = actions.map((action) => new ActionTicker(target, action));
 
-    return {
-      childTickers: this.actions.map(action => {
-        const ticker = new ActionTicker(undefined, target, action);
-        ticker.autoDestroy = false;
-        return ticker;
-      })
-    };
+    return { childTickers };
   }
 
-  protected onTick(
+  public _onTickerTick(
     target: TargetNode,
     t: number,
     dt: number,
-    ticker: IActionTicker,
+    ticker: IActionTicker<GroupTickerData>,
     deltaTime: number,
   ): void {
-    const relativeDeltaTime = ticker.scaledDuration === Infinity
-      ? deltaTime * this.speed
-      : dt * ticker.scaledDuration;
-
     let allDone = true;
-    for (const childTicker of ticker.data.childTickers as IActionTicker[]) {
+
+    for (const childTicker of ticker.data.childTickers) {
       if (childTicker.isDone) continue;
 
-      allDone = false;
-      childTicker.tick(relativeDeltaTime);
+      childTicker.tick(deltaTime);
+
+      if (!childTicker.isDone) allDone = false;
     }
 
     if (allDone) ticker.isDone = true;
   }
 
-  protected onTickerDidReset(ticker: IActionTicker): any {
+  public _onTickerDidReset(ticker: IActionTicker<GroupTickerData>): GroupTickerData {
     if (!ticker.data) return;
-    ticker.data.childTickers.forEach((ticker: IActionTicker) => ticker.reset());
+    ticker.data.childTickers.forEach((ticker) => ticker.reset());
   }
 
-  protected onTickerRemoved(target: TargetNode, ticker: IActionTicker): any {
+  public _onTickerRemoved(target: TargetNode, ticker: IActionTicker<GroupTickerData>): void {
     if (!ticker.data) return;
-    ticker.data.childTickers.forEach((ticker: IActionTicker) => ticker.destroy());
+    ticker.data.childTickers.forEach((ticker) => ticker.destroy());
   }
 }
