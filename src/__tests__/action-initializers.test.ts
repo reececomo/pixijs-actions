@@ -170,7 +170,7 @@ describe('Action Chaining', () => {
       // Ignore that this tests the underlying implementation.
       // Just a lazy hack to make sure it's working nicely.
       expect((action as any).actions.length).toBe(2);
-      expect((action as any)._squashedActions().length).toBe(11);
+      expect((action as any)._flatten().length).toBe(11);
     });
 
     it('is reversible', () => {

@@ -1,4 +1,4 @@
-import { Action as _ } from './lib/Action';
+import { Action } from './lib/Action';
 import { ActionTicker } from './lib/ActionTicker';
 import {
   AnimateAction,
@@ -34,7 +34,6 @@ const DEG_TO_RAD = Math.PI / 180;
 
 type DestroyOptions = Parameters<TargetNode["destroy"]>[0];
 
-/* eslint-disable @typescript-eslint/no-extraneous-class */
 /**
  * Create, configure, and run actions in PixiJS.
  *
@@ -43,7 +42,7 @@ type DestroyOptions = Parameters<TargetNode["destroy"]>[0];
  * ### Setup:
  * Bind `Action.tick(deltaTimeMs)` to your renderer/shared ticker to activate actions.
  */
-export abstract class PixiJSActions {
+export abstract class PixiJSActions extends Action {
 
   //
   // ----------------- Global Settings: -----------------
@@ -164,7 +163,7 @@ export abstract class PixiJSActions {
    * This action is reversible; it creates a new group action that contains the reverse of each
    * action specified in the group.
    */
-  public static group(actions: _[]): _ {
+  public static group(actions: Action[]): Action {
     return new GroupAction(actions);
   }
 
@@ -180,7 +179,7 @@ export abstract class PixiJSActions {
    * actions. Each action in the reversed sequence is itself reversed. For example, if an action
    * sequence is {1,2,3}, the reversed sequence would be {3R,2R,1R}.
    */
-  public static sequence(actions: _[]): _ {
+  public static sequence(actions: Action[]): Action {
     return new SequenceAction(actions);
   }
 
@@ -193,7 +192,7 @@ export abstract class PixiJSActions {
    * This action is reversible; it creates a new action that is the reverse of the specified action
    * and then repeats it the same number of times.
    */
-  public static repeat(action: _, repeats: number): _ {
+  public static repeat(action: Action, repeats: number): Action {
     return new RepeatAction(action, repeats);
   }
 
@@ -205,7 +204,7 @@ export abstract class PixiJSActions {
    * This action is reversible; it creates a new action that is the reverse of the specified action
    * and then repeats it forever.
    */
-  public static repeatForever(action: _): _ {
+  public static repeatForever(action: Action): Action {
     return new RepeatForeverAction(action);
   }
 
@@ -218,7 +217,7 @@ export abstract class PixiJSActions {
    *
    * This action is not reversible; the reverse of this action is the same action.
    */
-  public static waitForDuration(duration: TimeInterval): _ {
+  public static waitForDuration(duration: TimeInterval): Action {
     return new DelayAction(duration);
   }
 
@@ -233,7 +232,7 @@ export abstract class PixiJSActions {
    *
    * This action is not reversible; the reverse of this action is the same action.
    */
-  public static waitForDurationWithRange(average: TimeInterval, rangeSize: TimeInterval): _ {
+  public static waitForDurationWithRange(average: TimeInterval, rangeSize: TimeInterval): Action {
     return new DelayAction(average + (rangeSize * Math.random() - rangeSize * 0.5));
   }
 
@@ -246,9 +245,9 @@ export abstract class PixiJSActions {
    *
    * This action is reversible.
    */
-  public static moveBy(delta: VectorLike, duration: TimeInterval): _;
-  public static moveBy(dx: number, dy: number, duration: TimeInterval): _;
-  public static moveBy(a: number | VectorLike, b: number | TimeInterval, c?: TimeInterval): _ {
+  public static moveBy(delta: VectorLike, duration: TimeInterval): Action;
+  public static moveBy(dx: number, dy: number, duration: TimeInterval): Action;
+  public static moveBy(a: number | VectorLike, b: number | TimeInterval, c?: TimeInterval): Action {
     return typeof a === 'number'
       ? new MoveByAction(a, b, c)
       : new MoveByAction(a.x, a.y, b);
@@ -259,7 +258,7 @@ export abstract class PixiJSActions {
    *
    * This action is reversible.
    */
-  public static moveByX(x: number, duration: TimeInterval): _ {
+  public static moveByX(x: number, duration: TimeInterval): Action {
     return this.moveBy(x, 0, duration);
   }
 
@@ -268,7 +267,7 @@ export abstract class PixiJSActions {
    *
    * This action is reversible.
    */
-  public static moveByY(y: number, duration: TimeInterval): _ {
+  public static moveByY(y: number, duration: TimeInterval): Action {
     return this.moveBy(0, y, duration);
   }
 
@@ -277,9 +276,9 @@ export abstract class PixiJSActions {
    *
    * This action is not reversible; the reverse of this action is the same action.
    */
-  public static moveTo(position: VectorLike, duration: TimeInterval): _;
-  public static moveTo(x: number, y: number, duration: TimeInterval): _;
-  public static moveTo(a: number | VectorLike, b: number | TimeInterval, c?: TimeInterval): _ {
+  public static moveTo(position: VectorLike, duration: TimeInterval): Action;
+  public static moveTo(x: number, y: number, duration: TimeInterval): Action;
+  public static moveTo(a: number | VectorLike, b: number | TimeInterval, c?: TimeInterval): Action {
     return typeof a === 'number'
       ? new MoveToAction(a, b, c)
       : new MoveToAction(a.x, a.y, b);
@@ -290,7 +289,7 @@ export abstract class PixiJSActions {
    *
    * This action is not reversible; the reverse of this action is the same action.
    */
-  public static moveToX(x: number, duration: TimeInterval): _ {
+  public static moveToX(x: number, duration: TimeInterval): Action {
     return new MoveToAction(x, null, duration);
   }
 
@@ -299,7 +298,7 @@ export abstract class PixiJSActions {
    *
    * This action is not reversible; the reverse of this action is the same action.
    */
-  public static moveToY(y: number, duration: TimeInterval): _ {
+  public static moveToY(y: number, duration: TimeInterval): Action {
     return new MoveToAction(null, y, duration);
   }
 
@@ -325,7 +324,7 @@ export abstract class PixiJSActions {
     asOffset: boolean = true,
     orientToPath: boolean = true,
     fixedSpeed: boolean = true,
-  ): _ {
+  ): Action {
     const _path = FollowPathAction.getPath(path);
     return new FollowPathAction(_path, duration, asOffset, orientToPath, fixedSpeed);
   }
@@ -347,7 +346,7 @@ export abstract class PixiJSActions {
     speed: number,
     asOffset: boolean = true,
     orientToPath: boolean = true,
-  ): _ {
+  ): Action {
     const _path = FollowPathAction.getPath(path);
     const _length = FollowPathAction.getLength(_path);
     return new FollowPathAction(_path, _length[0] / speed, asOffset, orientToPath, true);
@@ -362,7 +361,7 @@ export abstract class PixiJSActions {
    *
    * This action is reversible.
    */
-  public static rotateBy(rotation: number, duration: TimeInterval): _ {
+  public static rotateBy(rotation: number, duration: TimeInterval): Action {
     return new RotateByAction(rotation, duration);
   }
 
@@ -371,7 +370,7 @@ export abstract class PixiJSActions {
    *
    * This action is reversible.
    */
-  public static rotateByDegrees(degrees: number, duration: TimeInterval): _ {
+  public static rotateByDegrees(degrees: number, duration: TimeInterval): Action {
     return this.rotateBy(degrees * DEG_TO_RAD, duration);
   }
 
@@ -380,7 +379,7 @@ export abstract class PixiJSActions {
    *
    * This action is not reversible; the reverse of this action is the same action.
    */
-  public static rotateTo(rotation: number, duration: TimeInterval): _ {
+  public static rotateTo(rotation: number, duration: TimeInterval): Action {
     return new RotateToAction(rotation, duration);
   }
 
@@ -389,7 +388,7 @@ export abstract class PixiJSActions {
    *
    * This action is not reversible; the reverse of this action is the same action.
    */
-  public static rotateToDegrees(degrees: number, duration: TimeInterval): _ {
+  public static rotateToDegrees(degrees: number, duration: TimeInterval): Action {
     return this.rotateTo(degrees * DEG_TO_RAD, duration);
   }
 
@@ -402,7 +401,7 @@ export abstract class PixiJSActions {
    *
    * This action is reversible.
    */
-  public static speedBy(speed: number, duration: TimeInterval): _ {
+  public static speedBy(speed: number, duration: TimeInterval): Action {
     return new SpeedByAction(speed, duration);
   }
 
@@ -411,7 +410,7 @@ export abstract class PixiJSActions {
    *
    * This action is not reversible; the reverse of this action is the same action.
    */
-  public static speedTo(speed: number, duration: TimeInterval): _ {
+  public static speedTo(speed: number, duration: TimeInterval): Action {
     return new SpeedToAction(speed, duration);
   }
 
@@ -424,10 +423,10 @@ export abstract class PixiJSActions {
    *
    * This action is reversible.
    */
-  public static scaleBy(scale: number, duration: TimeInterval): _;
-  public static scaleBy(size: VectorLike, duration: TimeInterval): _;
-  public static scaleBy(dx: number, dy: number, duration: TimeInterval): _;
-  public static scaleBy(a: number | VectorLike, b: number | TimeInterval, c?: TimeInterval): _ {
+  public static scaleBy(scale: number, duration: TimeInterval): Action;
+  public static scaleBy(size: VectorLike, duration: TimeInterval): Action;
+  public static scaleBy(dx: number, dy: number, duration: TimeInterval): Action;
+  public static scaleBy(a: number | VectorLike, b: number | TimeInterval, c?: TimeInterval): Action {
     return typeof a === 'number'
       ? c == null
         ? new ScaleByAction(a, a, b)
@@ -440,7 +439,7 @@ export abstract class PixiJSActions {
    *
    * This action is reversible.
    */
-  public static scaleByX(x: number, duration: TimeInterval): _ {
+  public static scaleByX(x: number, duration: TimeInterval): Action {
     return this.scaleBy(x, 1, duration);
   }
 
@@ -449,7 +448,7 @@ export abstract class PixiJSActions {
    *
    * This action is reversible.
    */
-  public static scaleByY(y: number, duration: TimeInterval): _ {
+  public static scaleByY(y: number, duration: TimeInterval): Action {
     return this.scaleBy(1, y, duration);
   }
 
@@ -458,10 +457,10 @@ export abstract class PixiJSActions {
    *
    * This action is not reversible; the reverse of this action is the same action.
    */
-  public static scaleTo(scale: number, duration: TimeInterval): _;
-  public static scaleTo(size: SizeLike, duration: TimeInterval): _;
-  public static scaleTo(x: number, y: number, duration: TimeInterval): _;
-  public static scaleTo(a: number | SizeLike, b: number | TimeInterval, c?: TimeInterval): _ {
+  public static scaleTo(scale: number, duration: TimeInterval): Action;
+  public static scaleTo(size: SizeLike, duration: TimeInterval): Action;
+  public static scaleTo(x: number, y: number, duration: TimeInterval): Action;
+  public static scaleTo(a: number | SizeLike, b: number | TimeInterval, c?: TimeInterval): Action {
     return typeof a === 'number'
       ? c == null
         ? new ScaleToAction(a, a, b)
@@ -474,7 +473,7 @@ export abstract class PixiJSActions {
    *
    * This action is not reversible; the reverse of this action is the same action.
    */
-  public static scaleToX(x: number, duration: TimeInterval): _ {
+  public static scaleToX(x: number, duration: TimeInterval): Action {
     return new ScaleToAction(x, null, duration);
   }
 
@@ -483,7 +482,7 @@ export abstract class PixiJSActions {
    *
    * This action is not reversible; the reverse of this action is the same action.
    */
-  public static scaleToY(y: number, duration: TimeInterval): _ {
+  public static scaleToY(y: number, duration: TimeInterval): Action {
     return new ScaleToAction(null, y, duration);
   }
 
@@ -496,7 +495,7 @@ export abstract class PixiJSActions {
    *
    * This action is reversible. The reverse is equivalent to fadeOut(duration).
    */
-  public static fadeIn(duration: TimeInterval): _ {
+  public static fadeIn(duration: TimeInterval): Action {
     return new FadeInAction(duration);
   }
 
@@ -505,7 +504,7 @@ export abstract class PixiJSActions {
    *
    * This action is reversible. The reverse is equivalent to fadeIn(duration).
    */
-  public static fadeOut(duration: TimeInterval): _ {
+  public static fadeOut(duration: TimeInterval): Action {
     return new FadeOutAction(duration);
   }
 
@@ -514,7 +513,7 @@ export abstract class PixiJSActions {
    *
    * This action is not reversible; the reverse of this action is the same action.
    */
-  public static fadeAlphaTo(alpha: number, duration: TimeInterval): _ {
+  public static fadeAlphaTo(alpha: number, duration: TimeInterval): Action {
     return new FadeAlphaToAction(alpha, duration);
   }
 
@@ -523,7 +522,7 @@ export abstract class PixiJSActions {
    *
    * This action is reversible.
    */
-  public static fadeAlphaBy(alpha: number, duration: TimeInterval): _ {
+  public static fadeAlphaBy(alpha: number, duration: TimeInterval): Action {
     return new FadeByAction(alpha, duration);
   }
 
@@ -538,7 +537,7 @@ export abstract class PixiJSActions {
    *
    * This action is reversible.
    */
-  public static animate(options: AnimateOptions): _ {
+  public static animate(options: AnimateOptions): Action {
     return new AnimateAction(options);
   }
 
@@ -554,7 +553,7 @@ export abstract class PixiJSActions {
    *
    * This action is reversible. The reversed action is equivalent to show().
    */
-  public static hide(): _ {
+  public static hide(): Action {
     return new SetVisibleAction(false);
   }
 
@@ -566,7 +565,7 @@ export abstract class PixiJSActions {
    *
    * This action is reversible. The reversed action is equivalent to hide().
    */
-  public static unhide(): _ {
+  public static unhide(): Action {
     return new SetVisibleAction(true);
   }
 
@@ -578,7 +577,7 @@ export abstract class PixiJSActions {
    *
    * This action is not reversible; the reverse of this action is the same action.
    */
-  public static destroy(options?: DestroyOptions): _ {
+  public static destroy(options?: DestroyOptions): Action {
     return this.run(target => target.destroy(options));
   }
 
@@ -589,7 +588,7 @@ export abstract class PixiJSActions {
    *
    * This action is not reversible; the reverse of this action is the same action.
    */
-  public static removeFromParent(): _ {
+  public static removeFromParent(): Action {
     return this.run(target => target.parent?.removeChild(target));
   }
 
@@ -607,7 +606,7 @@ export abstract class PixiJSActions {
    * This action is reversible; it tells the child to execute the reverse of the action specified by
    * the action parameter.
    */
-  public static runOnChild(childLabel: string, action: _): _ {
+  public static runOnChild(childLabel: string, action: Action): Action {
     return new RunOnChildAction(action, childLabel);
   }
 
@@ -622,7 +621,7 @@ export abstract class PixiJSActions {
    *
    * This action is not reversible; the reverse action executes the same block function.
    */
-  public static run(blockFn: (target: TargetNode) => void): _ {
+  public static run(blockFn: (target: TargetNode) => void): Action {
     return new RunBlockAction(blockFn);
   }
 
@@ -638,7 +637,7 @@ export abstract class PixiJSActions {
   public static custom(
     duration: number,
     stepFn: (target: TargetNode, t: number, dt: number) => void
-  ): _ {
+  ): Action {
     return new CustomAction(duration, stepFn);
   }
 }

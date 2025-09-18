@@ -26,7 +26,7 @@ export class SequenceAction extends Action {
     target: TargetNode,
     ticker: IActionTicker<any>,
   ): any {
-    const actions = this._squashedActions();
+    const actions = this._flatten();
     const childTickers = actions.map((action) => new ActionTicker(target, action));
 
     return { childTickers };
@@ -71,7 +71,7 @@ export class SequenceAction extends Action {
 
   // ----- Implementation: -----
 
-  protected _squashedActions(): Action[] {
+  protected _flatten(): Action[] {
     const actions: Action[] = [];
 
     for (const action of this.actions) {
@@ -80,7 +80,7 @@ export class SequenceAction extends Action {
           && action.speed === 1
           && action.timing === Timing.linear
       ) {
-        actions.push(...action._squashedActions());
+        actions.push(...action._flatten());
       }
       else {
         actions.push(action);

@@ -201,7 +201,7 @@ declare abstract class Action {
  * ### Setup:
  * Bind `Action.tick(deltaTimeMs)` to your renderer/shared ticker to activate actions.
  */
-declare abstract class PixiJSActions {
+declare abstract class PixiJSActions extends Action {
 	/**
 	 * Default `timePerFrame` in seconds for `Action.animate(…)`.
 	 *
