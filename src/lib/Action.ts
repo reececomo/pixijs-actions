@@ -63,6 +63,9 @@ export abstract class Action {
     return this;
   }
 
+  /** @deprecated Use `setTiming()` instead. */
+  public setTimingMode = this.setTiming;
+
   /**
    * Set the action's speed scale. Default: `1.0`.
    *

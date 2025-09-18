@@ -103,6 +103,37 @@ export abstract class PixiJSActions {
     ActionSettings.timingEaseInOut = typeof v === 'string' ? Timing[v] : v;
   }
 
+  /**
+   * @deprecated Use `DefaultTimingEaseIn` instead.
+   */
+  public static get DefaultTimingModeEaseIn(): TimingFunction {
+    return this.DefaultTimingEaseIn;
+  }
+  public static set DefaultTimingModeEaseIn(v: TimingFunction | TimingKey) {
+    this.DefaultTimingEaseIn = typeof v === 'string' ? Timing[v] : v;
+  }
+
+  /**
+   * @deprecated Use `DefaultTimingEaseOut` instead.
+   */
+  public static get DefaultTimingModeEaseOut(): TimingFunction {
+    return this.DefaultTimingEaseOut;
+  }
+  public static set DefaultTimingModeEaseOut(v: TimingFunction | TimingKey) {
+    this.DefaultTimingEaseOut = v;
+  }
+
+  /**
+   * @deprecated Use `DefaultTimingEaseInOut` instead.
+   */
+  public static get DefaultTimingModeEaseInOut(): TimingFunction {
+    return this.DefaultTimingEaseInOut;
+  }
+  public static set DefaultTimingModeEaseInOut(v: TimingFunction | TimingKey) {
+    this.DefaultTimingEaseInOut = v;
+  }
+
+
   //
   // ----------------- Global Methods: -----------------
   //

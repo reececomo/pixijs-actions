@@ -136,6 +136,11 @@ declare abstract class Action {
 	 */
 	setTiming(timingMode: TimingFunction): this;
 	setTiming(timingModeKey: TimingKey): this;
+	/** @deprecated Use `setTiming()` instead. */
+	setTimingMode: {
+		(timingMode: TimingFunction): this;
+		(timingModeKey: TimingKey): this;
+	};
 	/**
 	 * Set the action's speed scale. Default: `1.0`.
 	 *
@@ -231,6 +236,21 @@ declare abstract class PixiJSActions {
 	 */
 	static get DefaultTimingEaseInOut(): TimingFunction;
 	static set DefaultTimingEaseInOut(v: TimingFunction | TimingKey);
+	/**
+	 * @deprecated Use `DefaultTimingEaseIn` instead.
+	 */
+	static get DefaultTimingModeEaseIn(): TimingFunction;
+	static set DefaultTimingModeEaseIn(v: TimingFunction | TimingKey);
+	/**
+	 * @deprecated Use `DefaultTimingEaseOut` instead.
+	 */
+	static get DefaultTimingModeEaseOut(): TimingFunction;
+	static set DefaultTimingModeEaseOut(v: TimingFunction | TimingKey);
+	/**
+	 * @deprecated Use `DefaultTimingEaseInOut` instead.
+	 */
+	static get DefaultTimingModeEaseInOut(): TimingFunction;
+	static set DefaultTimingModeEaseInOut(v: TimingFunction | TimingKey);
 	/**
 	 * Tick all actions forward.
 	 *
@@ -583,6 +603,40 @@ export declare const Timing: {
 	readonly easeOutBounce: (x: number) => number;
 	readonly easeInOutBounce: (x: number) => number;
 };
+/** @deprecated Use `Timing` instead. */
+export declare const TimingMode: {
+	readonly linear: (x: number) => number;
+	readonly easeInQuad: (x: number) => number;
+	readonly easeOutQuad: (x: number) => number;
+	readonly easeInOutQuad: (x: number) => number;
+	readonly easeInCubic: (x: number) => number;
+	readonly easeOutCubic: (x: number) => number;
+	readonly easeInOutCubic: (x: number) => number;
+	readonly easeInQuart: (x: number) => number;
+	readonly easeOutQuart: (x: number) => number;
+	readonly easeInOutQuart: (x: number) => number;
+	readonly easeInQuint: (x: number) => number;
+	readonly easeOutQuint: (x: number) => number;
+	readonly easeInOutQuint: (x: number) => number;
+	readonly easeInSine: (x: number) => number;
+	readonly easeOutSine: (x: number) => number;
+	readonly easeInOutSine: (x: number) => number;
+	readonly easeInExpo: (x: number) => number;
+	readonly easeOutExpo: (x: number) => number;
+	readonly easeInOutExpo: (x: number) => number;
+	readonly easeInCirc: (x: number) => number;
+	readonly easeOutCirc: (x: number) => number;
+	readonly easeInOutCirc: (x: number) => number;
+	readonly easeInBack: (x: number) => number;
+	readonly easeOutBack: (x: number) => number;
+	readonly easeInOutBack: (x: number) => number;
+	readonly easeInElastic: (x: number) => number;
+	readonly easeOutElastic: (x: number) => number;
+	readonly easeInOutElastic: (x: number) => number;
+	readonly easeInBounce: (x: number) => number;
+	readonly easeOutBounce: (x: number) => number;
+	readonly easeInOutBounce: (x: number) => number;
+};
 /**
  * Register the mixin for PIXI.Container.
  *
@@ -638,6 +692,8 @@ export type TimingFunction = (x: number) => number;
  * Timing mode key.
  */
 export type TimingKey = keyof typeof Timing;
+/** @deprecated Use `TimingFunction` instead. */
+export type TimingModeFn = TimingFunction;
 
 export {
 	PixiJSActions as Action,
