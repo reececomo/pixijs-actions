@@ -1,61 +1,8 @@
 import { Container, Sprite } from 'pixi.js';
-import { Action, TimingMode, registerPixiJSActionsMixin } from '../index';
-import '../globals.d.ts';
+import { Action } from '../index';
+import { simulateTime } from "./testHelpers";
 
-function simulateTime(seconds: number, steps: number = 100): Error[] {
-  const errors: Error[] = [];
-  const tickMs = seconds / steps * 1_000;
-
-  // Simulate in multiple increments to mimic real world conditions.
-  for (let i = 0; i < steps; i++) {
-    Action.tick(tickMs, (error) => errors.push(error));
-  }
-
-  return errors;
-}
-
-beforeAll(() => registerPixiJSActionsMixin(Container));
-
-describe('DefaultTimingMode static properties', () => {
-  it('should reflect the DefaultTimingModeEaseInOut on the root Action type', () => {
-    expect(Action.DefaultTimingModeEaseInOut).toBe(TimingMode.easeInOutSine);
-    expect(Action.fadeIn(0.3).easeInOut().timingMode).toBe(TimingMode.easeInOutSine);
-    expect(Action.fadeIn(0.3).easeInOut().timingMode).not.toBe(TimingMode.easeInCubic);
-
-    // Update to any other function.
-    Action.DefaultTimingModeEaseInOut = TimingMode.easeInCubic;
-
-    expect(Action.DefaultTimingModeEaseInOut).toBe(TimingMode.easeInCubic);
-    expect(Action.fadeIn(0.3).easeInOut().timingMode).toBe(TimingMode.easeInCubic);
-    expect(Action.fadeIn(0.3).easeInOut().timingMode).not.toBe(TimingMode.easeInOutSine);
-  });
-
-  it('should reflect the DefaultTimingModeEaseIn on the root Action type', () => {
-    expect(Action.DefaultTimingModeEaseIn).toBe(TimingMode.easeInSine);
-    expect(Action.fadeIn(0.3).easeIn().timingMode).toBe(TimingMode.easeInSine);
-    expect(Action.fadeIn(0.3).easeIn().timingMode).not.toBe(TimingMode.easeInCubic);
-
-    // Update to any other function.
-    Action.DefaultTimingModeEaseIn = TimingMode.easeInCubic;
-
-    expect(Action.DefaultTimingModeEaseIn).toBe(TimingMode.easeInCubic);
-    expect(Action.fadeIn(0.3).easeIn().timingMode).toBe(TimingMode.easeInCubic);
-    expect(Action.fadeIn(0.3).easeIn().timingMode).not.toBe(TimingMode.easeInSine);
-  });
-
-  it('should reflect the DefaultTimingModeEaseOut on the root Action type', () => {
-    expect(Action.DefaultTimingModeEaseOut).toBe(TimingMode.easeOutSine);
-    expect(Action.fadeIn(0.3).easeOut().timingMode).toBe(TimingMode.easeOutSine);
-    expect(Action.fadeIn(0.3).easeOut().timingMode).not.toBe(TimingMode.easeInCubic);
-
-    // Update to any other function.
-    Action.DefaultTimingModeEaseOut = TimingMode.easeInCubic;
-
-    expect(Action.DefaultTimingModeEaseOut).toBe(TimingMode.easeInCubic);
-    expect(Action.fadeIn(0.3).easeOut().timingMode).toBe(TimingMode.easeInCubic);
-    expect(Action.fadeIn(0.3).easeOut().timingMode).not.toBe(TimingMode.easeInSine);
-  });
-});
+import "../globals.d.ts";
 
 describe('keyed actions', () => {
   it('allows actions to be checked/retrieved', () => {
@@ -68,13 +15,13 @@ describe('keyed actions', () => {
     node.runWithKey(action, 'myKey');
 
     simulateTime(5.0);
-    expect(node.position.x).toBeCloseTo(5.0);
+    expect(node.x).toBeCloseTo(5.0);
 
     expect(node.action('myKey')).toBe(action);
     expect(node.hasActions()).toBe(true);
 
-    simulateTime(5.0);
-    expect(node.position.x).toBeCloseTo(0.0);
+    simulateTime(5.0 + 1e-10);
+    expect(node.x).toBeCloseTo(0.0);
 
     expect(node.action('myKey')).toBeUndefined();
     expect(node.hasActions()).toBe(false);
@@ -90,7 +37,7 @@ describe('keyed actions', () => {
     node.runWithKey(action, 'myKey');
 
     simulateTime(5.0);
-    expect(node.position.x).toBeCloseTo(5.0);
+    expect(node.x).toBeCloseTo(5.0);
 
     expect(node.action('myKey')).toBe(action);
     expect(node.hasActions()).toBe(true);
@@ -99,13 +46,13 @@ describe('keyed actions', () => {
     node.runWithKey('myKey', action);
 
     simulateTime(5.0);
-    expect(node.position.x).toBeCloseTo(10.0);
+    expect(node.x).toBeCloseTo(10.0);
 
     expect(node.action('myKey')).toBe(action);
     expect(node.hasActions()).toBe(true);
 
-    simulateTime(5.0);
-    expect(node.position.x).toBeCloseTo(5.0);
+    simulateTime(5.0 + 1e-10);
+    expect(node.x).toBeCloseTo(5.0);
 
     expect(node.action('myKey')).toBeUndefined();
     expect(node.hasActions()).toBe(false);
@@ -124,7 +71,7 @@ describe('keyed actions', () => {
     node.run(action);
 
     simulateTime(5.0);
-    expect(node.position.x).toBeCloseTo(15.0); // 3/4 should run.
+    expect(node.x).toBeCloseTo(15.0); // 3/4 should run.
 
     node.removeAllActions();
   });
@@ -134,11 +81,9 @@ describe('Action Chaining', () => {
   describe('sequence()', () => {
     it('complete all steps in order', () => {
       const action = Action.sequence([
-        Action.moveByX(5, 5.0),
-        Action.moveByX(5, 0.0),
+        Action.moveByX(10, 5.0),
         Action.waitForDuration(1.0),
         Action.moveByX(-10, 2.0),
-        Action.moveByX(-5, 0.0),
       ]);
 
       expect(action.duration).toBeCloseTo(8.0);
@@ -149,20 +94,20 @@ describe('Action Chaining', () => {
       expect(node.hasActions()).toBe(true);
 
       simulateTime(5.0);
-      expect(node.position.x).toBeCloseTo(10.0);
+      expect(node.x).toBeCloseTo(10.0);
 
       simulateTime(1.0);
-      expect(node.position.x).toBeCloseTo(10.0);
+      expect(node.x).toBeCloseTo(10.0);
 
       simulateTime(1.0);
-      expect(node.position.x).toBeCloseTo(5.0);
+      expect(node.x).toBeCloseTo(5.0);
 
       simulateTime(1.0);
-      expect(node.position.x).toBeCloseTo(-5.0);
+      expect(node.x).toBeCloseTo(0.0);
 
       // Sanity check: We've stopped.
       simulateTime(10.0);
-      expect(node.position.x).toBeCloseTo(-5.0);
+      expect(node.x).toBeCloseTo(0.0);
       expect(node.hasActions()).toBe(false);
     });
 
@@ -214,8 +159,8 @@ describe('Action Chaining', () => {
       node.run(action);
 
       simulateTime(11.0);
-      expect(node.position.x).toBeCloseTo(10);
-      expect(node.position.y).toBeCloseTo(10);
+      expect(node.x).toBeCloseTo(10);
+      expect(node.y).toBeCloseTo(10);
       expect(node.rotation).toBeCloseTo(Math.PI * 2);
       expect(node.alpha).toBeCloseTo(0.75);
 
@@ -225,7 +170,7 @@ describe('Action Chaining', () => {
       // Ignore that this tests the underlying implementation.
       // Just a lazy hack to make sure it's working nicely.
       expect((action as any).actions.length).toBe(2);
-      expect((action as any)._squashedActions().length).toBe(11);
+      expect((action as any)._flatten().length).toBe(11);
     });
 
     it('is reversible', () => {
@@ -259,7 +204,7 @@ describe('Action Chaining', () => {
       expect(node.rotation).toBeCloseTo(Math.PI/4);
       expect(node.x).toBeCloseTo(0);
 
-      simulateTime(0.5);
+      simulateTime(0.5 + 1e-10);
       expect(node.visible).toBe(true);
       expect(node.rotation).toBeCloseTo(0);
       expect(node.x).toBeCloseTo(0);
@@ -306,20 +251,21 @@ describe('Action Chaining', () => {
       expect(node.hasActions()).toBe(true);
 
       simulateTime(2.00);
-      expect(node.position.x).toBeCloseTo(-13);
+      expect(node.x).toBeCloseTo(-13);
 
       simulateTime(10.0);
-      expect(node.position.x).toBeCloseTo(-5);
+      expect(node.x).toBeCloseTo(-5);
 
       // Sanity check: We've stopped.
       simulateTime(10.0);
-      expect(node.position.x).toBeCloseTo(-5);
+      expect(node.x).toBeCloseTo(-5);
       expect(node.hasActions()).toBe(false);
     });
 
     it('is compatible with repeatForever()', () => {
-      const myCustomAction = Action.custom(5.0, (target, t) => {
-        target.position.x = 5.0 * t;
+      const customActionDuration = 5.0;
+      const myCustomAction = Action.custom(customActionDuration, (target, _, dt) => {
+        target.x += 5.0 * dt;
       });
 
       const myNode = new Container();
@@ -327,8 +273,8 @@ describe('Action Chaining', () => {
 
       simulateTime(7.5);
 
+      expect(myNode.x).toBeCloseTo(7.5);
       expect(myNode.hasActions()).toBe(true);
-      expect(myNode.x).toBeCloseTo(2.5);
 
       myNode.removeAllActions();
     });
@@ -365,13 +311,14 @@ describe('Action Chaining', () => {
       const down = up.reversed();
 
       const node = new Container();
+
+      node.run(Action.sequence([ up, down ]));
+
       expect(node.visible).toBe(true);
       expect(node.rotation).toBe(0);
       expect(node.x).toBe(0);
 
-      node.run(Action.sequence([ up, down ]));
-
-      simulateTime(1.0);
+      simulateTime(1.0 - 1e-10);
       expect(node.visible).toBe(false);
       expect(node.rotation).toBeCloseTo(Math.PI/4);
       expect(node.x).toBeCloseTo(-35);
@@ -395,46 +342,45 @@ describe('Action Chaining', () => {
       expect(node.hasActions()).toBe(true);
 
       simulateTime(10.0);
-      expect(node.position.x).toBeCloseTo(20);
+      expect(node.x).toBeCloseTo(20);
 
       simulateTime(1.0);
-      expect(node.position.x).toBeCloseTo(22);
+      expect(node.x).toBeCloseTo(22);
 
       // Sanity check: We've stopped.
       simulateTime(10.0);
-      expect(node.position.x).toBeCloseTo(22);
+      expect(node.x).toBeCloseTo(22);
       expect(node.hasActions()).toBe(false);
     });
 
     it('should loop over a group', () => {
       const group = Action.group([
         Action.moveByX(5, 1.0),
-        Action.moveByX(5, 0.0),
-        Action.waitForDuration(1.0),
+        Action.moveByY(5, 2.0),
       ]);
       const action = Action.repeat(group, 3);
 
-      expect(action.duration).toBeCloseTo(3.0);
-      expect(action.scaledDuration).toBeCloseTo(3.0);
+      expect(action.scaledDuration).toBeCloseTo(6.0);
 
       const node = new Container();
       node.run(action);
       expect(node.hasActions()).toBe(true);
 
       simulateTime(1.0);
-      expect(node.position.x).toBeCloseTo(10);
+      expect(node.x).toBeCloseTo(5);
+      expect(node.y).toBeCloseTo(2.5);
 
       simulateTime(1.0);
-      expect(node.position.x).toBeCloseTo(20);
+      expect(node.x).toBeCloseTo(5);
+      expect(node.y).toBeCloseTo(5);
 
-      simulateTime(1.0);
-      expect(node.position.x).toBeCloseTo(30);
+      simulateTime(2.0);
+      expect(node.x).toBeCloseTo(10);
+      expect(node.y).toBeCloseTo(10);
 
-      simulateTime(1.0);
-      expect(node.position.x).toBeCloseTo(30);
-
-      simulateTime(1.0);
-      expect(node.position.x).toBeCloseTo(30);
+      simulateTime(2.0 + 1e-10);
+      expect(node.x).toBeCloseTo(15);
+      expect(node.y).toBeCloseTo(15);
 
       // Sanity check: We've stopped.
       expect(node.hasActions()).toBe(false);
@@ -445,21 +391,21 @@ describe('Action Chaining', () => {
     it('should loop accurately', () => {
       const action = Action.repeatForever(Action.moveByX(5, 5.0));
 
-      expect(action.duration).toBe(Infinity);
-      expect(action.scaledDuration).toBe(Infinity);
+      expect(action.duration).toBe(5);
+      expect(action.scaledDuration).toBe(5);
 
       const node = new Container();
       node.run(action);
       expect(node.hasActions()).toBe(true);
 
       simulateTime(5.0);
-      expect(node.position.x).toBeCloseTo(5);
+      expect(node.x).toBeCloseTo(5);
 
       simulateTime(10.0);
-      expect(node.position.x).toBeCloseTo(15);
+      expect(node.x).toBeCloseTo(15);
 
       simulateTime(10.0);
-      expect(node.position.x).toBeCloseTo(25);
+      expect(node.x).toBeCloseTo(25);
 
       // Sanity check: We're still going.
       expect(node.hasActions()).toBe(true);
@@ -470,10 +416,16 @@ describe('Action Chaining', () => {
 
     it('loops correctly with scaleTo (regression case)', () => {
       const node = new Container();
+
       node.run(Action.repeatForever(Action.sequence([
         Action.scaleTo(0.9, 1.0).easeInOut(),
         Action.scaleTo(10, 1.0).easeInOut(),
       ])));
+
+      Action.repeatForever(Action.sequence([
+        Action.scaleTo(0.9, 1.0).easeIn(),
+        Action.scaleTo(10, 1.0).easeInOut(),
+      ]));
 
       simulateTime(1.0);
       expect(node.scale.x).toBeCloseTo(0.9);
@@ -486,28 +438,32 @@ describe('Action Chaining', () => {
     });
 
     it('should loop over a group', () => {
-      const group = Action.group([
+      const action = Action.repeatForever(Action.sequence([
         Action.moveByX(5, 1.0),
-        Action.moveByX(5, 0.0),
-        Action.waitForDuration(1.0),
-      ]);
-      const action = Action.repeatForever(group);
+        Action.moveByX(-5, 1.0),
+      ]));
 
       const node = new Container();
+
       node.run(action);
-      expect(node.hasActions()).toBe(true);
+
+      simulateTime(1.0);
+      expect(node.x).toBeCloseTo(5);
 
       simulateTime(0.5);
-      expect(node.position.x).toBeCloseTo(7.5);
+      expect(node.x).toBeCloseTo(2.5);
 
       simulateTime(0.5);
-      expect(node.position.x).toBeCloseTo(10);
+      expect(node.x).toBeCloseTo(0);
+
+      simulateTime(1);
+      expect(node.x).toBeCloseTo(5);
 
       simulateTime(0.5);
-      expect(node.position.x).toBeCloseTo(17.5);
+      expect(node.x).toBeCloseTo(2.5);
 
-      simulateTime(0.499999);
-      expect(node.position.x).toBeCloseTo(20);
+      simulateTime(0.5);
+      expect(node.x).toBeCloseTo(0);
 
       // Sanity check: We're still going.
       expect(node.hasActions()).toBe(true);
@@ -520,21 +476,20 @@ describe('Action Chaining', () => {
       const group = Action.sequence([
         Action.moveByX(5, 1.0),
         Action.moveByY(5, 1.0),
-        Action.waitForDuration(1.0),
       ]);
       const action = Action.repeatForever(group);
 
       const node = new Container();
       node.run(action);
 
-      simulateTime(3.0);
-      expect(node.position.x).toBeCloseTo(5);
+      simulateTime(2.0);
+      expect(node.x).toBeCloseTo(5);
 
-      simulateTime(3.0);
-      expect(node.position.x).toBeCloseTo(10);
+      simulateTime(2.0);
+      expect(node.x).toBeCloseTo(10);
 
-      simulateTime(3.0);
-      expect(node.position.x).toBeCloseTo(15);
+      simulateTime(2.0);
+      expect(node.x).toBeCloseTo(15);
 
       // Sanity check: We're still going.
       expect(node.hasActions()).toBe(true);
@@ -552,8 +507,8 @@ describe('Action', () => {
 
       node.run(Action.moveTo(2, 1.5, 1.0));
       simulateTime(1.0);
-      expect(node.position.x).toBeCloseTo(2);
-      expect(node.position.y).toBeCloseTo(1.5);
+      expect(node.x).toBeCloseTo(2);
+      expect(node.y).toBeCloseTo(1.5);
     });
 
     it('can be initialized with ({ x, y }, duration)', () => {
@@ -561,8 +516,8 @@ describe('Action', () => {
 
       node.run(Action.moveTo({ x: 2, y: 1.5 }, 1.0));
       simulateTime(1.0);
-      expect(node.position.x).toBeCloseTo(2);
-      expect(node.position.y).toBeCloseTo(1.5);
+      expect(node.x).toBeCloseTo(2);
+      expect(node.y).toBeCloseTo(1.5);
     });
   });
 
@@ -572,8 +527,8 @@ describe('Action', () => {
 
       node.run(Action.moveToX(2, 1.0));
       simulateTime(1.0);
-      expect(node.position.x).toBeCloseTo(2);
-      expect(node.position.y).toBe(0);
+      expect(node.x).toBeCloseTo(2);
+      expect(node.y).toBe(0);
     });
   });
 
@@ -583,8 +538,8 @@ describe('Action', () => {
 
       node.run(Action.moveToY(2, 1.0));
       simulateTime(1.0);
-      expect(node.position.x).toBe(0);
-      expect(node.position.y).toBeCloseTo(2);
+      expect(node.x).toBe(0);
+      expect(node.y).toBeCloseTo(2);
     });
   });
 
@@ -594,8 +549,8 @@ describe('Action', () => {
 
       node.run(Action.moveBy(2, 1.5, 1.0));
       simulateTime(1.0);
-      expect(node.position.x).toBeCloseTo(2);
-      expect(node.position.y).toBeCloseTo(1.5);
+      expect(node.x).toBeCloseTo(2);
+      expect(node.y).toBeCloseTo(1.5);
     });
 
     it('can be initialized with ({ x, y }, duration)', () => {
@@ -603,8 +558,8 @@ describe('Action', () => {
 
       node.run(Action.moveBy({ x: 2, y: 1.5 }, 1.0));
       simulateTime(1.0);
-      expect(node.position.x).toBeCloseTo(2);
-      expect(node.position.y).toBeCloseTo(1.5);
+      expect(node.x).toBeCloseTo(2);
+      expect(node.y).toBeCloseTo(1.5);
     });
 
     it('is reversible', () => {
@@ -615,12 +570,12 @@ describe('Action', () => {
       node.run(Action.sequence([ up, down ]));
 
       simulateTime(0.5);
-      expect(node.position.x).toBeCloseTo(2);
-      expect(node.position.y).toBeCloseTo(1.5);
+      expect(node.x).toBeCloseTo(2);
+      expect(node.y).toBeCloseTo(1.5);
 
       simulateTime(0.5);
-      expect(node.position.x).toBeCloseTo(0);
-      expect(node.position.y).toBeCloseTo(0);
+      expect(node.x).toBeCloseTo(0);
+      expect(node.y).toBeCloseTo(0);
     });
   });
 
@@ -630,8 +585,8 @@ describe('Action', () => {
 
       node.run(Action.moveByX(2, 1.0));
       simulateTime(1.0);
-      expect(node.position.x).toBeCloseTo(2);
-      expect(node.position.y).toBeCloseTo(0);
+      expect(node.x).toBeCloseTo(2);
+      expect(node.y).toBeCloseTo(0);
     });
 
     it('is reversible', () => {
@@ -642,12 +597,12 @@ describe('Action', () => {
       node.run(Action.sequence([ up, down ]));
 
       simulateTime(0.5);
-      expect(node.position.x).toBeCloseTo(2);
-      expect(node.position.y).toBe(0);
+      expect(node.x).toBeCloseTo(2);
+      expect(node.y).toBe(0);
 
       simulateTime(0.5);
-      expect(node.position.x).toBeCloseTo(0);
-      expect(node.position.y).toBe(0);
+      expect(node.x).toBeCloseTo(0);
+      expect(node.y).toBe(0);
     });
   });
 
@@ -657,8 +612,8 @@ describe('Action', () => {
 
       node.run(Action.moveByY(2, 1.0));
       simulateTime(1.0);
-      expect(node.position.x).toBeCloseTo(0);
-      expect(node.position.y).toBeCloseTo(2);
+      expect(node.x).toBeCloseTo(0);
+      expect(node.y).toBeCloseTo(2);
     });
 
     it('is reversible', () => {
@@ -669,12 +624,12 @@ describe('Action', () => {
       node.run(Action.sequence([ up, down ]));
 
       simulateTime(0.5);
-      expect(node.position.x).toBe(0);
-      expect(node.position.y).toBeCloseTo(2);
+      expect(node.x).toBe(0);
+      expect(node.y).toBeCloseTo(2);
 
       simulateTime(0.5);
-      expect(node.position.x).toBe(0);
-      expect(node.position.y).toBeCloseTo(0);
+      expect(node.x).toBe(0);
+      expect(node.y).toBeCloseTo(0);
     });
   });
 
@@ -972,8 +927,8 @@ describe('Action', () => {
   describe('custom()', () => {
     it('runs a stepping function', () => {
       const myCustomAction = Action.custom(5.0, (target, t, dt) => {
-        target.position.x = 5.0 * t;
-        target.position.y += 5.0 * dt;
+        target.x = 5.0 * t;
+        target.y += 5.0 * dt;
       });
 
       const myNode = new Container();
@@ -989,132 +944,6 @@ describe('Action', () => {
 
       expect(myNode.x).toBeCloseTo(5);
       expect(myNode.y).toBeCloseTo(5);
-    });
-  });
-});
-
-describe('Action and nodes', () => {
-  describe('speed', () => {
-    it('works on nested actions', () => {
-      const action = Action.sequence([
-        Action.moveByX(5, 5.0),
-        Action.moveByX(5, 0.0),
-        Action.moveByX(5, 5.0).setSpeed(2.0),
-        Action.moveByX(5, 0.0),
-      ]);
-
-      expect(action.duration).toBeCloseTo(7.5);
-      expect(action.scaledDuration).toBeCloseTo(7.5);
-
-      const node = new Container();
-      node.speed = 2.0;
-      node.run(action);
-      expect(node.hasActions()).toBe(true);
-
-      simulateTime(2.5);
-      expect(node.position.x).toBeCloseTo(10);
-
-      simulateTime(1.25);
-      expect(node.position.x).toBeCloseTo(20);
-
-      // Sanity check: We've stopped.
-      simulateTime(1.0);
-      expect(node.position.x).toBeCloseTo(20);
-      expect(node.hasActions()).toBe(false);
-    });
-
-    it('works on parent values', () => {
-      const action = Action.sequence([
-        Action.moveByX(5, 4.0),
-        Action.moveByX(5, 0.0),
-        Action.moveByX(5, 4.0).setSpeed(2.0),
-        Action.moveByX(5, 0.0),
-      ]);
-
-      expect(action.duration).toBeCloseTo(6.0);
-      expect(action.scaledDuration).toBeCloseTo(6.0);
-
-      const grandparent = new Container();
-      const parent = new Container();
-      const node = new Container();
-      grandparent.addChild(parent);
-      parent.addChild(node);
-
-      grandparent.speed = 4.0;
-      parent.speed = 0.5;
-
-      node.run(action);
-      expect(node.hasActions()).toBe(true);
-
-      simulateTime(2.0);
-      expect(node.position.x).toBeCloseTo(10);
-
-      simulateTime(1.0);
-      expect(node.position.x).toBeCloseTo(20);
-
-      // Sanity check: We've stopped.
-      simulateTime(1.0);
-      expect(node.position.x).toBeCloseTo(20);
-      expect(node.hasActions()).toBe(false);
-    });
-  });
-
-  describe('isPaused', () => {
-    it('pauses current actions', () => {
-      const action = Action.sequence([
-        Action.moveByX(5, 5.0),
-        Action.moveByX(5, 0.0),
-        Action.moveByX(5, 5.0).setSpeed(2.0),
-        Action.moveByX(5, 0.0),
-      ]);
-
-      expect(action.duration).toBeCloseTo(7.5);
-      expect(action.scaledDuration).toBeCloseTo(7.5);
-
-      const node = new Container();
-      node.run(action);
-      expect(node.hasActions()).toBe(true);
-
-      simulateTime(5.0);
-      expect(node.position.x).toBeCloseTo(10);
-
-      node.isPaused = true;
-
-      // Sanity check: We've paused.
-      simulateTime(2.5);
-      expect(node.position.x).toBeCloseTo(10);
-      expect(node.hasActions()).toBe(true);
-    });
-
-    it('falls back to parent value', () => {
-      const action = Action.sequence([
-        Action.moveByX(5, 5.0),
-        Action.moveByX(5, 0.0),
-        Action.moveByX(5, 5.0).setSpeed(2.0),
-        Action.moveByX(5, 0.0),
-      ]);
-
-      expect(action.duration).toBeCloseTo(7.5);
-      expect(action.scaledDuration).toBeCloseTo(7.5);
-
-      const grandparent = new Container();
-      const parent = new Container();
-      const node = new Container();
-      grandparent.addChild(parent);
-      parent.addChild(node);
-
-      node.run(action);
-      expect(node.hasActions()).toBe(true);
-
-      simulateTime(5.0);
-      expect(node.position.x).toBeCloseTo(10);
-
-      grandparent.isPaused = true;
-
-      // Sanity check: We've paused.
-      simulateTime(12.5);
-      expect(node.position.x).toBeCloseTo(10);
-      expect(node.hasActions()).toBe(true);
     });
   });
 });

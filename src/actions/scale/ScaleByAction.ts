@@ -17,17 +17,17 @@ export class ScaleByAction extends Action {
   }
 
   public reversed(): Action {
-    return new ScaleByAction(1/this.x, 1/this.y, this.duration)._mutate(this);
+    return new ScaleByAction(1/this.x, 1/this.y, this.duration)._apply(this);
   }
 
-  protected onSetupTicker({ scale }: TargetNode): any {
+  public _onTickerInit({ scale }: TargetNode): any {
     return {
       dx: scale.x * this.x - scale.x,
       dy: scale.y * this.y - scale.y
     };
   }
 
-  protected onTick(
+  public _onTickerTick(
     { scale }: TargetNode,
     t: number,
     dt: number,

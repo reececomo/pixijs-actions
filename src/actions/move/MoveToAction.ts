@@ -17,14 +17,14 @@ export class MoveToAction extends Action {
   }
 
   public reversed(): Action {
-    return new MoveToAction(this.x1, this.y1, this.duration)._mutate(this);
+    return new MoveToAction(this.x1, this.y1, this.duration)._apply(this);
   }
 
-  protected onSetupTicker({ position }: TargetNode): any {
+  public _onTickerInit({ position }: TargetNode): any {
     return { x0: position._x, y0: position._y };
   }
 
-  protected onTick(
+  public _onTickerTick(
     { position }: TargetNode,
     t: number,
     dt: number,

@@ -75,7 +75,7 @@ Containers are extended with the following properties and methods:
 | Method | Description |
 | :----- | :------ |
 | `run(action)` | Run an action. |
-| `runWithKey(key, action)` | Run an action, and store it so it can be retrieved later. |
+| `runWithKey(key, action)` | Run an identifiable, replacing any actions with the same key. |
 | `runAsPromise(action): Promise<void>` | Run an action as a promise. |
 | `hasActions(): boolean` | Whether the container is executing actions. |
 | `action(forKey): Action \| undefined` | Return an action associated with a specified key. |
@@ -129,7 +129,7 @@ myContainer.parent.speed = 0.25;
 ```
 
 > [!NOTE]
-> Modifying an action initializer's `speed` or `timingMode` will not affect in-progress actions.
+> Modifying an action initializer's `speed` or `timing` will not affect in-progress actions.
 > However changes to a container's `speed` apply immediately.
 
 ## Action Initializers
@@ -194,7 +194,7 @@ Most actions implement specific predefined animations that are ready to use. If 
 | `Action.waitForDurationWithRange(duration, range)` | Idle for a randomized period of time. | _†Identical_ |
 |***Triggers and Custom Actions***|||
 | `Action.run(callback)` | Execute a custom function. | _†Identical_ |
-| `Action.customAction(duration, callback)` | Execute a custom stepping function over the action duration. | _†Identical_ |
+| `Action.custom(duration, callback)` | Execute a custom stepping function over the action duration. | _†Identical_ |
 |***Manipulating the Action Speed of a Node***|||
 | `Action.speedBy(delta, duration)` | Change how fast a node executes its actions by a relative value. | Yes |
 | `Action.speedTo(speed, duration)` | Set how fast a node executes actions to a specified value. | _†Identical_ |
@@ -235,31 +235,34 @@ mySprite.run(Action.repeatForever(moveBackAndForthWhilePulsating));
 
 ## Timing Modes
 
-Every action has a `timingMode` which controls the timing curve of its execution.
+Every action has a `timing` function which controls the timing curve of its execution.
 
-The default timingMode for all actions is `TimingMode.linear`, which causes an animation to occur evenly over its duration.
+The default timing mode for all actions is `Timing.linear`, which causes an animation to occur evenly over its duration.
 
 You can customize the speed curve of actions in many ways:
 
 ```ts
 // Default easings:
-Action.fadeIn(0.3).easeIn();
-Action.fadeIn(0.3).easeOut();
-Action.fadeIn(0.3).easeInOut();
+Action.fadeIn(1.0).easeIn();
+Action.fadeIn(1.0).easeOut();
+Action.fadeIn(1.0).easeInOut();
 
-// Set a specific TimingMode:
-Action.fadeIn(0.3).setTimingMode(TimingMode.easeInOutCubic);
+// Set a specific timing:
+Action.fadeIn(1.0).setTiming(Timing.easeInOutCubic);
 
-// Set a custom timing function:
-Action.fadeIn(0.3).setTimingMode(x => x * x);
+// You may also use timing function names:
+Action.fadeIn(1.0).setTiming("easeInOutCubic");
+
+// Or provide a custom function:
+Action.fadeIn(1.0).setTiming((x) => x * x);
 ```
 
 > [!IMPORTANT]
-> **Timing Mutators:** The `.easeIn()`, `.easeOut()`, `.easeInOut()`, `setTimingMode(…)`, `setSpeed(…)` methods mutate the underlying action.
+> **Timing Mutators:** The `.easeIn()`, `.easeOut()`, `.easeInOut()`, `setTiming(…)`, `setSpeed(…)` methods mutate the underlying action.
 
-### Built-in TimingMode Options
+### Built-in Timing Functions
 
-See the following table for default `TimingMode` options.
+See the following table for the built-in `Timing` modes:
 
 | Pattern | Ease In, Ease Out | Ease In | Ease Out | Description |
 | --------------- | ----- | -- | --- | ----------- |
@@ -277,26 +280,26 @@ See the following table for default `TimingMode` options.
 
 ### Default Timing Modes
 
-The `.easeIn()`, `.easeOut()`, `.easeInOut()`, and `.linear()` mutator methods on `Action` instances will set the timing mode of that action to the global default timing mode for that curve type.
+The `.easeIn()`, `.easeOut()`, and `.easeInOut()` mutator methods on `Action` instances will set the timing mode of that action to the default curve mode for that timing type.
 
-| TimingMode mutator | Global setting | Default value |
+| Mutator | Global setting | Default value |
 | :--- | :--- | :--- |
-| `action.easeIn()` | `Action.DefaultTimingModeEaseIn` | `TimingMode.easeInSine` |
-| `action.easeOut()` | `Action.DefaultTimingModeEaseOut` | `TimingMode.easeOutSine` |
-| `action.easeInOut()` | `Action.DefaultTimingModeEaseInOut` | `TimingMode.easeInOutSine` |
-| `action.linear()` | _(n/a)_ | `TimingMode.linear` |
+| `action.easeIn()` | `Action.DefaultTimingEaseIn` | `easeInSine` |
+| `action.easeOut()` | `Action.DefaultTimingEaseOut` | `easeOutSine` |
+| `action.easeInOut()` | `Action.DefaultTimingEaseInOut` | `easeInOutSine` |
+| `action.linear()` | _(n/a)_ | `linear` |
 
 Global default timing modes can be set like so:
 
 ```ts
 // set default
-Action.DefaultTimingModeEaseIn = TimingMode.easeInQuad;
+Action.DefaultTimingEaseIn = Timing.easeInQuad;
 
 // apply
 myNode.run(myAction.easeIn());
 
-myAction.timingMode
-// TimingMode.easeInQuad
+myAction.timing
+// Timing.easeInQuad
 ```
 
 ## Creating Custom Actions
@@ -361,7 +364,7 @@ mySprite.run(MyActions.squashAndStretch(2.0));
 You can use the built-in `Action.custom(duration, stepFunction)` to provide custom actions:
 
 ```ts
-const rainbowColors = Action.customAction(5.0, (target, t, dt) => {
+const rainbowColors = Action.custom(5.0, (target, t, dt) => {
   // Calculate color based on time "t" (0 -> 1).
   const colorR = Math.sin(0.3 * t + 0) * 127 + 128;
   const colorG = Math.sin(0.3 * t + 2) * 127 + 128;
@@ -380,10 +383,10 @@ mySprite.removeAction("rainbow");
 
 > **Step functions:**
 > - `target` = The node the aciton is runnning against.
-> - `t` = Progress of time from 0 to 1, which has been passed through the `timingMode` function.
+> - `t` = Progress of time from 0 to 1, which has been passed through the `timing` function.
 > - `dt` = delta/change in `t` since last step. Use for relative actions.
 >
-> _Note: `t` can be outside of 0 and 1 in timing mode functions which overshoot, such as `TimingMode.easeInOutBack`._
+> _Note: `t` can be outside of 0 and 1 in timing mode functions which overshoot, such as `Timing.easeInOutBack`._
 
 This function will be called as many times as the renderer asks over the course of its duration.
 
@@ -400,7 +403,7 @@ const makeOrbitAction = (
 ): Action => {
   let startPos: PIXI.IPointData;
 
-  return Action.customAction(duration, (target, t, td) => {
+  return Action.custom(duration, (target, t, td) => {
     if (!startPos) {
       // Capture on first run
       startPos = { x: target.x, y: target.y };

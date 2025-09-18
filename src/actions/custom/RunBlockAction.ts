@@ -11,10 +11,10 @@ export class RunBlockAction extends Action {
   }
 
   public reversed(): Action {
-    return new RunBlockAction(this.fn)._mutate(this);
+    return new RunBlockAction(this.fn)._apply(this);
   }
 
-  protected onTick(target: TargetNode): void {
+  public _onTickerTick(target: TargetNode): void {
     this.fn(target);
   }
 }

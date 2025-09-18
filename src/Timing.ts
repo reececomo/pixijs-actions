@@ -1,3 +1,13 @@
+/**
+ * Timing function.
+ */
+export type TimingFunction = (x: number) => number;
+
+/**
+ * Timing mode key.
+ */
+export type TimingKey = keyof typeof Timing;
+
 const pow = Math.pow;
 const sqrt = Math.sqrt;
 const sin = Math.sin;
@@ -9,7 +19,10 @@ const c3 = c1 + 1;
 const c4 = (2 * PI) / 3;
 const c5 = (2 * PI) / 4.5;
 
-const _bounceOut = function (x: number): number {
+/**
+ * @internal
+ */
+function _bounceOut(x: number): number {
   const n1 = 7.5625;
   const d1 = 2.75;
 
@@ -25,25 +38,18 @@ const _bounceOut = function (x: number): number {
   else {
     return n1 * (x -= 2.625 / d1) * x + 0.984375;
   }
-};
+}
 
 /**
- * Any timing mode function.
- *
- * @example x => x // Linear, constant-time.
- *
- * @see {TimingMode}
- */
-export type TimingModeFn = (x: number) => number;
-
-/**
- * Timing mode functions
+ * Timing functions.
  *
  * @see https://easings.net/
  * @see https://raw.githubusercontent.com/ai/easings.net/master/src/easings/easingsFunctions.ts
  */
-export const TimingMode = {
-  linear: (x: number): number => x,
+export const Timing = {
+  linear: function (x: number): number {
+    return x;
+  },
   easeInQuad: function (x: number): number {
     return x * x;
   },
@@ -152,10 +158,12 @@ export const TimingMode = {
   easeInBounce: function (x: number): number {
     return 1 - _bounceOut(1 - x);
   },
-  easeOutBounce: _bounceOut,
+  easeOutBounce: function (x: number): number {
+    return _bounceOut(x);
+  },
   easeInOutBounce: function (x: number): number {
     return x < 0.5
       ? (1 - _bounceOut(1 - 2 * x)) / 2
       : (1 + _bounceOut(2 * x - 1)) / 2;
   },
-};
+} as const;

@@ -16,10 +16,10 @@ export class MoveByAction extends Action {
   }
 
   public reversed(): Action {
-    return new MoveByAction(-this.x, -this.y, this.duration)._mutate(this);
+    return new MoveByAction(-this.x, -this.y, this.duration)._apply(this);
   }
 
-  protected onTick(target: TargetNode, t: number, dt: number): void {
+  public _onTickerTick(target: TargetNode, t: number, dt: number): void {
     target.position.x += this.x * dt;
     target.position.y += this.y * dt;
   }

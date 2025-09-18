@@ -17,14 +17,14 @@ export class ScaleToAction extends Action {
   }
 
   public reversed(): Action {
-    return new ScaleToAction(this.x1, this.y1, this.duration)._mutate(this);
+    return new ScaleToAction(this.x1, this.y1, this.duration)._apply(this);
   }
 
-  protected onSetupTicker({ scale }: TargetNode): any {
+  public _onTickerInit({ scale }: TargetNode): any {
     return { x0: scale._x, y0: scale._y };
   }
 
-  protected onTick(
+  public _onTickerTick(
     { scale }: TargetNode,
     t: number,
     _: number,

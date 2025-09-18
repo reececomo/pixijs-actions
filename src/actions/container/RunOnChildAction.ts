@@ -1,5 +1,7 @@
 import { Action } from '../../lib/Action';
 
+type AnyContainer = any;
+
 export class RunOnChildAction extends Action {
   protected readonly action: Action;
   protected readonly label: string;
@@ -13,27 +15,27 @@ export class RunOnChildAction extends Action {
 
   public reversed(): Action {
     const reversedAction = this.action.reversed();
-    return new RunOnChildAction(reversedAction, this.label)._mutate(this);
+    return new RunOnChildAction(reversedAction, this.label)._apply(this);
   }
 
-  protected onTick(target: TargetNode): void {
+  public _onTickerTick(target: TargetNode): void {
     const child = this._getChildByLabel(target, this.label);
     if (!child) throw new ReferenceError(`Target did not have child '${this.label}'.`);
     child.run(this.action);
   }
 
-  private _getChildByLabel(target: TargetNode, label: string): TargetNode | undefined {
+  private _getChildByLabel(target: AnyContainer, label: string): TargetNode | undefined {
     if (!target.children || !Array.isArray(target.children)) {
       return undefined;
     }
 
-    let child: any;
+    let child: AnyContainer;
 
-    if ('getChildByLabel' in target as any) {
-      child = (target as any).getChildByLabel(label);
+    if ('getChildByLabel' in target) {
+      child = target.getChildByLabel(label);
     }
     else {
-      child = target.children.find((child: any) =>
+      child = target.children.find((child: AnyContainer) =>
         child.label === label || child.name === label
       );
     }

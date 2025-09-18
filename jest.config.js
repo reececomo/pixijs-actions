@@ -1,18 +1,16 @@
+const tsconfig = 'src/__tests__/tsconfig.jest.json';
+const setupFile = '<rootDir>/src/__tests__/jest.setup.ts';
+
 /** @type {import('ts-jest').JestConfigWithTsJest} */
 module.exports = {
-  roots: ['<rootDir>/src'],
-  testMatch: ['**/*.test.ts'],
   preset: 'ts-jest',
+  roots: ['<rootDir>/src'],
   testEnvironment: 'node',
-  testPathIgnorePatterns: [
-    '/node_modules/'
-  ],
+  testMatch: ['**/*.test.ts'],
+  testPathIgnorePatterns: ['/node_modules/'],
   transform: {
-    '^.+\\.(ts|tsx)$': [
-      'ts-jest', {
-        tsconfig: 'src/__tests__/tsconfig.jest.json'
-      }
-    ]
+    '^.+\\.(ts|tsx)$': ['ts-jest', { tsconfig }]
   },
+  setupFilesAfterEnv: [setupFile],
   verbose: false,
 };

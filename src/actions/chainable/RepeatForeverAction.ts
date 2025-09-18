@@ -1,6 +1,11 @@
 import { Action } from '../../lib/Action';
 import { IActionTicker } from '../../lib/IActionTicker';
 import { ActionTicker } from '../../lib/ActionTicker';
+import { Timing } from '../../Timing';
+
+interface RepeatForeverTickerData {
+  childTicker: IActionTicker<any>;
+}
 
 export class RepeatForeverAction extends Action {
   protected readonly action: Action;
@@ -10,37 +15,39 @@ export class RepeatForeverAction extends Action {
       throw new TypeError('The action to be repeated must have a non-instantaneous duration.');
     }
 
-    super(Infinity);
+    super(action.scaledDuration, true);
 
     this.action = action;
   }
 
   public reversed(): Action {
     const reversedAction = this.action.reversed();
-    return new RepeatForeverAction(reversedAction)._mutate(this);
+    return new RepeatForeverAction(reversedAction)._apply(this);
   }
 
-  protected onSetupTicker(target: TargetNode, ticker: IActionTicker): any {
-    ticker.autoComplete = false;
+  public _onTickerInit(
+    target: TargetNode,
+    ticker: IActionTicker<RepeatForeverTickerData>
+  ): RepeatForeverTickerData {
+    const childTicker = new ActionTicker(target, this.action);
 
-    const childTicker = new ActionTicker(undefined, target, this.action);
-    childTicker.timingMode = (x: number) => ticker.timingMode(childTicker.timingMode(x));
-    childTicker.autoDestroy = false; // manually destroy
+    // inject timing mode into child ticker
+    if (ticker.timing !== Timing.linear) {
+      childTicker.timing = (x) => ticker.timing(childTicker.timing(x));
+    }
 
-    return {
-      childTicker
-    };
+    return { childTicker };
   }
 
-  protected onTick(
+  public _onTickerTick(
     target: TargetNode,
     t: number,
     dt: number,
-    ticker: IActionTicker,
+    ticker: IActionTicker<RepeatForeverTickerData>,
     deltaTime: number
   ): void {
-    const childTicker: IActionTicker = ticker.data.childTicker;
-    let remainingDeltaTime = deltaTime * ticker.speed;
+    const childTicker = ticker.data.childTicker;
+    let remainingDeltaTime = deltaTime;
 
     remainingDeltaTime = childTicker.tick(remainingDeltaTime);
 
@@ -50,12 +57,12 @@ export class RepeatForeverAction extends Action {
     }
   }
 
-  protected onTickerDidReset(ticker: IActionTicker): any {
+  public _onTickerDidReset(ticker: IActionTicker<RepeatForeverTickerData>): any {
     if (!ticker.data) return;
     ticker.data.childTicker.reset();
   }
 
-  protected onTickerRemoved(target: TargetNode, ticker: IActionTicker): void {
+  public _onTickerRemoved(target: TargetNode, ticker: IActionTicker<RepeatForeverTickerData>): void {
     if (!ticker.data) return;
     ticker.data.childTicker.destroy();
   }

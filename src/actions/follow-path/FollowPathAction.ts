@@ -1,4 +1,4 @@
-import { IActionTicker } from 'src/lib/IActionTicker';
+import { IActionTicker } from '../../lib/IActionTicker';
 import { Action } from '../../lib/Action';
 
 const HALF_PI = Math.PI / 2;
@@ -68,17 +68,17 @@ export class FollowPathAction extends Action {
       this.asOffset,
       this.orientToPath,
       this.fixedSpeed,
-    )._mutate(this);
+    )._apply(this);
   }
 
-  protected onSetupTicker(target: any): any {
+  public _onTickerInit(target: any): any {
     return {
       x: this.asOffset ? target.x : 0,
       y: this.asOffset ? target.y : 0,
     };
   }
 
-  protected onTick(target: any, t: number, dt: number, ticker: IActionTicker): void {
+  public _onTickerTick(target: any, t: number, dt: number, ticker: IActionTicker): void {
     if (this.lastIndex < 0) {
       return; // Empty path.
     }

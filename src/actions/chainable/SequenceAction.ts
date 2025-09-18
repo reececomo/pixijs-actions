@@ -1,80 +1,86 @@
 import { Action } from '../../lib/Action';
 import { IActionTicker } from '../../lib/IActionTicker';
 import { ActionTicker } from '../../lib/ActionTicker';
-import { TimingMode } from '../../TimingMode';
+import { Timing } from '../../Timing';
+
+interface SequenceTickerData {
+  childTickers: IActionTicker[];
+}
 
 export class SequenceAction extends Action {
   protected actions: Action[];
 
   public constructor(actions: Action[]) {
-    const duration = actions.reduce((d, action) => d + action.scaledDuration, 0);
-    super(duration);
+    const duration = actions.reduce((total, action) => total + action.scaledDuration, 0);
+
+    super(duration, true);
     this.actions = actions;
   }
 
   public reversed(): Action {
     const reversedActions = this.actions.map(action => action.reversed()).reverse();
-    return new SequenceAction(reversedActions)._mutate(this);
+    return new SequenceAction(reversedActions)._apply(this);
   }
 
-  protected onSetupTicker(target: TargetNode, ticker: IActionTicker): any {
-    ticker.autoComplete = false;
+  public _onTickerInit(
+    target: TargetNode,
+    ticker: IActionTicker<any>,
+  ): any {
+    const actions = this._flatten();
+    const childTickers = actions.map((action) => new ActionTicker(target, action));
 
-    return {
-      childTickers: this._squashedActions().map(action => {
-        const ticker = new ActionTicker(undefined, target, action);
-        ticker.autoDestroy = false;
-        return ticker;
-      })
-    };
+    return { childTickers };
   }
 
-  protected onTick(
+  public _onTickerTick(
     target: TargetNode,
     t: number,
     dt: number,
-    ticker: IActionTicker,
+    ticker: IActionTicker<SequenceTickerData>,
     deltaTime: number,
   ): void {
-    let remainingDeltaTime = ticker.scaledDuration === Infinity
-      ? deltaTime * this.speed
-      : dt * ticker.scaledDuration;
+    let remainingDeltaTime = deltaTime;
+    let allDone = true;
 
-    for (const childTicker of ticker.data.childTickers as IActionTicker[]) {
+    for (const childTicker of ticker.data.childTickers) {
       if (childTicker.isDone) continue;
 
       remainingDeltaTime = childTicker.tick(remainingDeltaTime);
 
+      if (!childTicker.isDone) allDone = false;
+
       if (remainingDeltaTime < 0) {
-        return; // Cannot continue to next: Current action not completed yet.
+        // Stop sequence, no more time remaining.
+        // (0 = continue for instant actions)
+        break;
       }
     }
 
-    ticker.isDone = true;
+    if (allDone) ticker.isDone = true;
   }
 
-  protected onTickerDidReset(ticker: IActionTicker): any {
+  public _onTickerDidReset(ticker: IActionTicker<SequenceTickerData>): SequenceTickerData {
     if (!ticker.data) return;
-    ticker.data.childTickers.forEach((ticker: IActionTicker) => ticker.reset());
+    ticker.data.childTickers.forEach((ticker) => ticker.reset());
   }
 
-  protected onTickerRemoved(target: TargetNode, ticker: IActionTicker): any {
+  public _onTickerRemoved(target: TargetNode, ticker: IActionTicker<SequenceTickerData>): void {
     if (!ticker.data) return;
-    ticker.data.childTickers.forEach((ticker: IActionTicker) => ticker.destroy());
+    ticker.data.childTickers.forEach((ticker) => ticker.reset());
   }
 
   // ----- Implementation: -----
 
-  protected _squashedActions(): Action[] {
+  protected _flatten(): Action[] {
     const actions: Action[] = [];
 
     for (const action of this.actions) {
       if (
         action instanceof SequenceAction
-        && action.speed === 1
-        && action.timingMode === TimingMode.linear
+          && action.speed === 1
+          && action.timing === Timing.linear
       ) {
-        actions.push(...action._squashedActions());
+        actions.push(...action._flatten());
       }
       else {
         actions.push(action);
