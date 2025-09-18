@@ -640,4 +640,9 @@ export abstract class PixiJSActions extends Action {
   ): Action {
     return new CustomAction(duration, stepFn);
   }
+
+  /**
+   * @deprecated Use `custom` instead.
+   */
+  public static customAction = this.custom;
 }

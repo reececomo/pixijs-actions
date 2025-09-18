@@ -557,6 +557,10 @@ declare abstract class PixiJSActions extends Action {
 	 * This action is not reversible; the reverse action executes the same stepping function.
 	 */
 	static custom(duration: number, stepFn: (target: TargetNode, t: number, dt: number) => void): Action;
+	/**
+	 * @deprecated Use `custom` instead.
+	 */
+	static customAction: typeof PixiJSActions.custom;
 }
 export declare const ActionSettings: {
 	animateTimePerFrame: number;
