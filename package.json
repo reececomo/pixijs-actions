@@ -1,6 +1,6 @@
 {
   "name": "pixijs-actions",
-  "version": "1.4.0",
+  "version": "1.4.1-rc.0",
   "author": "Reece Como <reece.como@gmail.com>",
   "authors": [
     "Reece Como <reece.como@gmail.com>",
@@ -13,7 +13,9 @@
   "main": "dist/index.cjs",
   "module": "dist/index.mjs",
   "types": "./dist/index.d.ts",
-  "files": ["./dist"],
+  "files": [
+    "./dist"
+  ],
   "scripts": {
     "build:rollup": "rimraf dist && echo 'rollup (1/2):' && rollup -c --bundleConfigAsCjs",
     "build:rm-dts": "rimraf dist/*.d.ts dist/actions dist/lib",
