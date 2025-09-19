@@ -262,21 +262,21 @@ Action.fadeIn(1.0).setTiming((x) => x * x);
 
 ### Built-in Timing Functions
 
-See the following table for the built-in `Timing` modes:
+See the following table for the built-in `Timing` modes ([**Live preview at Easings.net**](https://easings.net/)):
 
-| Pattern | Ease In, Ease Out | Ease In | Ease Out | Description |
+| Pattern | Ease In & Out | Ease In | Ease Out | Description |
 | --------------- | ----- | -- | --- | ----------- |
 | **Linear** | `linear` | - | - | Constant motion with no acceleration or deceleration. |
 | **Sine** | `easeInOutSine` | `easeInSine` | `easeOutSine` | Gentle start and end, with accelerated motion in the middle. |
-| **Circular** | `easeInOutCirc` | `easeInCirc` | `easeOutCirc` | Smooth start and end, faster acceleration in the middle, circular motion. |
-| **Cubic** | `easeInOutCubic` | `easeInCubic` | `easeOutCubic` | Gradual acceleration and deceleration, smooth motion throughout. |
 | **Quadratic** | `easeInOutQuad` | `easeInQuad` | `easeOutQuad` | Smooth acceleration and deceleration, starts and ends slowly, faster in the middle. |
+| **Cubic** | `easeInOutCubic` | `easeInCubic` | `easeOutCubic` | Gradual acceleration and deceleration, smooth motion throughout. |
 | **Quartic** | `easeInOutQuart` | `easeInQuart` | `easeOutQuart` | Slower start and end, increased acceleration in the middle. |
 | **Quintic** | `easeInOutQuint` | `easeInQuint` | `easeOutQuint` | Very gradual start and end, smoother acceleration in the middle. |
 | **Exponential** | `easeInOutExpo` | `easeInExpo` | `easeOutExpo` | Very slow start, exponential acceleration, slow end. |
+| **Circular** | `easeInOutCirc` | `easeInCirc` | `easeOutCirc` | Smooth start and end, faster acceleration in the middle, circular motion. |
 | **Back** | `easeInOutBack` | `easeInBack` | `easeOutBack` | Starts slowly, overshoots slightly, settles into final position. |
-| **Bounce** | `easeInOutBounce` | `easeInBounce` | `easeOutBounce` | Bouncy effect at the start or end, with multiple rebounds. |
 | **Elastic** | `easeInOutElastic` | `easeInElastic` | `easeOutElastic` | Stretchy motion with overshoot and multiple oscillations. |
+| **Bounce** | `easeInOutBounce` | `easeInBounce` | `easeOutBounce` | Bouncy effect at the start or end, with multiple rebounds. |
 
 ### Default Timing Modes
 
