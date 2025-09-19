@@ -4,8 +4,8 @@
 
 | | |
 | ------ | ------ |
-| 🎯 35+ built-in [Actions](#action-initializers), 30+ [TimingModes](#timing-modes) | 🧩 Simple, declarative API |
-| 🎬 Supports custom actions/timing modes | 🧑‍🍳 Chainable & reuseable recipes |
+| 🎯 35+ built-in [Actions](#action-initializers), 30+ [Timing modes](#timing-modes) | 🧩 Simple, declarative API |
+| 🎬 Supports custom actions/timing functions | 🧑‍🍳 Chainable & reuseable recipes |
 | 🍃 Zero dependencies | ⏱️ Speed, timing and pause support |
 | 🤏 <5kB minzipped | 💻 Compatible with PixiJS v6, v7 and v8+ |
 
