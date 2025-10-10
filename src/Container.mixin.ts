@@ -1,6 +1,8 @@
-import { Action } from "./lib/Action";
-import { PixiJSActions as _ } from "./Action";
+import { type Container } from "pixi.js";
+
+import { Action } from "./lib";
 import { ActionTicker } from "./lib/ActionTicker";
+
 
 /**
  * Register the mixin for PIXI.Container.
@@ -8,26 +10,31 @@ import { ActionTicker } from "./lib/ActionTicker";
  * @param containerType A reference to `PIXI.Container`.
  */
 export function registerPixiJSActionsMixin(containerType: any): void {
-  const prototype = containerType.prototype;
+  const prototype = (containerType as typeof Container).prototype;
 
-  // - Properties:
+  //
+  // ----------------- Container Action Properties: -----------------
+  //
+
   prototype.speed = 1;
   prototype.isPaused = false;
 
-  // - Methods:
+  //
+  // ----------------- Container Action Methods: -----------------
+  //
+
   prototype.run = function (this: TargetNode, action: Action, completion?: () => void): void {
-    return completion
-      ? ActionTicker.runAction(undefined, this, _.sequence([action, _.run(completion)]))
-      : ActionTicker.runAction(undefined, this, action);
+    if (completion) action = Action.sequence([action, Action.run(completion)]);
+    return ActionTicker.runAction(this, action);
   };
 
-  prototype.runWithKey = function (this: TargetNode, a: Action | string, b: Action | string): void {
-    if (typeof b === "string") ActionTicker.runAction(b, this, a as Action);
-    else ActionTicker.runAction(a as string, this, b);
+  prototype.runWithKey = function (this: TargetNode, k, a): void {
+    if (typeof a === "string") [ a, k ] = [ k, a ];
+    ActionTicker.runAction(this, a as any, k as any);
   };
 
   prototype.runAsPromise = function (this: TargetNode, action: Action): Promise<void> {
-    return new Promise(resolve => this.run(action, () => resolve()));
+    return new Promise((resolve) => this.run(action, () => resolve()));
   };
 
   prototype.action = function (this: TargetNode, forKey: string): Action | undefined {

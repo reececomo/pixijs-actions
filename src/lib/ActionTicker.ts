@@ -1,5 +1,16 @@
-import { Action } from "./Action";
-import { TimingFunction } from "../Timing";
+import { Action } from "./ActionClass";
+import { TimingFunction } from "./Timing";
+
+
+export interface TickerLike
+{
+  /**
+   * Scalar time elapsed in milliseconds from last frame to this frame.
+   */
+  deltaMS: number;
+}
+
+type TickerMap = Map<string | ActionTicker, ActionTicker>;
 
 const EPSILON_1 = 1 - 1e-15;
 
@@ -11,7 +22,7 @@ export class ActionTicker {
   /**
    * All currently executing actions.
    */
-  protected static _tickers: Map<TargetNode, Map<string | ActionTicker, ActionTicker>> = new Map();
+  private static tickers = new Map<TargetNode, TickerMap>(); // TODO: weakmap
 
   //
   // ----- Global ticker: -----
@@ -20,18 +31,22 @@ export class ActionTicker {
   /**
    * Tick all actions forward.
    *
-   * @param deltaTimeMs Delta time given in milliseconds.
-   * @param onErrorHandler Handle action errors.
+   * @param value Ticker instance or delta time given in milliseconds.
+   * @param onErrorHandler Error handler for individual action errors.
    */
-  public static tickAll(deltaTimeMs: number, onErrorHandler?: (error: any) => void): void {
-    const deltaTime = deltaTimeMs * 0.001;
+  public static tickAll(
+    value: number | TickerLike,
+    onErrorHandler?: (error: any) => void
+  ): void {
+    const deltaMS = typeof value === "number" ? value : value.deltaMS;
+    const deltaTime = deltaMS * 0.001;
 
     let _leaf: TargetNode;
     let _isPaused: boolean;
     let _speed: number;
 
-    for (const [target, tickers] of this._tickers) {
-      // Calculate global isPaused and speed
+    for (const [target, tickers] of ActionTicker.tickers) {
+      // calculate global isPaused and speed
       _leaf = target;
       _isPaused = target.isPaused;
       _speed = target.speed;
@@ -51,7 +66,7 @@ export class ActionTicker {
           actionTicker.tick(deltaTime * _speed);
 
           if (actionTicker.isDone) {
-            this._removeActionTicker(actionTicker);
+            ActionTicker._removeActionTicker(actionTicker);
           }
         }
         catch (error) {
@@ -64,7 +79,7 @@ export class ActionTicker {
           }
 
           // Remove offending ticker.
-          this._removeActionTicker(actionTicker);
+          ActionTicker._removeActionTicker(actionTicker);
         }
       }
     }
@@ -75,30 +90,30 @@ export class ActionTicker {
   //
 
   /** Adds an action to the list of actions executed by the node. */
-  public static runAction(key: string | undefined, target: TargetNode, action: Action): void {
-    if (!this._tickers.has(target)) {
-      this._tickers.set(target, new Map());
+  public static runAction(target: TargetNode, action: Action, key?: string): void {
+    if (!this.tickers.has(target)) {
+      this.tickers.set(target, new Map());
     }
 
     const actionTicker = new ActionTicker(target, action, key);
 
     // Replaces any existing, identical-keyed actions on insert.
-    this._tickers.get(target).set(key ?? actionTicker, actionTicker);
+    this.tickers.get(target).set(key ?? actionTicker, actionTicker);
   }
 
   /** Whether a target has any actions. */
   public static hasTargetActions(target: TargetNode): boolean {
-    return this._tickers.has(target);
+    return this.tickers.has(target);
   }
 
   /** Retrieve an action with a key from a specific target. */
   public static getTargetActionForKey(target: TargetNode, key: string): Action | undefined {
-    return this._tickers.get(target)?.get(key)?.action;
+    return this.tickers.get(target)?.get(key)?.action;
   }
 
   /** Remove an action with a key from a specific target. */
   public static removeTargetActionForKey(target: TargetNode, key: string): void {
-    const actionTicker = this._tickers.get(target)?.get(key);
+    const actionTicker = this.tickers.get(target)?.get(key);
     if (actionTicker) {
       this._removeActionTicker(actionTicker);
     }
@@ -106,7 +121,7 @@ export class ActionTicker {
 
   /** Remove all actions for a specific target. */
   public static removeAllTargetActions(target: TargetNode): void {
-    const actionTickers = this._tickers.get(target);
+    const actionTickers = this.tickers.get(target);
     if (!actionTickers) return;
 
     for (const ticker of [...actionTickers.values()]) {
@@ -116,7 +131,7 @@ export class ActionTicker {
 
   /** Remove all actions for every target. */
   public static removeAll(): void {
-    for (const target of this._tickers.keys()) {
+    for (const target of this.tickers.keys()) {
       this.removeAllTargetActions(target);
     }
   }
@@ -132,7 +147,7 @@ export class ActionTicker {
    */
   protected static _removeActionTicker(ticker: ActionTicker, propagate = true): void {
     const target = ticker.target;
-    const targetTickers = this._tickers.get(target);
+    const targetTickers = this.tickers.get(target);
 
     if (targetTickers === undefined) {
       return; // No change.
@@ -146,7 +161,7 @@ export class ActionTicker {
 
     // if no more actions then remove target from map
     if (targetTickers.size === 0) {
-      this._tickers.delete(target);
+      this.tickers.delete(target);
     }
 
     ticker.destroy();

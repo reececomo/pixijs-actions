@@ -1,7 +1,56 @@
 import { Container } from 'pixi.js';
 
+
+export {};
+
+//
+// ----------------- Global Type Aliases -----------------
+//
+
+declare global {
+
+  /** Time measured in seconds. */
+  type TimeInterval = number;
+
+  /** Targeted display node. */
+  type TargetNode = Container;
+
+  type ContainerDestroyOptions = Parameters<TargetNode["destroy"]>[0];
+
+  /** Targeted display node with a width and height. */
+  type SizedTargetNode = TargetNode & SizeLike;
+
+  /** Any vector-like object (e.g. PIXI.Point, or any node). */
+  interface VectorLike {
+    x: number;
+    y: number;
+  }
+
+  /** Any object with a width and height (e.g. PIXI.Sprite). */
+  interface SizeLike {
+    width: number;
+    height: number;
+  }
+
+  /** Any object containing an array of points (e.g. PIXI.SimpleRope). */
+  interface PathObjectLike {
+    points: VectorLike[];
+  }
+
+}
+
+//
+// ----------------- PixiJS extension: -----------------
+//
+
 declare module 'pixi.js' {
+
   export interface Container {
+
+    //
+    // ----------------- Container Action Properties: -----------------
+    //
+
     /**
      * A boolean value that determines whether actions on the node and its descendants are processed.
      */
@@ -11,6 +60,10 @@ declare module 'pixi.js' {
      * A speed modifier applied to all actions executed by a node and its descendants.
      */
     speed: number;
+
+    //
+    // ----------------- Container Action Methods: -----------------
+    //
 
     /**
      * Adds an action to the list of actions executed by the node.
@@ -71,39 +124,3 @@ declare module 'pixi.js' {
   }
 
 }
-
-/*
- * Type aliases:
- */
-
-declare global {
-
-  /** Time measured in seconds. */
-  type TimeInterval = number;
-
-  /** Targeted display node. */
-  type TargetNode = Container;
-
-  /** Targeted display node with a width and height. */
-  type SizedTargetNode = TargetNode & SizeLike;
-
-  /** Any vector-like object (e.g. PIXI.Point, or any node). */
-  interface VectorLike {
-    x: number;
-    y: number;
-  }
-
-  /** Any object with a width and height (e.g. PIXI.Sprite). */
-  interface SizeLike {
-    width: number;
-    height: number;
-  }
-
-  /** Any object containing an array of points (e.g. PIXI.SimpleRope). */
-  interface PathObjectLike {
-    points: VectorLike[];
-  }
-
-}
-
-export {};
