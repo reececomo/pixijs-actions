@@ -130,7 +130,7 @@ declare const Defaults: {
 	/**
 	 * Default `timePerFrame` in seconds for `Action.animate(…)`.
 	 *
-	 * @default 1 / 60
+	 * @default 1/24 // 24 FPS
 	 */
 	animateTimePerFrame: number;
 	/**

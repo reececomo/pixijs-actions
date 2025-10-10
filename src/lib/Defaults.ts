@@ -6,9 +6,9 @@ export const Defaults = {
   /**
    * Default `timePerFrame` in seconds for `Action.animate(…)`.
    *
-   * @default 1 / 60
+   * @default 1/24 // 24 FPS
    */
-  animateTimePerFrame: 1 / 60,
+  animateTimePerFrame: 1 / 24,
 
   /**
    * Default timing mode used for ease-in pacing.
