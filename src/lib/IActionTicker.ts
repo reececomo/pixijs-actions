@@ -1,4 +1,4 @@
-import { TimingFunction } from "../Timing";
+import { TimingFunction } from "./Timing";
 
 export interface IActionTicker<TickerData = any>
 {

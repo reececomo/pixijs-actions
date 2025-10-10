@@ -12,14 +12,14 @@ export function simulateTime(seconds: number, fps: number = 60): Error[] {
 
   // simulate time forward in multiple discrete steps
   // to approximate real world conditions
-  let remainingMs = seconds * 1_000;
-  const tickMs = 1_000 / fps;
+  let remainingMS = seconds * 1_000;
+  const tickMS = 1_000 / fps;
 
-  while (remainingMs > 0) {
-    const ms = Math.min(tickMs, remainingMs);
-    remainingMs -= ms;
+  while (remainingMS > 0) {
+    const ms = Math.min(tickMS, remainingMS);
+    remainingMS -= ms;
 
-    Action.tick(ms, errorHandler);
+    Action.tick({ deltaMS: ms }, errorHandler);
   }
 
   return errors;

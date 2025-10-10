@@ -1,7 +1,56 @@
 import { Container } from 'pixi.js';
 
+
+export {};
+
+//
+// ----------------- Global Type Aliases -----------------
+//
+
+declare global {
+
+  /** Time measured in seconds. */
+  type TimeInterval = number;
+
+  /** Targeted display node. */
+  type TargetNode = Container;
+
+  type ContainerDestroyOptions = Parameters<TargetNode["destroy"]>[0];
+
+  /** Targeted display node with a width and height. */
+  type SizedTargetNode = TargetNode & SizeLike;
+
+  /** Any vector-like object (e.g. PIXI.Point, or any node). */
+  interface VectorLike {
+    x: number;
+    y: number;
+  }
+
+  /** Any object with a width and height (e.g. PIXI.Sprite). */
+  interface SizeLike {
+    width: number;
+    height: number;
+  }
+
+  /** Any object containing an array of points (e.g. PIXI.SimpleRope). */
+  interface PathObjectLike {
+    points: VectorLike[];
+  }
+
+}
+
+//
+// ----------------- PixiJS extension: -----------------
+//
+
 declare module 'pixi.js' {
+
   export interface Container {
+
+    //
+    // ----------------- Container Action Properties: -----------------
+    //
+
     /**
      * A boolean value that determines whether actions on the node and its descendants are processed.
      */
@@ -11,6 +60,10 @@ declare module 'pixi.js' {
      * A speed modifier applied to all actions executed by a node and its descendants.
      */
     speed: number;
+
+    //
+    // ----------------- Container Action Methods: -----------------
+    //
 
     /**
      * Adds an action to the list of actions executed by the node.
@@ -71,45 +124,85 @@ declare module 'pixi.js' {
   }
 
 }
-
-/*
- * Type aliases:
- */
-
-declare global {
-
-  /** Time measured in seconds. */
-  type TimeInterval = number;
-
-  /** Targeted display node. */
-  type TargetNode = Container;
-
-  /** Targeted display node with a width and height. */
-  type SizedTargetNode = TargetNode & SizeLike;
-
-  /** Any vector-like object (e.g. PIXI.Point, or any node). */
-  interface VectorLike {
-    x: number;
-    y: number;
-  }
-
-  /** Any object with a width and height (e.g. PIXI.Sprite). */
-  interface SizeLike {
-    width: number;
-    height: number;
-  }
-
-  /** Any object containing an array of points (e.g. PIXI.SimpleRope). */
-  interface PathObjectLike {
-    points: VectorLike[];
-  }
-
-}
-
-export {};
 import { Spritesheet, Texture } from 'pixi.js';
 
-declare abstract class Action {
+declare const Defaults: {
+	/**
+	 * Default `timePerFrame` in seconds for `Action.animate(…)`.
+	 *
+	 * @default 1 / 60
+	 */
+	animateTimePerFrame: number;
+	/**
+	 * Default timing mode used for ease-in pacing.
+	 *
+	 * Set this to update the default `easeIn()` timing mode.
+	 *
+	 * @default Timing.easeInSine
+	 */
+	timingEaseIn: (x: number) => number;
+	/**
+	 * Default timing mode used for ease-out pacing.
+	 *
+	 * Set this to update the default `easeOut()` timing mode.
+	 *
+	 * @default Timing.easeOutSine
+	 */
+	timingEaseOut: (x: number) => number;
+	/**
+	 * Default timing mode used for ease-in, ease-out pacing.
+	 *
+	 * Set this to update the default `easeInOut()` timing mode.
+	 *
+	 * @default Timing.easeInOutSine
+	 */
+	timingEaseInOut: (x: number) => number;
+};
+/**
+ * Create, configure, and run actions in PixiJS.
+ *
+ * An action is an animation that is executed by a target node.
+ *
+ * ### Setup:
+ * @example
+ * Ticker.shared.add( Action.tick )
+ */
+export declare abstract class Action {
+	/**
+	 * @deprecated Use `Action.defaults.animateTimePerFrame` instead.
+	 */
+	static get DefaultAnimateTimePerFrame(): TimeInterval;
+	static set DefaultAnimateTimePerFrame(value: TimeInterval);
+	/**
+	 * @deprecated Use `Action.defaults.timingEaseIn` instead.
+	 */
+	static get DefaultTimingEaseIn(): TimingFunction;
+	static set DefaultTimingEaseIn(v: TimingFunction | TimingKey);
+	/**
+	 * @deprecated Use `Action.defaults.timingEaseOut` instead.
+	 */
+	static get DefaultTimingEaseOut(): TimingFunction;
+	static set DefaultTimingEaseOut(v: TimingFunction | TimingKey);
+	/**
+	 * @deprecated Use `Action.defaults.timingEaseInOut` instead.
+	 */
+	static get DefaultTimingEaseInOut(): TimingFunction;
+	static set DefaultTimingEaseInOut(v: TimingFunction | TimingKey);
+	/**
+	 * @deprecated Use `Action.defaults.timingEaseIn` instead.
+	 */
+	static get DefaultTimingModeEaseIn(): TimingFunction;
+	static set DefaultTimingModeEaseIn(v: TimingFunction | TimingKey);
+	/**
+	 * @deprecated Use `Action.defaults.timingEaseOut` instead.
+	 */
+	static get DefaultTimingModeEaseOut(): TimingFunction;
+	static set DefaultTimingModeEaseOut(v: TimingFunction | TimingKey);
+	/**
+	 * @deprecated Use `Action.defaults.timingEaseInOut` instead.
+	 */
+	static get DefaultTimingModeEaseInOut(): TimingFunction;
+	static set DefaultTimingModeEaseInOut(v: TimingFunction | TimingKey);
 	/**
 	 * The duration required to complete an action.
 	 */
@@ -126,7 +219,7 @@ declare abstract class Action {
 	 * A function that controls the speed curve of an action.
 	 */
 	timing: TimingFunction;
-	protected constructor(duration: TimeInterval, hasChildren?: boolean);
+	protected constructor(duration: TimeInterval, hasChildren?: true | undefined);
 	/**
 	 * Adjust the timing curve of an animation.
 	 *
@@ -193,375 +286,7 @@ declare abstract class Action {
 	 */
 	abstract reversed(): Action;
 }
-/**
- * Create, configure, and run actions in PixiJS.
- *
- * An action is an animation that is executed by a target node.
- *
- * ### Setup:
- * Bind `Action.tick(deltaTimeMs)` to your renderer/shared ticker to activate actions.
- */
-declare abstract class PixiJSActions extends Action {
-	/**
-	 * Default `timePerFrame` in seconds for `Action.animate(…)`.
-	 *
-	 * @default 1/60
-	 */
-	static get DefaultAnimateTimePerFrame(): TimeInterval;
-	static set DefaultAnimateTimePerFrame(value: TimeInterval);
-	/**
-	 * Default timing mode used for ease-in pacing.
-	 *
-	 * Set this to update the default `easeIn()` timing mode.
-	 *
-	 * @default Timing.easeInSine
-	 */
-	static get DefaultTimingEaseIn(): TimingFunction;
-	static set DefaultTimingEaseIn(v: TimingFunction | TimingKey);
-	/**
-	 * Default timing mode used for ease-out pacing.
-	 *
-	 * Set this to update the default `easeOut()` timing mode.
-	 *
-	 * @default Timing.easeOutSine
-	 */
-	static get DefaultTimingEaseOut(): TimingFunction;
-	static set DefaultTimingEaseOut(v: TimingFunction | TimingKey);
-	/**
-	 * Default timing mode used for ease-in, ease-out pacing.
-	 *
-	 * Set this to update the default `easeInOut()` timing mode.
-	 *
-	 * @default Timing.easeInOutSine
-	 */
-	static get DefaultTimingEaseInOut(): TimingFunction;
-	static set DefaultTimingEaseInOut(v: TimingFunction | TimingKey);
-	/**
-	 * @deprecated Use `DefaultTimingEaseIn` instead.
-	 */
-	static get DefaultTimingModeEaseIn(): TimingFunction;
-	static set DefaultTimingModeEaseIn(v: TimingFunction | TimingKey);
-	/**
-	 * @deprecated Use `DefaultTimingEaseOut` instead.
-	 */
-	static get DefaultTimingModeEaseOut(): TimingFunction;
-	static set DefaultTimingModeEaseOut(v: TimingFunction | TimingKey);
-	/**
-	 * @deprecated Use `DefaultTimingEaseInOut` instead.
-	 */
-	static get DefaultTimingModeEaseInOut(): TimingFunction;
-	static set DefaultTimingModeEaseInOut(v: TimingFunction | TimingKey);
-	/**
-	 * Tick all actions forward.
-	 *
-	 * @param deltaTimeMs Delta time in milliseconds.
-	 * @param onErrorHandler Handle action errors.
-	 */
-	static tick(deltaTimeMs: number, onErrorHandler?: (error: any) => void): void;
-	/**
-	 * Creates an action that runs a collection of actions in parallel.
-	 *
-	 * When the action executes, the actions that comprise the group all start immediately and run in
-	 * parallel. The duration of the group action is the longest duration among the collection of
-	 * actions. If an action in the group has a duration less than the group’s duration, the action
-	 * completes, then idles until the group completes the remaining actions. This matters most when
-	 * creating a repeating action that repeats a group.
-	 *
-	 * This action is reversible; it creates a new group action that contains the reverse of each
-	 * action specified in the group.
-	 */
-	static group(actions: Action[]): Action;
-	/**
-	 * Creates an action that runs a collection of actions sequentially.
-	 *
-	 * When the action executes, the first action in the sequence starts and runs to completion.
-	 * Subsequent actions in the sequence run in a similar fashion until all of the actions in the
-	 * sequence have executed. The duration of the sequence action is the sum of the durations of the
-	 * actions in the sequence.
-	 *
-	 * This action is reversible; it creates a new sequence action that reverses the order of the
-	 * actions. Each action in the reversed sequence is itself reversed. For example, if an action
-	 * sequence is {1,2,3}, the reversed sequence would be {3R,2R,1R}.
-	 */
-	static sequence(actions: Action[]): Action;
-	/**
-	 * Creates an action that repeats another action a specified number of times.
-	 *
-	 * When the action executes, the associated action runs to completion and then repeats, until the
-	 * count is reached.
-	 *
-	 * This action is reversible; it creates a new action that is the reverse of the specified action
-	 * and then repeats it the same number of times.
-	 */
-	static repeat(action: Action, repeats: number): Action;
-	/**
-	 * Creates an action that repeats another action forever.
-	 *
-	 * When the action executes, the associated action runs to completion and then repeats.
-	 *
-	 * This action is reversible; it creates a new action that is the reverse of the specified action
-	 * and then repeats it forever.
-	 */
-	static repeatForever(action: Action): Action;
-	/**
-	 * Creates an action that idles for a specified period of time.
-	 *
-	 * This action is not reversible; the reverse of this action is the same action.
-	 */
-	static waitForDuration(duration: TimeInterval): Action;
-	/**
-	 * Creates an action that idles for a randomized period of time.
-	 * The resulting action will wait for averageDuration ± (rangeSize / 2).
-	 *
-	 * @param average The average amount of time to wait.
-	 * @param rangeSize The range of possible values for the duration.
-	 *
-	 * @example Action.waitForDurationWithRange(10.0, 5.0) // duration will be 7.5 -> 12.5
-	 *
-	 * This action is not reversible; the reverse of this action is the same action.
-	 */
-	static waitForDurationWithRange(average: TimeInterval, rangeSize: TimeInterval): Action;
-	/**
-	 * Creates an action that moves a node relative to its current position.
-	 *
-	 * This action is reversible.
-	 */
-	static moveBy(delta: VectorLike, duration: TimeInterval): Action;
-	static moveBy(dx: number, dy: number, duration: TimeInterval): Action;
-	/**
-	 * Creates an action that moves a node horizontally relative to its current position.
-	 *
-	 * This action is reversible.
-	 */
-	static moveByX(x: number, duration: TimeInterval): Action;
-	/**
-	 * Creates an action that moves a node vertically relative to its current position.
-	 *
-	 * This action is reversible.
-	 */
-	static moveByY(y: number, duration: TimeInterval): Action;
-	/**
-	 * Creates an action that moves a node to a new position.
-	 *
-	 * This action is not reversible; the reverse of this action is the same action.
-	 */
-	static moveTo(position: VectorLike, duration: TimeInterval): Action;
-	static moveTo(x: number, y: number, duration: TimeInterval): Action;
-	/**
-	 * Creates an action that moves a node horizontally.
-	 *
-	 * This action is not reversible; the reverse of this action is the same action.
-	 */
-	static moveToX(x: number, duration: TimeInterval): Action;
-	/**
-	 * Creates an action that moves a node vertically.
-	 *
-	 * This action is not reversible; the reverse of this action is the same action.
-	 */
-	static moveToY(y: number, duration: TimeInterval): Action;
-	/**
-	 * Creates an action that moves the node along a path, optionally orienting the node to the path.
-	 *
-	 * This action is reversible; the resulting action creates a reversed path and then follows it,
-	 * with the same duration.
-	 *
-	 * @param path A path to follow, or an object containing an array of points called `points`.
-	 * @param duration The duration of the animation.
-	 * @param asOffset (Default: true) When true, the path is relative to the node's current position.
-	 * @param orientToPath (Default: true) When true, the node’s rotation turns to follow the path.
-	 * @param fixedSpeed (Default: true) When true, the node's speed is consistent for each segment.
-	 */
-	static follow(path: PathObjectLike | VectorLike[], duration: number, asOffset?: boolean, orientToPath?: boolean, fixedSpeed?: boolean): Action;
-	/**
-	 * Creates an action that moves the node along a path at a specified speed, optionally orienting
-	 * the node to the path.
-	 *
-	 * This action is reversible; the resulting action creates a reversed path and then follows it,
-	 * with the same speed.
-	 *
-	 * @param path A path to follow.
-	 * @param speed The velocity at which the node should move, in world units per second.
-	 * @param asOffset (Default: true) When true, the path is relative to the node's current position.
-	 * @param orientToPath (Default: true) When true, the node’s rotation turns to follow the path.
-	 */
-	static followAtSpeed(path: PathObjectLike | VectorLike[], speed: number, asOffset?: boolean, orientToPath?: boolean): Action;
-	/**
-	 * Creates an action that rotates the node by a relative value (in radians).
-	 *
-	 * This action is reversible.
-	 */
-	static rotateBy(rotation: number, duration: TimeInterval): Action;
-	/**
-	 * Creates an action that rotates the node by a relative value (in degrees).
-	 *
-	 * This action is reversible.
-	 */
-	static rotateByDegrees(degrees: number, duration: TimeInterval): Action;
-	/**
-	 * Creates an action that rotates the node to an absolute value (in radians).
-	 *
-	 * This action is not reversible; the reverse of this action is the same action.
-	 */
-	static rotateTo(rotation: number, duration: TimeInterval): Action;
-	/**
-	 * Creates an action that rotates the node to an absolute value (in degrees).
-	 *
-	 * This action is not reversible; the reverse of this action is the same action.
-	 */
-	static rotateToDegrees(degrees: number, duration: TimeInterval): Action;
-	/**
-	 * Creates an action that changes how fast the node executes actions by a relative value.
-	 *
-	 * This action is reversible.
-	 */
-	static speedBy(speed: number, duration: TimeInterval): Action;
-	/**
-	 * Creates an action that changes how fast the node executes actions.
-	 *
-	 * This action is not reversible; the reverse of this action is the same action.
-	 */
-	static speedTo(speed: number, duration: TimeInterval): Action;
-	/**
-	 * Creates an action that changes the scale of a node by a relative value.
-	 *
-	 * This action is reversible.
-	 */
-	static scaleBy(scale: number, duration: TimeInterval): Action;
-	static scaleBy(size: VectorLike, duration: TimeInterval): Action;
-	static scaleBy(dx: number, dy: number, duration: TimeInterval): Action;
-	/**
-	 * Creates an action that changes the x scale of a node by a relative value.
-	 *
-	 * This action is reversible.
-	 */
-	static scaleByX(x: number, duration: TimeInterval): Action;
-	/**
-	 * Creates an action that changes the y scale of a node by a relative value.
-	 *
-	 * This action is reversible.
-	 */
-	static scaleByY(y: number, duration: TimeInterval): Action;
-	/**
-	 * Creates an action that changes the x and y scale values of a node.
-	 *
-	 * This action is not reversible; the reverse of this action is the same action.
-	 */
-	static scaleTo(scale: number, duration: TimeInterval): Action;
-	static scaleTo(size: SizeLike, duration: TimeInterval): Action;
-	static scaleTo(x: number, y: number, duration: TimeInterval): Action;
-	/**
-	 * Creates an action that changes the y scale values of a node.
-	 *
-	 * This action is not reversible; the reverse of this action is the same action.
-	 */
-	static scaleToX(x: number, duration: TimeInterval): Action;
-	/**
-	 * Creates an action that changes the x scale values of a node.
-	 *
-	 * This action is not reversible; the reverse of this action is the same action.
-	 */
-	static scaleToY(y: number, duration: TimeInterval): Action;
-	/**
-	 * Creates an action that changes the alpha value of the node to 1.0.
-	 *
-	 * This action is reversible. The reverse is equivalent to fadeOut(duration).
-	 */
-	static fadeIn(duration: TimeInterval): Action;
-	/**
-	 * Creates an action that changes the alpha value of the node to 0.0.
-	 *
-	 * This action is reversible. The reverse is equivalent to fadeIn(duration).
-	 */
-	static fadeOut(duration: TimeInterval): Action;
-	/**
-	 * Creates an action that adjusts the alpha value of a node to a new value.
-	 *
-	 * This action is not reversible; the reverse of this action is the same action.
-	 */
-	static fadeAlphaTo(alpha: number, duration: TimeInterval): Action;
-	/**
-	 * Creates an action that adjusts the alpha value of a node by a relative value.
-	 *
-	 * This action is reversible.
-	 */
-	static fadeAlphaBy(alpha: number, duration: TimeInterval): Action;
-	/**
-	 * Creates an action that animates changes to a sprite’s texture.
-	 *
-	 * Note: Target must be a Sprite.
-	 *
-	 * This action is reversible.
-	 */
-	static animate(options: AnimateOptions): Action;
-	/**
-	 * Creates an action that hides a node.
-	 *
-	 * This action has an instantaneous duration. When the action executes, the node’s visible
-	 * property is set to true.
-	 *
-	 * This action is reversible. The reversed action is equivalent to show().
-	 */
-	static hide(): Action;
-	/**
-	 * Creates an action that makes a node visible.
-	 *
-	 * This action has an instantaneous duration. When the action executes, the node’s visible
-	 * property is set to false.
-	 *
-	 * This action is reversible. The reversed action is equivalent to hide().
-	 */
-	static unhide(): Action;
-	/**
-	 * Creates an action that removes all internal references, listeners and actions,
-	 * as well as removes children from the display list.
-	 *
-	 * This action has an instantaneous duration.
-	 *
-	 * This action is not reversible; the reverse of this action is the same action.
-	 */
-	static destroy(options?: DestroyOptions): Action;
-	/**
-	 * Creates an action that removes the node from its parent.
-	 *
-	 * This action has an instantaneous duration.
-	 *
-	 * This action is not reversible; the reverse of this action is the same action.
-	 */
-	static removeFromParent(): Action;
-	/**
-	 * Creates an action that runs an action on a named child object.
-	 *
-	 * This action has an instantaneous duration, although the action executed on the child may have
-	 * a duration of its own. When the action executes, it looks up an appropriate child node and
-	 * calls its `run(action)` method, passing in the action to execute.
-	 *
-	 * This action is reversible; it tells the child to execute the reverse of the action specified by
-	 * the action parameter.
-	 */
-	static runOnChild(childLabel: string, action: Action): Action;
-	/**
-	 * Creates an action that executes a block.
-	 *
-	 * This action takes place instantaneously.
-	 *
-	 * This action is not reversible; the reverse action executes the same block function.
-	 */
-	static run(blockFn: (target: TargetNode) => void): Action;
-	/**
-	 * Creates an action that executes a stepping function over its duration.
-	 *
-	 * The function will be triggered on every redraw until the action completes, and is passed
-	 * the target and the elasped time as a scalar between 0 and 1 (which is passed through the timing
-	 * mode function).
-	 *
-	 * This action is not reversible; the reverse action executes the same stepping function.
-	 */
-	static custom(duration: number, stepFn: (target: TargetNode, t: number, dt: number) => void): Action;
-	/**
-	 * @deprecated Use `custom` instead.
-	 */
-	static customAction: typeof PixiJSActions.custom;
-}
+/** @deprecated Use `Action.defaults` instead. */
 export declare const ActionSettings: {
 	animateTimePerFrame: number;
 	timingEaseIn: (x: number) => number;
@@ -686,8 +411,352 @@ export interface BaseAnimateOptions {
 	 */
 	restore?: boolean;
 }
+export interface TickerLike {
+	/**
+	 * Scalar time elapsed in milliseconds from last frame to this frame.
+	 */
+	deltaMS: number;
+}
+export namespace Action {
+	/**
+	 * Creates an action that runs a collection of actions in parallel.
+	 *
+	 * When the action executes, the actions that comprise the group all start immediately and run in
+	 * parallel. The duration of the group action is the longest duration among the collection of
+	 * actions. If an action in the group has a duration less than the group’s duration, the action
+	 * completes, then idles until the group completes the remaining actions. This matters most when
+	 * creating a repeating action that repeats a group.
+	 *
+	 * This action is reversible; it creates a new group action that contains the reverse of each
+	 * action specified in the group.
+	 */
+	function group(actions: Action[]): Action;
+	/**
+	 * Creates an action that runs a collection of actions sequentially.
+	 *
+	 * When the action executes, the first action in the sequence starts and runs to completion.
+	 * Subsequent actions in the sequence run in a similar fashion until all of the actions in the
+	 * sequence have executed. The duration of the sequence action is the sum of the durations of the
+	 * actions in the sequence.
+	 *
+	 * This action is reversible; it creates a new sequence action that reverses the order of the
+	 * actions. Each action in the reversed sequence is itself reversed. For example, if an action
+	 * sequence is {1,2,3}, the reversed sequence would be {3R,2R,1R}.
+	 */
+	function sequence(actions: Action[]): Action;
+	/**
+	 * Creates an action that repeats another action a specified number of times.
+	 *
+	 * When the action executes, the associated action runs to completion and then repeats, until the
+	 * count is reached.
+	 *
+	 * This action is reversible; it creates a new action that is the reverse of the specified action
+	 * and then repeats it the same number of times.
+	 */
+	function repeat(action: Action, repeats: number): Action;
+	/**
+	 * Creates an action that repeats another action forever.
+	 *
+	 * When the action executes, the associated action runs to completion and then repeats.
+	 *
+	 * This action is reversible; it creates a new action that is the reverse of the specified action
+	 * and then repeats it forever.
+	 */
+	function repeatForever(action: Action): Action;
+	/**
+	 * Creates an action that idles for a specified period of time.
+	 *
+	 * This action is not reversible; the reverse of this action is the same action.
+	 */
+	function waitForDuration(duration: TimeInterval): Action;
+	/**
+	 * Creates an action that idles for a randomized period of time.
+	 * The resulting action will wait for averageDuration ± (rangeSize / 2).
+	 *
+	 * @param average The average amount of time to wait.
+	 * @param rangeSize The range of possible values for the duration.
+	 *
+	 * @example Action.waitForDurationWithRange(10.0, 5.0) // duration will be 7.5 -> 12.5
+	 *
+	 * This action is not reversible; the reverse of this action is the same action.
+	 */
+	function waitForDurationWithRange(average: TimeInterval, rangeSize: TimeInterval): Action;
+	/**
+	 * Creates an action that moves a node relative to its current position.
+	 *
+	 * This action is reversible.
+	 */
+	function moveBy(delta: VectorLike, duration: TimeInterval): Action;
+	function moveBy(dx: number, dy: number, duration: TimeInterval): Action;
+	function moveBy(a: number | VectorLike, b: number | TimeInterval, c?: TimeInterval): Action;
+	/**
+	 * Creates an action that moves a node horizontally relative to its current position.
+	 *
+	 * This action is reversible.
+	 */
+	function moveByX(x: number, duration: TimeInterval): Action;
+	/**
+	 * Creates an action that moves a node vertically relative to its current position.
+	 *
+	 * This action is reversible.
+	 */
+	function moveByY(y: number, duration: TimeInterval): Action;
+	/**
+	 * Creates an action that moves a node to a new position.
+	 *
+	 * This action is not reversible; the reverse of this action is the same action.
+	 */
+	function moveTo(position: VectorLike, duration: TimeInterval): Action;
+	function moveTo(x: number, y: number, duration: TimeInterval): Action;
+	function moveTo(a: number | VectorLike, b: number | TimeInterval, c?: TimeInterval): Action;
+	/**
+	 * Creates an action that moves a node horizontally.
+	 *
+	 * This action is not reversible; the reverse of this action is the same action.
+	 */
+	function moveToX(x: number, duration: TimeInterval): Action;
+	/**
+	 * Creates an action that moves a node vertically.
+	 *
+	 * This action is not reversible; the reverse of this action is the same action.
+	 */
+	function moveToY(y: number, duration: TimeInterval): Action;
+	/**
+	 * Creates an action that moves the node along a path, optionally orienting the node to the path.
+	 *
+	 * This action is reversible; the resulting action creates a reversed path and then follows it,
+	 * with the same duration.
+	 *
+	 * @param path A path to follow, or an object containing an array of points called `points`.
+	 * @param duration The duration of the animation.
+	 * @param asOffset (Default: true) When true, the path is relative to the node's current position.
+	 * @param orientToPath (Default: true) When true, the node’s rotation turns to follow the path.
+	 * @param fixedSpeed (Default: true) When true, the node's speed is consistent for each segment.
+	 */
+	function follow(path: PathObjectLike | VectorLike[], duration: number, asOffset?: boolean, orientToPath?: boolean, fixedSpeed?: boolean): Action;
+	/**
+	 * Creates an action that moves the node along a path at a specified speed, optionally orienting
+	 * the node to the path.
+	 *
+	 * This action is reversible; the resulting action creates a reversed path and then follows it,
+	 * with the same speed.
+	 *
+	 * @param path A path to follow.
+	 * @param speed The velocity at which the node should move, in world units per second.
+	 * @param asOffset (Default: true) When true, the path is relative to the node's current position.
+	 * @param orientToPath (Default: true) When true, the node’s rotation turns to follow the path.
+	 */
+	function followAtSpeed(path: PathObjectLike | VectorLike[], speed: number, asOffset?: boolean, orientToPath?: boolean): Action;
+	/**
+	 * Creates an action that rotates the node by a relative value (in radians).
+	 *
+	 * This action is reversible.
+	 */
+	function rotateBy(rotation: number, duration: TimeInterval): Action;
+	/**
+	 * Creates an action that rotates the node by a relative value (in degrees).
+	 *
+	 * This action is reversible.
+	 */
+	function rotateByDegrees(degrees: number, duration: TimeInterval): Action;
+	/**
+	 * Creates an action that rotates the node to an absolute value (in radians).
+	 *
+	 * This action is not reversible; the reverse of this action is the same action.
+	 */
+	function rotateTo(rotation: number, duration: TimeInterval): Action;
+	/**
+	 * Creates an action that rotates the node to an absolute value (in degrees).
+	 *
+	 * This action is not reversible; the reverse of this action is the same action.
+	 */
+	function rotateToDegrees(degrees: number, duration: TimeInterval): Action;
+	/**
+	 * Creates an action that changes how fast the node executes actions by a relative value.
+	 *
+	 * This action is reversible.
+	 */
+	function speedBy(speed: number, duration: TimeInterval): Action;
+	/**
+	 * Creates an action that changes how fast the node executes actions.
+	 *
+	 * This action is not reversible; the reverse of this action is the same action.
+	 */
+	function speedTo(speed: number, duration: TimeInterval): Action;
+	/**
+	 * Creates an action that changes the scale of a node by a relative value.
+	 *
+	 * This action is reversible.
+	 */
+	function scaleBy(scale: number, duration: TimeInterval): Action;
+	function scaleBy(size: VectorLike, duration: TimeInterval): Action;
+	function scaleBy(dx: number, dy: number, duration: TimeInterval): Action;
+	function scaleBy(a: number | VectorLike, b: number | TimeInterval, c?: TimeInterval): Action;
+	/**
+	 * Creates an action that changes the x scale of a node by a relative value.
+	 *
+	 * This action is reversible.
+	 */
+	function scaleByX(x: number, duration: TimeInterval): Action;
+	/**
+	 * Creates an action that changes the y scale of a node by a relative value.
+	 *
+	 * This action is reversible.
+	 */
+	function scaleByY(y: number, duration: TimeInterval): Action;
+	/**
+	 * Creates an action that changes the x and y scale values of a node.
+	 *
+	 * This action is not reversible; the reverse of this action is the same action.
+	 */
+	function scaleTo(scale: number, duration: TimeInterval): Action;
+	function scaleTo(size: SizeLike, duration: TimeInterval): Action;
+	function scaleTo(x: number, y: number, duration: TimeInterval): Action;
+	function scaleTo(a: number | SizeLike, b: number | TimeInterval, c?: TimeInterval): Action;
+	/**
+	 * Creates an action that changes the y scale values of a node.
+	 *
+	 * This action is not reversible; the reverse of this action is the same action.
+	 */
+	function scaleToX(x: number, duration: TimeInterval): Action;
+	/**
+	 * Creates an action that changes the x scale values of a node.
+	 *
+	 * This action is not reversible; the reverse of this action is the same action.
+	 */
+	function scaleToY(y: number, duration: TimeInterval): Action;
+	/**
+	 * Creates an action that changes the alpha value of the node to 1.0.
+	 *
+	 * This action is reversible. The reverse is equivalent to fadeOut(duration).
+	 */
+	function fadeIn(duration: TimeInterval): Action;
+	/**
+	 * Creates an action that changes the alpha value of the node to 0.0.
+	 *
+	 * This action is reversible. The reverse is equivalent to fadeIn(duration).
+	 */
+	function fadeOut(duration: TimeInterval): Action;
+	/**
+	 * Creates an action that adjusts the alpha value of a node to a new value.
+	 *
+	 * This action is not reversible; the reverse of this action is the same action.
+	 */
+	function fadeAlphaTo(alpha: number, duration: TimeInterval): Action;
+	/**
+	 * Creates an action that adjusts the alpha value of a node by a relative value.
+	 *
+	 * This action is reversible.
+	 */
+	function fadeAlphaBy(alpha: number, duration: TimeInterval): Action;
+	/**
+	 * Creates an action that animates changes to a sprite’s texture.
+	 *
+	 * Note: Target must be a Sprite.
+	 *
+	 * This action is reversible.
+	 */
+	function animate(options: AnimateOptions): Action;
+	/**
+	 * Creates an action that hides a node.
+	 *
+	 * This action has an instantaneous duration. When the action executes, the node’s visible
+	 * property is set to true.
+	 *
+	 * This action is reversible. The reversed action is equivalent to show().
+	 */
+	function hide(): Action;
+	/**
+	 * Creates an action that makes a node visible.
+	 *
+	 * This action has an instantaneous duration. When the action executes, the node’s visible
+	 * property is set to false.
+	 *
+	 * This action is reversible. The reversed action is equivalent to hide().
+	 */
+	function unhide(): Action;
+	/**
+	 * Creates an action that removes all internal references, listeners and actions,
+	 * as well as removes children from the display list.
+	 *
+	 * This action has an instantaneous duration.
+	 *
+	 * This action is not reversible; the reverse of this action is the same action.
+	 */
+	function destroy(options?: Parameters<TargetNode["destroy"]>[0]): Action;
+	/**
+	 * Creates an action that removes the node from its parent.
+	 *
+	 * This action has an instantaneous duration.
+	 *
+	 * This action is not reversible; the reverse of this action is the same action.
+	 */
+	function removeFromParent(): Action;
+	/**
+	 * Creates an action that runs an action on a named child object.
+	 *
+	 * This action has an instantaneous duration, although the action executed on the child may have
+	 * a duration of its own. When the action executes, it looks up an appropriate child node and
+	 * calls its `run(action)` method, passing in the action to execute.
+	 *
+	 * This action is reversible; it tells the child to execute the reverse of the action specified by
+	 * the action parameter.
+	 */
+	function runOnChild(childLabel: string, action: Action): Action;
+	/**
+	 * Creates an action that executes a block.
+	 *
+	 * This action takes place instantaneously.
+	 *
+	 * This action is not reversible; the reverse action executes the same block function.
+	 */
+	function run(blockFn: (target: TargetNode) => void): Action;
+	/**
+	 * Creates an action that executes a stepping function over its duration.
+	 *
+	 * The function will be triggered on every redraw until the action completes, and is passed
+	 * the target and the elasped time as a scalar between 0 and 1 (which is passed through the timing
+	 * mode function).
+	 *
+	 * This action is not reversible; the reverse action executes the same stepping function.
+	 */
+	function custom(duration: number, stepFn: (target: TargetNode, t: number, dt: number) => void): Action;
+	/**
+	 * @deprecated Use `Action.custom(duration, stepFn)`
+	 *
+	 * Creates an action that executes a stepping function over its duration.
+	 *
+	 * The function will be triggered on every redraw until the action completes, and is passed
+	 * the target and the elasped time as a scalar between 0 and 1 (which is passed through the timing
+	 * mode function).
+	 *
+	 * This action is not reversible; the reverse action executes the same stepping function.
+	 */
+	function customAction(duration: number, stepFn: (target: TargetNode, t: number, dt: number) => void): Action;
+}
+export namespace Action {
+	/**
+	 * PixiJS Actions global default settings.
+	 */
+	const defaults: typeof Defaults;
+}
+export namespace Action {
+	/**
+	 * Tick all actions forward.
+	 *
+	 * @param ticker Ticker instance.
+	 * @param onErrorHandler Error handler for individual action errors.
+	 */
+	function tick(ticker: TickerLike, onErrorHandler?: (error: any) => void): void;
+	/**
+	 * Tick all actions forward.
+	 *
+	 * @param deltaMS Delta time given in milliseconds.
+	 * @param onErrorHandler Error handler for individual action errors.
+	 */
+	function tick(deltaMS: number, onErrorHandler?: (error: any) => void): void;
+}
 export type AnimateOptions = AnimateTextureOptions | AnimateSpritesheetOptions;
-export type DestroyOptions = Parameters<TargetNode["destroy"]>[0];
 /**
  * Timing function.
  */
@@ -698,9 +767,5 @@ export type TimingFunction = (x: number) => number;
 export type TimingKey = keyof typeof Timing;
 /** @deprecated Use `TimingFunction` instead. */
 export type TimingModeFn = TimingFunction;
-
-export {
-	PixiJSActions as Action,
-};
 
 export {};

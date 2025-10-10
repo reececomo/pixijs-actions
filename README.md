@@ -50,7 +50,7 @@ import { registerPixiJSActionsMixin, Action } from 'pixijs-actions';
 registerPixiJSActionsMixin(PIXI.Container);
 
 // start
-Ticker.shared.add(ticker => Action.tick(ticker.deltaMS));
+Ticker.shared.add(Action.tick);
 ```
 
 > [!NOTE]
