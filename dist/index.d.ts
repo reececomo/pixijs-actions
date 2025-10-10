@@ -488,7 +488,6 @@ export namespace Action {
 	 */
 	function moveBy(delta: VectorLike, duration: TimeInterval): Action;
 	function moveBy(dx: number, dy: number, duration: TimeInterval): Action;
-	function moveBy(a: number | VectorLike, b: number | TimeInterval, c?: TimeInterval): Action;
 	/**
 	 * Creates an action that moves a node horizontally relative to its current position.
 	 *
@@ -508,7 +507,6 @@ export namespace Action {
 	 */
 	function moveTo(position: VectorLike, duration: TimeInterval): Action;
 	function moveTo(x: number, y: number, duration: TimeInterval): Action;
-	function moveTo(a: number | VectorLike, b: number | TimeInterval, c?: TimeInterval): Action;
 	/**
 	 * Creates an action that moves a node horizontally.
 	 *
@@ -591,7 +589,6 @@ export namespace Action {
 	function scaleBy(scale: number, duration: TimeInterval): Action;
 	function scaleBy(size: VectorLike, duration: TimeInterval): Action;
 	function scaleBy(dx: number, dy: number, duration: TimeInterval): Action;
-	function scaleBy(a: number | VectorLike, b: number | TimeInterval, c?: TimeInterval): Action;
 	/**
 	 * Creates an action that changes the x scale of a node by a relative value.
 	 *
@@ -612,7 +609,6 @@ export namespace Action {
 	function scaleTo(scale: number, duration: TimeInterval): Action;
 	function scaleTo(size: SizeLike, duration: TimeInterval): Action;
 	function scaleTo(x: number, y: number, duration: TimeInterval): Action;
-	function scaleTo(a: number | SizeLike, b: number | TimeInterval, c?: TimeInterval): Action;
 	/**
 	 * Creates an action that changes the y scale values of a node.
 	 *

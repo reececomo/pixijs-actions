@@ -19,19 +19,19 @@ export class FollowPathAction extends Action {
     orientToPath: boolean,
     fixedSpeed: boolean,
   ) {
+    path = Array.isArray(path) ? [...path] : [...path.points];
+
     super(duration);
 
-    const _path = Array.isArray(path) ? [...path] : [...path.points];
-
-    this.path = _path;
-    this.lastIndex = _path.length - 1;
+    this.path = path;
+    this.lastIndex = path.length - 1;
     this.asOffset = asOffset;
     this.orientToPath = orientToPath;
     this.fixedSpeed = fixedSpeed;
 
     // Precalculate segment lengths, if needed.
     if (orientToPath || fixedSpeed) {
-      const [totalDist, segmentLengths] = FollowPathAction.getLengths(_path);
+      const [totalDist, segmentLengths] = FollowPathAction.getLengths(path);
       this.segmentLengths = segmentLengths;
 
       if (fixedSpeed) {
@@ -42,8 +42,17 @@ export class FollowPathAction extends Action {
 
   // ----- Static Helpers: -----
 
-  public static getPath(path: PathObjectLike | VectorLike[]): VectorLike[] {
-    return Array.isArray(path) ? [...path] : [...path.points];
+  public static getLength(path: VectorLike[]): number {
+    let length = 0;
+
+    for (let i = 0; i < path.length - 1; i++) {
+      const dx = path[i + 1]!.x - path[i]!.x;
+      const dy = path[i + 1]!.y - path[i]!.y;
+
+      length += Math.sqrt(dx * dx + dy * dy);
+    }
+
+    return length;
   }
 
   public static getLengths(

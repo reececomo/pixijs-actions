@@ -121,7 +121,6 @@ declare module './ActionClass' {
      */
     function moveBy(delta: VectorLike, duration: TimeInterval): Action;
     function moveBy(dx: number, dy: number, duration: TimeInterval): Action;
-    function moveBy(a: number | VectorLike, b: number | TimeInterval, c?: TimeInterval): Action;
 
     /**
      * Creates an action that moves a node horizontally relative to its current position.
@@ -144,7 +143,6 @@ declare module './ActionClass' {
      */
     function moveTo(position: VectorLike, duration: TimeInterval): Action;
     function moveTo(x: number, y: number, duration: TimeInterval): Action;
-    function moveTo(a: number | VectorLike, b: number | TimeInterval, c?: TimeInterval): Action;
 
     /**
      * Creates an action that moves a node horizontally.
@@ -265,7 +263,6 @@ declare module './ActionClass' {
     function scaleBy(scale: number, duration: TimeInterval): Action;
     function scaleBy(size: VectorLike, duration: TimeInterval): Action;
     function scaleBy(dx: number, dy: number, duration: TimeInterval): Action;
-    function scaleBy(a: number | VectorLike, b: number | TimeInterval, c?: TimeInterval): Action;
 
     /**
      * Creates an action that changes the x scale of a node by a relative value.
@@ -289,7 +286,6 @@ declare module './ActionClass' {
     function scaleTo(scale: number, duration: TimeInterval): Action;
     function scaleTo(size: SizeLike, duration: TimeInterval): Action;
     function scaleTo(x: number, y: number, duration: TimeInterval): Action;
-    function scaleTo(a: number | SizeLike, b: number | TimeInterval, c?: TimeInterval): Action;
 
     /**
      * Creates an action that changes the y scale values of a node.
@@ -523,8 +519,7 @@ Action.follow = function(
   orientToPath: boolean = true,
   fixedSpeed: boolean = true,
 ): Action {
-  const _path = FollowPathAction.getPath(path);
-  return new FollowPathAction(_path, duration, asOffset, orientToPath, fixedSpeed);
+  return new FollowPathAction(path, duration, asOffset, orientToPath, fixedSpeed);
 };
 
 Action.followAtSpeed = function(
@@ -533,9 +528,9 @@ Action.followAtSpeed = function(
   asOffset: boolean = true,
   orientToPath: boolean = true,
 ): Action {
-  const _path = FollowPathAction.getPath(path);
-  const _length = FollowPathAction.getLengths(_path);
-  return new FollowPathAction(_path, _length[0] / speed, asOffset, orientToPath, true);
+  path = Array.isArray(path) ? path : path.points;
+  const length = FollowPathAction.getLength(path);
+  return new FollowPathAction(path, length/speed, asOffset, orientToPath, true);
 };
 
 Action.rotateBy = function(rotation: number, duration: TimeInterval): Action {
