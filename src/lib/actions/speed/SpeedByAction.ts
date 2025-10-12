@@ -16,7 +16,7 @@ export class SpeedByAction extends Action {
     return new SpeedByAction(-this._speed, this.duration)._apply(this);
   }
 
-  public _onTickerTick(target: TargetNode, t: number, dt: number): void {
+  public _onTickerUpdate(target: Target, t: number, dt: number): void {
     target.speed += this._speed * dt;
   }
 }

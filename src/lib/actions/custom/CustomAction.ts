@@ -1,6 +1,6 @@
 import { Action } from '../../ActionClass';
 
-export type StepFunction = (target: TargetNode, t: number, dt: number) => void;
+export type StepFunction = (target: Target, t: number, dt: number) => void;
 
 export class CustomAction extends Action {
   protected readonly stepFn: StepFunction;
@@ -10,7 +10,7 @@ export class CustomAction extends Action {
     this.stepFn = stepFn;
   }
 
-  public _onTickerTick(target: TargetNode, t: number, dt: number): void {
+  public _onTickerUpdate(target: Target, t: number, dt: number): void {
     this.stepFn(target, t, dt);
   }
 

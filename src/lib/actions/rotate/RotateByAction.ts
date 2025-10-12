@@ -16,7 +16,7 @@ export class RotateByAction extends Action {
     return new RotateByAction(-this.rotation, this.duration)._apply(this);
   }
 
-  public _onTickerTick(target: TargetNode, t: number, dt: number): void {
+  public _onTickerUpdate(target: Target, t: number, dt: number): void {
     target.rotation += this.rotation * dt;
   }
 }

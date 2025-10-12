@@ -13,7 +13,7 @@ export class FollowPathAction extends Action {
   protected readonly fixedSpeed: boolean;
 
   public constructor(
-    path: VectorLike[] | PathObjectLike,
+    path: VectorLike[] | IPath,
     duration: number,
     asOffset: boolean,
     orientToPath: boolean,
@@ -85,14 +85,14 @@ export class FollowPathAction extends Action {
     )._apply(this);
   }
 
-  public _onTickerInit(target: any): any {
+  public _onTickerAdded(target: any): any {
     return {
       x: this.asOffset ? target.x : 0,
       y: this.asOffset ? target.y : 0,
     };
   }
 
-  public _onTickerTick(target: any, t: number, dt: number, ticker: IActionTicker): void {
+  public _onTickerUpdate(target: any, t: number, dt: number, ticker: IActionTicker): void {
     if (this.lastIndex < 0) {
       return; // Empty path.
     }

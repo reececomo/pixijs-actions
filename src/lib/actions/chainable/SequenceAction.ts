@@ -22,8 +22,8 @@ export class SequenceAction extends Action {
     return new SequenceAction(reversedActions)._apply(this);
   }
 
-  public _onTickerInit(
-    target: TargetNode,
+  public _onTickerAdded(
+    target: Target,
     ticker: IActionTicker<any>,
   ): any {
     const actions = this._flatten();
@@ -32,8 +32,8 @@ export class SequenceAction extends Action {
     return { childTickers };
   }
 
-  public _onTickerTick(
-    target: TargetNode,
+  public _onTickerUpdate(
+    target: Target,
     t: number,
     dt: number,
     ticker: IActionTicker<SequenceTickerData>,
@@ -64,7 +64,7 @@ export class SequenceAction extends Action {
     ticker.data.childTickers.forEach((ticker) => ticker.reset());
   }
 
-  public _onTickerRemoved(target: TargetNode, ticker: IActionTicker<SequenceTickerData>): void {
+  public _onTickerRemoved(target: Target, ticker: IActionTicker<SequenceTickerData>): void {
     if (!ticker.data) return;
     ticker.data.childTickers.forEach((ticker) => ticker.reset());
   }

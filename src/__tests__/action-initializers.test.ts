@@ -1,6 +1,7 @@
 import { Container, Sprite } from 'pixi.js';
 import { Action } from '../index';
 import { simulateTime } from "./testHelpers";
+import { MockSprite } from './MockSprite';
 
 import "../globals.d.ts";
 
@@ -131,7 +132,7 @@ describe('Action Chaining', () => {
           ]),
           Action.group([ // Also has 'actions' but not a SequenceAction
             Action.fadeOut(0.5),
-            Action.scaleTo({ width: 2, height: 2 }, 1.0),
+            Action.scaleToSize({ width: 2, height: 2 }, 1.0),
           ]),
         ]),
         Action.sequence([
@@ -633,6 +634,40 @@ describe('Action', () => {
     });
   });
 
+  describe('tintTo()', () => {
+    it('can be initialized with (tint, duration)', () => {
+      const node = new MockSprite();
+      expect(node.tint).toBe(0xffffff); // Sanity check.
+
+      node.run(Action.tintTo(0x000000, 1.0));
+
+      simulateTime(0.5);
+      expect(node.tint).toBe(0x7f7f7f);
+
+      simulateTime(0.5);
+      expect(node.tint).toBe(0x000000);
+    });
+
+    it('correctly blends tint', () => {
+      const node = new MockSprite();
+      expect(node.tint).toBe(0xffffff); // Sanity check.
+
+      node.run(Action.tintTo(0xff0000, 1.0));
+      simulateTime(0.5);
+      expect(node.tint).toBe(0xff7f7f);
+      simulateTime(0.5);
+      expect(node.tint).toBe(0xff0000);
+
+      node.run(Action.tintTo(0x00ff00, 1.0));
+      simulateTime(1.0);
+      expect(node.tint).toBe(0x00ff00);
+
+      node.run(Action.tintTo(0x0000ff, 1.0));
+      simulateTime(1.0);
+      expect(node.tint).toBe(0x0000ff);
+    });
+  });
+
   describe('scaleTo()', () => {
     it('can be initialized with (x, y, duration)', () => {
       const node = new Container();
@@ -656,12 +691,85 @@ describe('Action', () => {
       expect(node.scale.y).toBeCloseTo(2);
     });
 
-    it('can be initialized with ({ width, height }, duration)', () => {
-      const node = new Sprite();
-      expect(node.scale.x).toBe(1); // Sanity check.
+    it('can be initialized with ({ x, y }, duration)', () => {
+      const node = new MockSprite();
+      expect(node.width).toBe(100); // Sanity check.
+      expect(node.height).toBe(100);
+      expect(node.scale.x).toBe(1);
       expect(node.scale.y).toBe(1);
 
-      node.run(Action.scaleTo({ width: 2, height: 1.5 }, 1.0));
+      node.run(Action.scaleTo({ x: 2, y: 1.5 }, 1.0));
+      simulateTime(1.0);
+      expect(node.scale.x).toBeCloseTo(2);
+      expect(node.scale.y).toBeCloseTo(1.5);
+    });
+
+    it('can be initialized with ({ width, height }, duration)', () => {
+      const node = new MockSprite({ width: 100, height: 100 });
+      expect(node.width).toBe(100); // Sanity check.
+      expect(node.height).toBe(100);
+      expect(node.scale.x).toBe(1);
+      expect(node.scale.y).toBe(1);
+
+      node.run(Action.scaleTo({ width: 200, height: 50 }, 1.0));
+
+      simulateTime(1.0);
+      expect(node.scale.x).toBeCloseTo(2);
+      expect(node.scale.y).toBeCloseTo(0.5);
+
+      // when given another node which has { x, y, width, height },
+      // it will prefer { width, height }.
+      const otherNode = new MockSprite({ width: 60, height: 120 });
+
+      node.run(Action.scaleTo(otherNode, 1.0));
+      simulateTime(1.0);
+
+      expect(node.width).toBeCloseTo(60);
+      expect(node.height).toBeCloseTo(120);
+
+      expect(node.scale.x).toBeCloseTo(0.6);
+      expect(node.scale.y).toBeCloseTo(1.2);
+    });
+  });
+
+  describe('scaleToSize()', () => {
+    it('can be initialized with (width, height, duration)', () => {
+      const node = new MockSprite();
+      expect(node.width).toBe(100); // Sanity check.
+      expect(node.height).toBe(100);
+      expect(node.scale.x).toBe(1);
+      expect(node.scale.y).toBe(1);
+
+      node.run(Action.scaleToSize(50, 200, 1.0));
+      simulateTime(1.0);
+
+      expect(node.width).toBeCloseTo(50);
+      expect(node.height).toBeCloseTo(200);
+      expect(node.scale.x).toBeCloseTo(0.5);
+      expect(node.scale.y).toBeCloseTo(2.0);
+    });
+
+    it('can be initialized with (size, duration)', () => {
+      const node = new MockSprite();
+      expect(node.width).toBe(100); // Sanity check.
+      expect(node.height).toBe(100);
+      expect(node.scale.x).toBe(1);
+      expect(node.scale.y).toBe(1);
+
+      node.run(Action.scaleToSize(200, 1.0));
+      simulateTime(1.0);
+      expect(node.scale.x).toBeCloseTo(2);
+      expect(node.scale.y).toBeCloseTo(2);
+    });
+
+    it('can be initialized with ({ width, height }, duration)', () => {
+      const node = new MockSprite();
+      expect(node.width).toBe(100); // Sanity check.
+      expect(node.height).toBe(100);
+      expect(node.scale.x).toBe(1);
+      expect(node.scale.y).toBe(1);
+
+      node.run(Action.scaleToSize({ width: 200, height: 150 }, 1.0));
       simulateTime(1.0);
       expect(node.scale.x).toBeCloseTo(2);
       expect(node.scale.y).toBeCloseTo(1.5);
@@ -670,12 +778,12 @@ describe('Action', () => {
       otherNode.width = 50;
       otherNode.height = 120;
 
-      node.run(Action.scaleTo(otherNode, 1.0));
+      node.run(Action.scaleToSize(otherNode, 1.0));
       simulateTime(1.0);
       expect(node.width).toBeCloseTo(50);
       expect(node.height).toBeCloseTo(120);
-      expect(node.scale.x).toBeCloseTo(50);
-      expect(node.scale.y).toBeCloseTo(120);
+      expect(node.scale.x).toBeCloseTo(0.5);
+      expect(node.scale.y).toBeCloseTo(1.2);
     });
   });
 
@@ -779,6 +887,118 @@ describe('Action', () => {
       simulateTime(1.0);
       expect(node.scale.x).toBeCloseTo(1);
       expect(node.scale.y).toBeCloseTo(2);
+    });
+  });
+
+  describe('skewBy()', () => {
+    it('can be initialized with (x, y, duration)', () => {
+      const node = new Container();
+      expect(node.skew.x).toBeCloseTo(0); // Sanity check.
+      expect(node.skew.y).toBeCloseTo(0);
+
+      node.run(Action.skewBy(2, 1.5, 1.0));
+      simulateTime(1.0);
+      expect(node.skew.x).toBeCloseTo(2);
+      expect(node.skew.y).toBeCloseTo(1.5);
+    });
+
+    it('can be initialized with (delta, duration)', () => {
+      const node = new Container();
+      expect(node.skew.x).toBeCloseTo(0); // Sanity check.
+      expect(node.skew.y).toBeCloseTo(0);
+
+      node.run(Action.skewBy(2, 1.0));
+      simulateTime(1.0);
+      expect(node.skew.x).toBeCloseTo(2);
+      expect(node.skew.y).toBeCloseTo(2);
+    });
+
+    it('can be initialized with ({ x, y }, duration)', () => {
+      const node = new Container();
+      expect(node.skew.x).toBe(0); // Sanity check.
+      expect(node.skew.y).toBe(0);
+
+      node.run(Action.skewBy({ x: 2, y: 1.5 }, 1.0));
+      simulateTime(1.0);
+      expect(node.skew.x).toBeCloseTo(2);
+      expect(node.skew.y).toBeCloseTo(1.5);
+    });
+
+    it('is reversible', () => {
+      const node = new Container();
+      const up = Action.skewBy({ x: 2, y: 1.5 }, 0.5);
+      const down = up.reversed();
+
+      node.run(Action.sequence([ up, down ]));
+
+      simulateTime(0.5);
+      expect(node.skew.x).toBeCloseTo(2);
+      expect(node.skew.y).toBeCloseTo(1.5);
+
+      simulateTime(0.5);
+      expect(node.skew.x).toBeCloseTo(0);
+      expect(node.skew.y).toBeCloseTo(0);
+    });
+  });
+
+  describe('skewTo()', () => {
+    it('can be initialized with (x, y, duration)', () => {
+      const node = new Container();
+      expect(node.skew.x).toBe(0); // Sanity check.
+      expect(node.skew.y).toBe(0);
+
+      node.run(Action.skewTo(2, 1.5, 1.0));
+      simulateTime(1.0);
+      expect(node.skew.x).toBeCloseTo(2);
+      expect(node.skew.y).toBeCloseTo(1.5);
+    });
+
+    it('can be initialized with (skew, duration)', () => {
+      const node = new Container();
+      expect(node.skew.x).toBe(0); // Sanity check.
+      expect(node.skew.y).toBe(0);
+
+      node.run(Action.skewTo(2, 1.0));
+      simulateTime(1.0);
+      expect(node.skew.x).toBeCloseTo(2);
+      expect(node.skew.y).toBeCloseTo(2);
+    });
+
+    it('can be initialized with ({ x, y }, duration)', () => {
+      const node = new Sprite();
+      expect(node.skew.x).toBe(0); // Sanity check.
+      expect(node.skew.y).toBe(0);
+
+      node.run(Action.skewTo({ x: 2, y: 1.5 }, 1.0));
+      simulateTime(1.0);
+      expect(node.skew.x).toBeCloseTo(2);
+      expect(node.skew.y).toBeCloseTo(1.5);
+    });
+  });
+
+  describe('skewToX()', () => {
+    it('can be initialized with (x, duration)', () => {
+      const node = new Container();
+      expect(node.skew.x).toBe(0); // Sanity check.
+      expect(node.skew.y).toBe(0);
+
+      node.run(Action.skewToX(2, 1.0));
+      simulateTime(1.0);
+      expect(node.skew.x).toBeCloseTo(2);
+      expect(node.skew.y).toBeCloseTo(0);
+    });
+  });
+
+  describe('skewToY()', () => {
+    it('can be initialized with (y, duration)', () => {
+      const node = new Container();
+      expect(node.skew.x).toBe(0); // Sanity check.
+      expect(node.skew.y).toBe(0);
+
+      node.run(Action.skewToY(2, 1.0));
+      simulateTime(1.0);
+      expect(node.skew.x).toBeCloseTo(0);
+      expect(node.skew.y).toBeCloseTo(2);
     });
   });
 

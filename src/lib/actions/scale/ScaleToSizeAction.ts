@@ -1,6 +1,10 @@
 import { Action } from '../../ActionClass';
 import { IActionTicker } from '../../IActionTicker';
 
+
+type SizedTarget = Target & ISize;
+type Data = ISize;
+
 export class ScaleToSizeAction extends Action {
   protected readonly width: number;
   protected readonly height: number;
@@ -20,9 +24,9 @@ export class ScaleToSizeAction extends Action {
     return new ScaleToSizeAction(this.width, this.height, this.duration)._apply(this);
   }
 
-  public _onTickerInit(target: SizedTargetNode): any {
+  public _onTickerAdded(target: SizedTarget): Data {
     if (typeof target.width !== 'number' || typeof target.height !== 'number') {
-      throw new TypeError("Target must have 'width' and 'height'.");
+      throw new TypeError("Action target must have 'width' and 'height'.");
     }
 
     return {
@@ -31,8 +35,8 @@ export class ScaleToSizeAction extends Action {
     };
   }
 
-  public _onTickerTick(
-    target: SizedTargetNode,
+  public _onTickerUpdate(
+    target: SizedTarget,
     t: number,
     dt: number,
     { data }: IActionTicker

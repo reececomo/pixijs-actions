@@ -1,4 +1,4 @@
-import { Container } from 'pixi.js';
+import type * as PIXI from 'pixi.js';
 
 
 export {};
@@ -8,35 +8,27 @@ export {};
 //
 
 declare global {
-
-  /** Time measured in seconds. */
+  /**
+   * Time measured in seconds.
+   * */
   type TimeInterval = number;
 
-  /** Targeted display node. */
-  type TargetNode = Container;
+  /**
+   * Hexadecimal color (e.g. 0xFF7700)
+   */
+  type HexColor = number;
 
-  type ContainerDestroyOptions = Parameters<TargetNode["destroy"]>[0];
+  type VectorLike = { x: number; y: number; };
+  type IPoint = VectorLike;
+  type IPath = { points: IPoint[]; };
+  type ISize = { width: number; height: number; };
 
-  /** Targeted display node with a width and height. */
-  type SizedTargetNode = TargetNode & SizeLike;
+  // PIXI node types:
 
-  /** Any vector-like object (e.g. PIXI.Point, or any node). */
-  interface VectorLike {
-    x: number;
-    y: number;
-  }
-
-  /** Any object with a width and height (e.g. PIXI.Sprite). */
-  interface SizeLike {
-    width: number;
-    height: number;
-  }
-
-  /** Any object containing an array of points (e.g. PIXI.SimpleRope). */
-  interface PathObjectLike {
-    points: VectorLike[];
-  }
-
+  type Target = PIXI.Container;
+  type SpriteTarget = PIXI.Sprite;
+  type PixiTexture = PIXI.Texture;
+  type PixiSpritesheet = PIXI.Spritesheet;
 }
 
 //
@@ -124,8 +116,6 @@ declare module 'pixi.js' {
   }
 
 }
-import { Spritesheet, Texture } from 'pixi.js';
-
 declare const Defaults: {
 	/**
 	 * Default `timePerFrame` in seconds for `Action.animate(…)`.
@@ -223,7 +213,7 @@ export declare abstract class Action {
 	/**
 	 * Adjust the timing curve of an animation.
 	 *
-	 * This function mutates the underlying action.
+	 * This method mutates the underlying action.
 	 *
 	 * @see {Timing}
 	 */
@@ -237,14 +227,14 @@ export declare abstract class Action {
 	/**
 	 * Set the action's speed scale. Default: `1.0`.
 	 *
-	 * This function mutates the underlying action.
+	 * This method mutates the underlying action.
 	 */
 	setSpeed(speed: number): this;
 	/**
 	 * Default `timingMode`. Sets the speed curve of the action to linear pacing. Linear pacing causes
 	 * an animation to occur evenly over its duration.
 	 *
-	 * This function mutates the underlying action.
+	 * This method mutates the underlying action.
 	 *
 	 * @see {Timing.linear}
 	 */
@@ -253,7 +243,7 @@ export declare abstract class Action {
 	 * Sets the speed curve of the action to the default ease-in pacing. Ease-in pacing causes the
 	 * animation to begin slowly and then speed up as it progresses.
 	 *
-	 * This function mutates the underlying action.
+	 * This method mutates the underlying action.
 	 *
 	 * @see {Action.DefaultTimingEaseIn}
 	 */
@@ -262,7 +252,7 @@ export declare abstract class Action {
 	 * Sets the speed curve of the action to the default ease-out pacing. Ease-out pacing causes the
 	 * animation to begin quickly and then slow as it completes.
 	 *
-	 * This function mutates the underlying action.
+	 * This method mutates the underlying action.
 	 *
 	 * @see {Action.DefaultTimingEaseOut}
 	 */
@@ -272,7 +262,7 @@ export declare abstract class Action {
 	 * pacing causes the animation to begin slowly, accelerate through the middle of its duration,
 	 * and then slow again before completing.
 	 *
-	 * This function mutates the underlying action.
+	 * This method mutates the underlying action.
 	 *
 	 * @see {Action.DefaultTimingEaseInOut}
 	 */
@@ -281,8 +271,8 @@ export declare abstract class Action {
 	 * Creates an action that reverses the behavior of another action.
 	 *
 	 * This method always returns an action object; however, not all actions are reversible.
-	 * When reversed, some actions return an object that either does nothing or that performs the same
-	 * action as the original action.
+	 * When reversed, some actions return an object that either does nothing or that
+	 * performs the same action as the original action.
 	 */
 	abstract reversed(): Action;
 }
@@ -376,7 +366,9 @@ export interface AnimateSpritesheetOptions extends BaseAnimateOptions {
 	/**
 	 * A spritesheet containing textures to animate.
 	 */
-	spritesheet: Spritesheet;
+	spritesheet: {
+		textures: Record<string, PixiTexture>;
+	};
 	/**
 	 * Whether spritesheet frames are sorted on key.
 	 *
@@ -388,7 +380,7 @@ export interface AnimateTextureOptions extends BaseAnimateOptions {
 	/**
 	 * Array of textures to animate.
 	 */
-	frames: Texture[];
+	frames: PixiTexture[];
 }
 export interface BaseAnimateOptions {
 	/**
@@ -486,8 +478,8 @@ export namespace Action {
 	 *
 	 * This action is reversible.
 	 */
-	function moveBy(delta: VectorLike, duration: TimeInterval): Action;
 	function moveBy(dx: number, dy: number, duration: TimeInterval): Action;
+	function moveBy(delta: VectorLike, duration: TimeInterval): Action;
 	/**
 	 * Creates an action that moves a node horizontally relative to its current position.
 	 *
@@ -505,8 +497,8 @@ export namespace Action {
 	 *
 	 * This action is not reversible; the reverse of this action is the same action.
 	 */
-	function moveTo(position: VectorLike, duration: TimeInterval): Action;
 	function moveTo(x: number, y: number, duration: TimeInterval): Action;
+	function moveTo(position: IPoint, duration: TimeInterval): Action;
 	/**
 	 * Creates an action that moves a node horizontally.
 	 *
@@ -531,7 +523,7 @@ export namespace Action {
 	 * @param orientToPath (Default: true) When true, the node’s rotation turns to follow the path.
 	 * @param fixedSpeed (Default: true) When true, the node's speed is consistent for each segment.
 	 */
-	function follow(path: PathObjectLike | VectorLike[], duration: number, asOffset?: boolean, orientToPath?: boolean, fixedSpeed?: boolean): Action;
+	function follow(path: IPath | IPoint[], duration: number, asOffset?: boolean, orientToPath?: boolean, fixedSpeed?: boolean): Action;
 	/**
 	 * Creates an action that moves the node along a path at a specified speed, optionally orienting
 	 * the node to the path.
@@ -544,7 +536,7 @@ export namespace Action {
 	 * @param asOffset (Default: true) When true, the path is relative to the node's current position.
 	 * @param orientToPath (Default: true) When true, the node’s rotation turns to follow the path.
 	 */
-	function followAtSpeed(path: PathObjectLike | VectorLike[], speed: number, asOffset?: boolean, orientToPath?: boolean): Action;
+	function followAtSpeed(path: IPath | IPoint[], speed: number, asOffset?: boolean, orientToPath?: boolean): Action;
 	/**
 	 * Creates an action that rotates the node by a relative value (in radians).
 	 *
@@ -587,7 +579,7 @@ export namespace Action {
 	 * This action is reversible.
 	 */
 	function scaleBy(scale: number, duration: TimeInterval): Action;
-	function scaleBy(size: VectorLike, duration: TimeInterval): Action;
+	function scaleBy(delta: IPoint, duration: TimeInterval): Action;
 	function scaleBy(dx: number, dy: number, duration: TimeInterval): Action;
 	/**
 	 * Creates an action that changes the x scale of a node by a relative value.
@@ -606,9 +598,17 @@ export namespace Action {
 	 *
 	 * This action is not reversible; the reverse of this action is the same action.
 	 */
-	function scaleTo(scale: number, duration: TimeInterval): Action;
-	function scaleTo(size: SizeLike, duration: TimeInterval): Action;
 	function scaleTo(x: number, y: number, duration: TimeInterval): Action;
+	function scaleTo(scale: number, duration: TimeInterval): Action;
+	/**
+	 * Creates an action that changes the x and y scale values of a node.
+	 *
+	 * Note: Action target must have width and height.
+	 *
+	 * This action is not reversible; the reverse of this action is the same action.
+	 */
+	function scaleTo(size: ISize, duration: TimeInterval): Action;
+	function scaleTo(scale: VectorLike, duration: TimeInterval): Action;
 	/**
 	 * Creates an action that changes the y scale values of a node.
 	 *
@@ -621,6 +621,57 @@ export namespace Action {
 	 * This action is not reversible; the reverse of this action is the same action.
 	 */
 	function scaleToY(y: number, duration: TimeInterval): Action;
+	/**
+	 * Creates an action that changes the x and y scale values of a node to achieve
+	 * a target size (width, height).
+	 *
+	 * Note: Action target must have width and height.
+	 *
+	 * This action is not reversible; the reverse of this action is the same action.
+	 */
+	function scaleToSize(width: number, height: number, duration: TimeInterval): Action;
+	function scaleToSize(size: number, duration: TimeInterval): Action;
+	function scaleToSize(size: ISize, duration: TimeInterval): Action;
+	/**
+	 * Creates an action that changes the skew of a node by a relative value.
+	 *
+	 * This action is reversible.
+	 */
+	function skewBy(skew: number, duration: TimeInterval): Action;
+	function skewBy(vector: VectorLike, duration: TimeInterval): Action;
+	function skewBy(dx: number, dy: number, duration: TimeInterval): Action;
+	/**
+	 * Creates an action that changes the x skew of a node by a relative value.
+	 *
+	 * This action is reversible.
+	 */
+	function skewByX(x: number, duration: TimeInterval): Action;
+	/**
+	 * Creates an action that changes the y skew of a node by a relative value.
+	 *
+	 * This action is reversible.
+	 */
+	function skewByY(y: number, duration: TimeInterval): Action;
+	/**
+	 * Creates an action that changes the x and y skew values of a node.
+	 *
+	 * This action is not reversible; the reverse of this action is the same action.
+	 */
+	function skewTo(skew: number, duration: TimeInterval): Action;
+	function skewTo(vector: VectorLike, duration: TimeInterval): Action;
+	function skewTo(x: number, y: number, duration: TimeInterval): Action;
+	/**
+	 * Creates an action that changes the y skew values of a node.
+	 *
+	 * This action is not reversible; the reverse of this action is the same action.
+	 */
+	function skewToX(x: number, duration: TimeInterval): Action;
+	/**
+	 * Creates an action that changes the x skew values of a node.
+	 *
+	 * This action is not reversible; the reverse of this action is the same action.
+	 */
+	function skewToY(y: number, duration: TimeInterval): Action;
 	/**
 	 * Creates an action that changes the alpha value of the node to 1.0.
 	 *
@@ -646,9 +697,17 @@ export namespace Action {
 	 */
 	function fadeAlphaBy(alpha: number, duration: TimeInterval): Action;
 	/**
+	 * Creates an action that changes the tint value of the node.
+	 *
+	 * Note: Action target must have tint.
+	 *
+	 * This action is not reversible; the reverse of this action is the same action.
+	 */
+	function tintTo(tint: HexColor, duration: TimeInterval): Action;
+	/**
 	 * Creates an action that animates changes to a sprite’s texture.
 	 *
-	 * Note: Target must be a Sprite.
+	 * Note: Action target must be a Sprite.
 	 *
 	 * This action is reversible.
 	 */
@@ -679,7 +738,7 @@ export namespace Action {
 	 *
 	 * This action is not reversible; the reverse of this action is the same action.
 	 */
-	function destroy(options?: Parameters<TargetNode["destroy"]>[0]): Action;
+	function destroy(options?: Parameters<Target["destroy"]>[0]): Action;
 	/**
 	 * Creates an action that removes the node from its parent.
 	 *
@@ -706,7 +765,7 @@ export namespace Action {
 	 *
 	 * This action is not reversible; the reverse action executes the same block function.
 	 */
-	function run(blockFn: (target: TargetNode) => void): Action;
+	function run(blockFn: (target: Target) => void): Action;
 	/**
 	 * Creates an action that executes a stepping function over its duration.
 	 *
@@ -716,7 +775,7 @@ export namespace Action {
 	 *
 	 * This action is not reversible; the reverse action executes the same stepping function.
 	 */
-	function custom(duration: number, stepFn: (target: TargetNode, t: number, dt: number) => void): Action;
+	function custom(duration: number, stepFn: (target: Target, t: number, dt: number) => void): Action;
 	/**
 	 * @deprecated Use `Action.custom(duration, stepFn)`
 	 *
@@ -728,7 +787,7 @@ export namespace Action {
 	 *
 	 * This action is not reversible; the reverse action executes the same stepping function.
 	 */
-	function customAction(duration: number, stepFn: (target: TargetNode, t: number, dt: number) => void): Action;
+	function customAction(duration: number, stepFn: (target: Target, t: number, dt: number) => void): Action;
 }
 export namespace Action {
 	/**

@@ -1,7 +1,7 @@
 import { Action } from '../../ActionClass';
 import { IActionTicker } from '../../IActionTicker';
 
-export class ScaleToAction extends Action {
+export class SkewToAction extends Action {
   protected readonly x1: number | null;
   protected readonly y1: number | null;
 
@@ -17,22 +17,22 @@ export class ScaleToAction extends Action {
   }
 
   public reversed(): Action {
-    return new ScaleToAction(this.x1, this.y1, this.duration)._apply(this);
+    return new SkewToAction(this.x1, this.y1, this.duration)._apply(this);
   }
 
-  public _onTickerAdded({ scale }: Target): any {
-    return { x0: scale._x, y0: scale._y };
+  public _onTickerAdded({ skew }: Target): any {
+    return { x0: skew._x, y0: skew._y };
   }
 
   public _onTickerUpdate(
-    { scale }: Target,
+    { skew }: Target,
     t: number,
     _: number,
     { data }: IActionTicker
   ): void {
-    scale.set(
-      this.x1 == null ? scale._x : data.x0 + (this.x1 - data.x0) * t,
-      this.y1 == null ? scale._y : data.y0 + (this.y1 - data.y0) * t
+    skew.set(
+      this.x1 == null ? skew._x : data.x0 + (this.x1 - data.x0) * t,
+      this.y1 == null ? skew._y : data.y0 + (this.y1 - data.y0) * t
     );
   }
 }

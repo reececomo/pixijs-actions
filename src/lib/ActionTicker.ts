@@ -22,7 +22,7 @@ export class ActionTicker {
   /**
    * All currently executing actions.
    */
-  private static tickers = new Map<TargetNode, TickerMap>(); // TODO: weakmap
+  private static tickers = new Map<Target, TickerMap>(); // TODO: weakmap
 
   //
   // ----- Global ticker: -----
@@ -41,7 +41,7 @@ export class ActionTicker {
     const deltaMS = typeof value === "number" ? value : value.deltaMS;
     const deltaTime = deltaMS * 0.001;
 
-    let _leaf: TargetNode;
+    let _leaf: Target;
     let _isPaused: boolean;
     let _speed: number;
 
@@ -90,7 +90,7 @@ export class ActionTicker {
   //
 
   /** Adds an action to the list of actions executed by the node. */
-  public static runAction(target: TargetNode, action: Action, key?: string): void {
+  public static runAction(target: Target, action: Action, key?: string): void {
     if (!this.tickers.has(target)) {
       this.tickers.set(target, new Map());
     }
@@ -102,17 +102,17 @@ export class ActionTicker {
   }
 
   /** Whether a target has any actions. */
-  public static hasTargetActions(target: TargetNode): boolean {
+  public static hasTargetActions(target: Target): boolean {
     return this.tickers.has(target);
   }
 
   /** Retrieve an action with a key from a specific target. */
-  public static getTargetActionForKey(target: TargetNode, key: string): Action | undefined {
+  public static getTargetActionForKey(target: Target, key: string): Action | undefined {
     return this.tickers.get(target)?.get(key)?.action;
   }
 
   /** Remove an action with a key from a specific target. */
-  public static removeTargetActionForKey(target: TargetNode, key: string): void {
+  public static removeTargetActionForKey(target: Target, key: string): void {
     const actionTicker = this.tickers.get(target)?.get(key);
     if (actionTicker) {
       this._removeActionTicker(actionTicker);
@@ -120,7 +120,7 @@ export class ActionTicker {
   }
 
   /** Remove all actions for a specific target. */
-  public static removeAllTargetActions(target: TargetNode): void {
+  public static removeAllTargetActions(target: Target): void {
     const actionTickers = this.tickers.get(target);
     if (!actionTickers) return;
 
@@ -181,7 +181,7 @@ export class ActionTicker {
   /**
    * The container receiving the action.
    */
-  public target: TargetNode;
+  public target: Target;
 
   /**
    * The action to apply.
@@ -245,7 +245,7 @@ export class ActionTicker {
   //
 
   public constructor(
-    target: TargetNode,
+    target: Target,
     action: Action,
     key?: string,
   ) {
@@ -277,7 +277,7 @@ export class ActionTicker {
 
       // Perform first time setup:
       try {
-        this.data = action._onTickerInit(target, this);
+        this.data = action._onTickerAdded(target, this);
       }
       catch (error) {
         // remove action if failed on launch
@@ -305,7 +305,7 @@ export class ActionTicker {
     // Instantaneous actions:
     if (duration === 0) {
       this._elapsed = 1;
-      action._onTickerTick(this.target, 1, 1, this, scaledDeltaTime);
+      action._onTickerUpdate(this.target, 1, 1, this, scaledDeltaTime);
 
       // remove ticker on next tick
       this.isDone = true;
@@ -329,7 +329,7 @@ export class ActionTicker {
 
     // apply
     this._elapsed = elapsed1;
-    action._onTickerTick(this.target, tScaled1, tDelta, this, scaledDeltaTime);
+    action._onTickerUpdate(this.target, tScaled1, tDelta, this, scaledDeltaTime);
 
     // queue completed actions to auto remove
     if (!action.hasChildren && t1 >= EPSILON_1) {

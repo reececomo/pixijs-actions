@@ -1,4 +1,4 @@
-import { type Container } from "pixi.js";
+import type * as PIXI from "pixi.js";
 
 import { Action } from "./lib";
 import { ActionTicker } from "./lib/ActionTicker";
@@ -10,7 +10,7 @@ import { ActionTicker } from "./lib/ActionTicker";
  * @param containerType A reference to `PIXI.Container`.
  */
 export function registerPixiJSActionsMixin(containerType: any): void {
-  const prototype = (containerType as typeof Container).prototype;
+  const prototype = (containerType as typeof PIXI.Container).prototype;
 
   //
   // ----------------- Container Action Properties: -----------------
@@ -23,33 +23,33 @@ export function registerPixiJSActionsMixin(containerType: any): void {
   // ----------------- Container Action Methods: -----------------
   //
 
-  prototype.run = function (this: TargetNode, action: Action, completion?: () => void): void {
+  prototype.run = function (this: PIXI.Container, action: Action, completion?: () => void): void {
     if (completion) action = Action.sequence([action, Action.run(completion)]);
     return ActionTicker.runAction(this, action);
   };
 
-  prototype.runWithKey = function (this: TargetNode, k, a): void {
+  prototype.runWithKey = function (this: PIXI.Container, k, a): void {
     if (typeof a === "string") [ a, k ] = [ k, a ];
     ActionTicker.runAction(this, a as any, k as any);
   };
 
-  prototype.runAsPromise = function (this: TargetNode, action: Action): Promise<void> {
+  prototype.runAsPromise = function (this: PIXI.Container, action: Action): Promise<void> {
     return new Promise((resolve) => this.run(action, () => resolve()));
   };
 
-  prototype.action = function (this: TargetNode, forKey: string): Action | undefined {
+  prototype.action = function (this: PIXI.Container, forKey: string): Action | undefined {
     return ActionTicker.getTargetActionForKey(this, forKey);
   };
 
-  prototype.hasActions = function (this: TargetNode): boolean {
+  prototype.hasActions = function (this: PIXI.Container): boolean {
     return ActionTicker.hasTargetActions(this);
   };
 
-  prototype.removeAllActions = function (this: TargetNode): void {
+  prototype.removeAllActions = function (this: PIXI.Container): void {
     ActionTicker.removeAllTargetActions(this);
   };
 
-  prototype.removeAction = function (this: TargetNode, forKey: string): void {
+  prototype.removeAction = function (this: PIXI.Container, forKey: string): void {
     ActionTicker.removeTargetActionForKey(this, forKey);
   };
 }

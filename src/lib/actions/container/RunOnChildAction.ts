@@ -1,6 +1,14 @@
 import { Action } from '../../ActionClass';
 
-type AnyContainer = any;
+interface CompatibilityTarget
+{
+  label?: string; // PIXI 8+
+  name?: string; // PIXI 7
+
+  children: CompatibilityTarget[];
+
+  getChildByLabel?: (label: string) => Target | undefined; // PIXI 8+
+}
 
 export class RunOnChildAction extends Action {
   protected readonly action: Action;
@@ -18,24 +26,31 @@ export class RunOnChildAction extends Action {
     return new RunOnChildAction(reversedAction, this.label)._apply(this);
   }
 
-  public _onTickerTick(target: TargetNode): void {
-    const child = this._getChildByLabel(target, this.label);
-    if (!child) throw new ReferenceError(`Target did not have child '${this.label}'.`);
+  public _onTickerUpdate(target: Target): void {
+    const child = this._getChildByLabel(target as any, this.label);
+
+    if (!child) {
+      throw new ReferenceError(`Action target did not have child matching '${this.label}'.`);
+    }
+
     child.run(this.action);
   }
 
-  private _getChildByLabel(target: AnyContainer, label: string): TargetNode | undefined {
+  private _getChildByLabel(
+    target: CompatibilityTarget,
+    label: string
+  ): Target | undefined {
     if (!target.children || !Array.isArray(target.children)) {
       return undefined;
     }
 
-    let child: AnyContainer;
+    let child: any;
 
     if ('getChildByLabel' in target) {
       child = target.getChildByLabel(label);
     }
     else {
-      child = target.children.find((child: AnyContainer) =>
+      child = target.children.find((child) =>
         child.label === label || child.name === label
       );
     }

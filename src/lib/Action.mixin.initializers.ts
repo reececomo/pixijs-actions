@@ -22,10 +22,13 @@ import {
   ScaleByAction,
   ScaleToAction,
   ScaleToSizeAction,
+  SkewByAction,
+  SkewToAction,
   SequenceAction,
   SetVisibleAction,
   SpeedByAction,
   SpeedToAction,
+  TintToAction,
 } from './actions';
 
 
@@ -119,8 +122,8 @@ declare module './ActionClass' {
      *
      * This action is reversible.
      */
-    function moveBy(delta: VectorLike, duration: TimeInterval): Action;
     function moveBy(dx: number, dy: number, duration: TimeInterval): Action;
+    function moveBy(delta: VectorLike, duration: TimeInterval): Action;
 
     /**
      * Creates an action that moves a node horizontally relative to its current position.
@@ -141,8 +144,8 @@ declare module './ActionClass' {
      *
      * This action is not reversible; the reverse of this action is the same action.
      */
-    function moveTo(position: VectorLike, duration: TimeInterval): Action;
     function moveTo(x: number, y: number, duration: TimeInterval): Action;
+    function moveTo(position: IPoint, duration: TimeInterval): Action;
 
     /**
      * Creates an action that moves a node horizontally.
@@ -175,7 +178,7 @@ declare module './ActionClass' {
      * @param fixedSpeed (Default: true) When true, the node's speed is consistent for each segment.
      */
     function follow(
-      path: PathObjectLike | VectorLike[],
+      path: IPath | IPoint[],
       duration: number,
       asOffset?: boolean,
       orientToPath?: boolean,
@@ -195,7 +198,7 @@ declare module './ActionClass' {
      * @param orientToPath (Default: true) When true, the node’s rotation turns to follow the path.
      */
     function followAtSpeed(
-      path: PathObjectLike | VectorLike[],
+      path: IPath | IPoint[],
       speed: number,
       asOffset?: boolean,
       orientToPath?: boolean,
@@ -261,7 +264,7 @@ declare module './ActionClass' {
      * This action is reversible.
      */
     function scaleBy(scale: number, duration: TimeInterval): Action;
-    function scaleBy(size: VectorLike, duration: TimeInterval): Action;
+    function scaleBy(delta: IPoint, duration: TimeInterval): Action;
     function scaleBy(dx: number, dy: number, duration: TimeInterval): Action;
 
     /**
@@ -283,9 +286,17 @@ declare module './ActionClass' {
      *
      * This action is not reversible; the reverse of this action is the same action.
      */
-    function scaleTo(scale: number, duration: TimeInterval): Action;
-    function scaleTo(size: SizeLike, duration: TimeInterval): Action;
     function scaleTo(x: number, y: number, duration: TimeInterval): Action;
+    function scaleTo(scale: number, duration: TimeInterval): Action;
+    /**
+     * Creates an action that changes the x and y scale values of a node.
+     *
+     * Note: Action target must have width and height.
+     *
+     * This action is not reversible; the reverse of this action is the same action.
+     */
+    function scaleTo(size: ISize, duration: TimeInterval): Action;
+    function scaleTo(scale: VectorLike, duration: TimeInterval): Action;
 
     /**
      * Creates an action that changes the y scale values of a node.
@@ -300,6 +311,68 @@ declare module './ActionClass' {
      * This action is not reversible; the reverse of this action is the same action.
      */
     function scaleToY(y: number, duration: TimeInterval): Action;
+
+    /**
+     * Creates an action that changes the x and y scale values of a node to achieve
+     * a target size (width, height).
+     *
+     * Note: Action target must have width and height.
+     *
+     * This action is not reversible; the reverse of this action is the same action.
+     */
+    function scaleToSize(width: number, height: number, duration: TimeInterval): Action;
+    function scaleToSize(size: number, duration: TimeInterval): Action;
+    function scaleToSize(size: ISize, duration: TimeInterval): Action;
+
+    //
+    // ----------------- Skew Actions: -----------------
+    //
+
+    /**
+     * Creates an action that changes the skew of a node by a relative value.
+     *
+     * This action is reversible.
+     */
+    function skewBy(skew: number, duration: TimeInterval): Action;
+    function skewBy(vector: VectorLike, duration: TimeInterval): Action;
+    function skewBy(dx: number, dy: number, duration: TimeInterval): Action;
+
+    /**
+     * Creates an action that changes the x skew of a node by a relative value.
+     *
+     * This action is reversible.
+     */
+    function skewByX(x: number, duration: TimeInterval): Action;
+
+    /**
+     * Creates an action that changes the y skew of a node by a relative value.
+     *
+     * This action is reversible.
+     */
+    function skewByY(y: number, duration: TimeInterval): Action;
+
+    /**
+     * Creates an action that changes the x and y skew values of a node.
+     *
+     * This action is not reversible; the reverse of this action is the same action.
+     */
+    function skewTo(skew: number, duration: TimeInterval): Action;
+    function skewTo(vector: VectorLike, duration: TimeInterval): Action;
+    function skewTo(x: number, y: number, duration: TimeInterval): Action;
+
+    /**
+     * Creates an action that changes the y skew values of a node.
+     *
+     * This action is not reversible; the reverse of this action is the same action.
+     */
+    function skewToX(x: number, duration: TimeInterval): Action;
+
+    /**
+     * Creates an action that changes the x skew values of a node.
+     *
+     * This action is not reversible; the reverse of this action is the same action.
+     */
+    function skewToY(y: number, duration: TimeInterval): Action;
 
     //
     // ----------------- Transparency Actions: -----------------
@@ -334,13 +407,26 @@ declare module './ActionClass' {
     function fadeAlphaBy(alpha: number, duration: TimeInterval): Action;
 
     //
+    // ----------------- Tint Actions: -----------------
+    //
+
+    /**
+     * Creates an action that changes the tint value of the node.
+     *
+     * Note: Action target must have tint.
+     *
+     * This action is not reversible; the reverse of this action is the same action.
+     */
+    function tintTo(tint: HexColor, duration: TimeInterval): Action;
+
+    //
     // ----------------- Sprite Actions: -----------------
     //
 
     /**
      * Creates an action that animates changes to a sprite’s texture.
      *
-     * Note: Target must be a Sprite.
+     * Note: Action target must be a Sprite.
      *
      * This action is reversible.
      */
@@ -378,7 +464,7 @@ declare module './ActionClass' {
      *
      * This action is not reversible; the reverse of this action is the same action.
      */
-    function destroy(options?: Parameters<TargetNode["destroy"]>[0]): Action;
+    function destroy(options?: Parameters<Target["destroy"]>[0]): Action;
 
     /**
      * Creates an action that removes the node from its parent.
@@ -416,7 +502,7 @@ declare module './ActionClass' {
      *
      * This action is not reversible; the reverse action executes the same block function.
      */
-    function run(blockFn: (target: TargetNode) => void): Action;
+    function run(blockFn: (target: Target) => void): Action;
 
     /**
      * Creates an action that executes a stepping function over its duration.
@@ -429,7 +515,7 @@ declare module './ActionClass' {
      */
     function custom(
       duration: number,
-      stepFn: (target: TargetNode, t: number, dt: number) => void
+      stepFn: (target: Target, t: number, dt: number) => void
     ): Action;
 
     /**
@@ -445,7 +531,7 @@ declare module './ActionClass' {
      */
     function customAction(
       duration: number,
-      stepFn: (target: TargetNode, t: number, dt: number) => void
+      stepFn: (target: Target, t: number, dt: number) => void
     ): Action;
   }
 }
@@ -513,7 +599,7 @@ Action.moveToY = function(y: number, duration: TimeInterval): Action {
 };
 
 Action.follow = function(
-  path: PathObjectLike | VectorLike[],
+  path: IPath | VectorLike[],
   duration: number,
   asOffset: boolean = true,
   orientToPath: boolean = true,
@@ -523,7 +609,7 @@ Action.follow = function(
 };
 
 Action.followAtSpeed = function(
-  path: PathObjectLike | VectorLike[],
+  path: IPath | VectorLike[],
   speed: number,
   asOffset: boolean = true,
   orientToPath: boolean = true,
@@ -573,11 +659,21 @@ Action.scaleByY = function(y: number, duration: TimeInterval): Action {
   return Action.scaleBy(1, y, duration);
 };
 
-Action.scaleTo = function(a: number | SizeLike, b: number | TimeInterval, c?: TimeInterval): Action {
+Action.scaleTo = function(a: number | ISize | VectorLike, b: number | TimeInterval, c?: TimeInterval): Action {
   return typeof a === 'number'
     ? c == null
       ? new ScaleToAction(a, a, b)
       : new ScaleToAction(a, b, c)
+    : 'width' in a
+      ? new ScaleToSizeAction(a.width, a.height, b)
+      : new ScaleToAction(a.x, a.y, b);
+};
+
+Action.scaleToSize = function(a: number | ISize, b: number | TimeInterval, c?: TimeInterval): Action {
+  return typeof a === 'number'
+    ? c == null
+      ? new ScaleToSizeAction(a, a, b)
+      : new ScaleToSizeAction(a, b, c)
     : new ScaleToSizeAction(a.width, a.height, b);
 };
 
@@ -587,6 +683,38 @@ Action.scaleToX = function(x: number, duration: TimeInterval): Action {
 
 Action.scaleToY = function(y: number, duration: TimeInterval): Action {
   return new ScaleToAction(null, y, duration);
+};
+
+Action.skewBy = function(a: number | VectorLike, b: number | TimeInterval, c?: TimeInterval): Action {
+  return typeof a === 'number'
+    ? c == null
+      ? new SkewByAction(a, a, b)
+      : new SkewByAction(a, b, c)
+    : new SkewByAction(a.x, a.y, b);
+};
+
+Action.skewByX = function(x: number, duration: TimeInterval): Action {
+  return Action.skewBy(x, 1, duration);
+};
+
+Action.skewByY = function(y: number, duration: TimeInterval): Action {
+  return Action.skewBy(1, y, duration);
+};
+
+Action.skewTo = function(a: number | VectorLike, b: number | TimeInterval, c?: TimeInterval): Action {
+  return typeof a === 'number'
+    ? c == null
+      ? new SkewToAction(a, a, b)
+      : new SkewToAction(a, b, c)
+    : new SkewToAction(a.x, a.y, b);
+};
+
+Action.skewToX = function(x: number, duration: TimeInterval): Action {
+  return new SkewToAction(x, null, duration);
+};
+
+Action.skewToY = function(y: number, duration: TimeInterval): Action {
+  return new SkewToAction(null, y, duration);
 };
 
 Action.fadeIn = function(duration: TimeInterval): Action {
@@ -603,6 +731,10 @@ Action.fadeAlphaTo = function(alpha: number, duration: TimeInterval): Action {
 
 Action.fadeAlphaBy = function(alpha: number, duration: TimeInterval): Action {
   return new FadeByAction(alpha, duration);
+};
+
+Action.tintTo = function(tint: HexColor, duration: TimeInterval): Action {
+  return new TintToAction(tint, duration);
 };
 
 Action.animate = function(options: AnimateOptions): Action {
@@ -629,13 +761,13 @@ Action.runOnChild = function(childLabel: string, action: Action): Action {
   return new RunOnChildAction(action, childLabel);
 };
 
-Action.run = function(blockFn: (target: TargetNode) => void): Action {
+Action.run = function(blockFn: (target: Target) => void): Action {
   return new RunBlockAction(blockFn);
 };
 
 Action.custom = function(
   duration: number,
-  stepFn: (target: TargetNode, t: number, dt: number) => void
+  stepFn: (target: Target, t: number, dt: number) => void
 ): Action {
   return new CustomAction(duration, stepFn);
 };

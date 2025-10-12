@@ -12,7 +12,7 @@ export class SetVisibleAction extends Action {
     return new SetVisibleAction(!this.visible)._apply(this);
   }
 
-  public _onTickerTick(target: TargetNode): void {
+  public _onTickerUpdate(target: Target): void {
     target.visible = this.visible;
   }
 }

@@ -20,12 +20,12 @@ export class MoveToAction extends Action {
     return new MoveToAction(this.x1, this.y1, this.duration)._apply(this);
   }
 
-  public _onTickerInit({ position }: TargetNode): any {
+  public _onTickerAdded({ position }: Target): any {
     return { x0: position._x, y0: position._y };
   }
 
-  public _onTickerTick(
-    { position }: TargetNode,
+  public _onTickerUpdate(
+    { position }: Target,
     t: number,
     dt: number,
     { data }: IActionTicker,

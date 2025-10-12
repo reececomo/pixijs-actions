@@ -15,7 +15,7 @@ export class FadeByAction extends Action {
     return new FadeByAction(-this.alpha, this.duration)._apply(this);
   }
 
-  public _onTickerTick(target: TargetNode, t: number, dt: number): void {
+  public _onTickerUpdate(target: Target, t: number, dt: number): void {
     target.alpha += this.alpha * dt;
   }
 }

@@ -17,12 +17,12 @@ export class RotateToAction extends Action {
     return new RotateToAction(this.r1, this.duration)._apply(this);
   }
 
-  public _onTickerInit({ rotation }: TargetNode): any {
+  public _onTickerAdded({ rotation }: Target): any {
     return { r0: rotation };
   }
 
-  public _onTickerTick(
-    target: TargetNode,
+  public _onTickerUpdate(
+    target: Target,
     t: number,
     dt: number,
     { data }: IActionTicker,

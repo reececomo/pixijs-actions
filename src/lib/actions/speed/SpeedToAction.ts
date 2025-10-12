@@ -13,12 +13,12 @@ export class SpeedToAction extends Action {
     return new SpeedToAction(this.s1, this.duration)._apply(this);
   }
 
-  public _onTickerInit(target: TargetNode): any {
+  public _onTickerAdded(target: Target): any {
     return { s0: target.speed };
   }
 
-  public _onTickerTick(
-    target: TargetNode,
+  public _onTickerUpdate(
+    target: Target,
     t: number,
     dt: number,
     { data }: IActionTicker

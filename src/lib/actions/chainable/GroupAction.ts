@@ -21,15 +21,15 @@ export class GroupAction extends Action {
     return new GroupAction(reversedActions)._apply(this);
   }
 
-  public _onTickerInit(target: TargetNode): GroupTickerData {
+  public _onTickerAdded(target: Target): GroupTickerData {
     const actions = this.actions;
     const childTickers = actions.map((action) => new ActionTicker(target, action));
 
     return { childTickers };
   }
 
-  public _onTickerTick(
-    target: TargetNode,
+  public _onTickerUpdate(
+    target: Target,
     t: number,
     dt: number,
     ticker: IActionTicker<GroupTickerData>,
@@ -53,7 +53,7 @@ export class GroupAction extends Action {
     ticker.data.childTickers.forEach((ticker) => ticker.reset());
   }
 
-  public _onTickerRemoved(target: TargetNode, ticker: IActionTicker<GroupTickerData>): void {
+  public _onTickerRemoved(target: Target, ticker: IActionTicker<GroupTickerData>): void {
     if (!ticker.data) return;
     ticker.data.childTickers.forEach((ticker) => ticker.destroy());
   }
