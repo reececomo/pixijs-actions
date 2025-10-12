@@ -28,7 +28,7 @@ declare global {
   type Target = PIXI.Container;
   type SpriteTarget = PIXI.Sprite;
   type PixiTexture = PIXI.Texture;
-  type PixiSpritesheet = PIXI.Spritesheet;
+  type PixiSpritesheet = { textures: Record<string, PixiTexture>; };
 }
 
 //

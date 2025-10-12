@@ -3,6 +3,7 @@ import { Action } from './ActionClass';
 import {
   AnimateAction,
   AnimateOptions,
+  AnimateSpritesheetOptions,
   CustomAction,
   DelayAction,
   FadeAlphaToAction,
@@ -22,10 +23,10 @@ import {
   ScaleByAction,
   ScaleToAction,
   ScaleToSizeAction,
-  SkewByAction,
-  SkewToAction,
   SequenceAction,
   SetVisibleAction,
+  SkewByAction,
+  SkewToAction,
   SpeedByAction,
   SpeedToAction,
   TintToAction,
@@ -413,24 +414,35 @@ declare module './ActionClass' {
     /**
      * Creates an action that changes the tint value of the node.
      *
-     * Note: Action target must have tint.
+     * Note: Action target must have a tint property.
      *
      * This action is not reversible; the reverse of this action is the same action.
      */
     function tintTo(tint: HexColor, duration: TimeInterval): Action;
 
     //
-    // ----------------- Sprite Actions: -----------------
+    // ----------------- Sprite Texture Actions: -----------------
     //
 
     /**
-     * Creates an action that animates changes to a sprite’s texture.
+     * Creates an action that changes a node's texture.
      *
-     * Note: Action target must be a Sprite.
+     * Note: Action target must be a PIXI.Sprite.
      *
      * This action is reversible.
      */
-    function animate(options: AnimateOptions): Action;
+    function animate(withFrames: PixiTexture[], options?: AnimateOptions): Action;
+    function animate(withFrames: { frames: PixiTexture[] } & AnimateOptions): Action;
+
+    /**
+     * Creates an action that changes a node's texture, using textures from a spritesheet.
+     *
+     * Note: Action target must be a PIXI.Sprite.
+     *
+     * This action is reversible.
+     */
+    function animate(withSpritesheet: PixiSpritesheet, options?: AnimateSpritesheetOptions): Action;
+    function animate(withSpritesheet: { spritesheet: PixiSpritesheet } & AnimateSpritesheetOptions): Action;
 
     //
     // ----------------- Container Actions: -----------------
@@ -737,8 +749,19 @@ Action.tintTo = function(tint: HexColor, duration: TimeInterval): Action {
   return new TintToAction(tint, duration);
 };
 
-Action.animate = function(options: AnimateOptions): Action {
-  return new AnimateAction(options);
+Action.animate = function(
+  a: PixiTexture[]
+    | PixiSpritesheet
+    | { frames: PixiTexture[] } & AnimateOptions
+    | { spritesheet: PixiSpritesheet; } & AnimateSpritesheetOptions,
+  b?: AnimateOptions
+): Action {
+  if (Array.isArray(a)) return new AnimateAction(a, b);
+  if ('textures' in a) return AnimateAction.fromSpritesheet(a, b);
+
+  return ('spritesheet' in a)
+    ? AnimateAction.fromSpritesheet(a.spritesheet, a)
+    : new AnimateAction(a.frames, a);
 };
 
 Action.hide = function(): Action {

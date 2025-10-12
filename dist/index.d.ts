@@ -28,7 +28,7 @@ declare global {
   type Target = PIXI.Container;
   type SpriteTarget = PIXI.Sprite;
   type PixiTexture = PIXI.Texture;
-  type PixiSpritesheet = PIXI.Spritesheet;
+  type PixiSpritesheet = { textures: Record<string, PixiTexture>; };
 }
 
 //
@@ -362,46 +362,34 @@ export declare const TimingMode: {
  * @param containerType A reference to `PIXI.Container`.
  */
 export declare function registerPixiJSActionsMixin(containerType: any): void;
-export interface AnimateSpritesheetOptions extends BaseAnimateOptions {
+export interface AnimateOptions {
 	/**
-	 * A spritesheet containing textures to animate.
-	 */
-	spritesheet: {
-		textures: Record<string, PixiTexture>;
-	};
-	/**
-	 * Whether spritesheet frames are sorted on key.
+	 * Time to display each texture (in seconds).
 	 *
-	 * @default true
-	 */
-	sortKeys?: boolean;
-}
-export interface AnimateTextureOptions extends BaseAnimateOptions {
-	/**
-	 * Array of textures to animate.
-	 */
-	frames: PixiTexture[];
-}
-export interface BaseAnimateOptions {
-	/**
-	 * Time to display each texture in seconds.
-	 *
-	 * @default Action.DefaultAnimateTimePerFrame
+	 * @default Action.defaults.animateTimePerFrame // default: 1/24
 	 */
 	timePerFrame?: number;
 	/**
-	 * Whether to resize the sprite width and height to match each texture.
+	 * Whether to resize the sprite to match each texture frame.
 	 *
 	 * @default false
 	 */
 	resize?: boolean;
 	/**
-	 * When the action completes or is removed, whether to restore the sprite's
-	 * texture to the texture it had before the action ran.
+	 * Whether to restore the sprite's texture to its original texture
+	 * when this action is completed or removed.
 	 *
 	 * @default false
 	 */
 	restore?: boolean;
+}
+export interface AnimateSpritesheetOptions extends AnimateOptions {
+	/**
+	 * Whether the textures should be sorted by their spritesheet key.
+	 *
+	 * @default true
+	 */
+	sortKeys?: boolean;
 }
 export interface TickerLike {
 	/**
@@ -699,19 +687,33 @@ export namespace Action {
 	/**
 	 * Creates an action that changes the tint value of the node.
 	 *
-	 * Note: Action target must have tint.
+	 * Note: Action target must have a tint property.
 	 *
 	 * This action is not reversible; the reverse of this action is the same action.
 	 */
 	function tintTo(tint: HexColor, duration: TimeInterval): Action;
 	/**
-	 * Creates an action that animates changes to a sprite’s texture.
+	 * Creates an action that changes a node's texture.
 	 *
-	 * Note: Action target must be a Sprite.
+	 * Note: Action target must be a PIXI.Sprite.
 	 *
 	 * This action is reversible.
 	 */
-	function animate(options: AnimateOptions): Action;
+	function animate(withFrames: PixiTexture[], options?: AnimateOptions): Action;
+	function animate(withFrames: {
+		frames: PixiTexture[];
+	} & AnimateOptions): Action;
+	/**
+	 * Creates an action that changes a node's texture, using textures from a spritesheet.
+	 *
+	 * Note: Action target must be a PIXI.Sprite.
+	 *
+	 * This action is reversible.
+	 */
+	function animate(withSpritesheet: PixiSpritesheet, options?: AnimateSpritesheetOptions): Action;
+	function animate(withSpritesheet: {
+		spritesheet: PixiSpritesheet;
+	} & AnimateSpritesheetOptions): Action;
 	/**
 	 * Creates an action that hides a node.
 	 *
@@ -811,7 +813,6 @@ export namespace Action {
 	 */
 	function tick(deltaMS: number, onErrorHandler?: (error: any) => void): void;
 }
-export type AnimateOptions = AnimateTextureOptions | AnimateSpritesheetOptions;
 /**
  * Timing function.
  */

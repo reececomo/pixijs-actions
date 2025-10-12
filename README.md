@@ -195,8 +195,8 @@ Most actions implement specific predefined animations that are ready to use. If 
 |***Animating the Tint of a Node***|||
 | `Action.tintTo(duration)` | Tint a node to a specified color. | _†Identical_ |
 |***Animating a Sprite by Changing its Texture***|||
-| `Action.animate({ frames, timePerFrame?, resize?, restore? })` | Animate a sprite by changing its texture. See options. | Yes |
-| `Action.animate({ spritesheet, timePerFrame?, resize?, restore?, sortKeys? })` | Animate a sprite by changing its texture an entire spritesheet as frames. See options. | Yes |
+| `Action.animate(textures, options?)` | Animate a sprite's texture. See options. | Yes |
+| `Action.animate(spritesheet, options?)` | Animate a sprite's texture using textures from a spritesheet. See options. | Yes |
 |***Controlling a Node's Visibility***|||
 | `Action.hide()` | Set `visible` to `false`. | Yes |
 | `Action.unhide()` | Set `visible` to `true`. | Yes |

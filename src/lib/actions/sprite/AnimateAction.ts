@@ -2,49 +2,33 @@ import { Action } from '../../ActionClass';
 import { IActionTicker } from '../../IActionTicker';
 import { Defaults } from '../../Defaults';
 
-export type AnimateOptions = AnimateTextureOptions | AnimateSpritesheetOptions;
-
-export interface AnimateTextureOptions extends BaseAnimateOptions {
+export interface AnimateSpritesheetOptions extends AnimateOptions {
   /**
-   * Array of textures to animate.
-   */
-  frames: PixiTexture[];
-}
-
-export interface AnimateSpritesheetOptions extends BaseAnimateOptions {
-  /**
-   * A spritesheet containing textures to animate.
-   */
-  spritesheet: {
-    textures: Record<string, PixiTexture>;
-  };
-
-  /**
-   * Whether spritesheet frames are sorted on key.
+   * Whether the textures should be sorted by their spritesheet key.
    *
    * @default true
    */
   sortKeys?: boolean;
 }
 
-interface BaseAnimateOptions {
+export interface AnimateOptions {
   /**
-   * Time to display each texture in seconds.
+   * Time to display each texture (in seconds).
    *
-   * @default Action.DefaultAnimateTimePerFrame
+   * @default Action.defaults.animateTimePerFrame // default: 1/24
    */
   timePerFrame?: number;
 
   /**
-   * Whether to resize the sprite width and height to match each texture.
+   * Whether to resize the sprite to match each texture frame.
    *
    * @default false
    */
   resize?: boolean;
 
   /**
-   * When the action completes or is removed, whether to restore the sprite's
-   * texture to the texture it had before the action ran.
+   * Whether to restore the sprite's texture to its original texture
+   * when this action is completed or removed.
    *
    * @default false
    */
@@ -52,51 +36,50 @@ interface BaseAnimateOptions {
 }
 
 interface AnimateTickerData {
-  restoreTexture: PixiTexture;
+  previousTexture: PixiTexture;
 }
 
 export class AnimateAction extends Action {
-  protected readonly frames: PixiTexture[];
+  protected readonly textures: PixiTexture[];
+  protected readonly count: number;
   protected readonly timePerFrame: number;
   protected readonly resize: boolean;
   protected readonly restore: boolean;
 
-  public constructor(options: AnimateOptions) {
-    let textures: PixiTexture[];
+  /**
+   * @internal
+   */
+  public static fromSpritesheet(
+    spritesheet: PixiSpritesheet,
+    options?: AnimateOptions & { sortKey?: boolean },
+  ): Action {
+    const textures = (options.sortKey === false)
+      ? Object.values(spritesheet.textures)
+      : Object.keys(spritesheet.textures).sort().map((key) => spritesheet.textures[key]);
 
-    if ("frames" in options) {
-      textures = options.frames;
-    }
-    else {
-      const { spritesheet, sortKeys } = options;
+    return new AnimateAction(textures, options);
+  }
 
-      if (sortKeys) {
-        textures = Object.keys(spritesheet.textures)
-          .sort()
-          .map(k => spritesheet.textures[k]);
-      }
-      else {
-        textures = Object.values(spritesheet.textures);
-      }
-    }
-
-    const timePerFrame = options.timePerFrame || Defaults.animateTimePerFrame;
+  public constructor(textures: PixiTexture[], options?: AnimateOptions) {
+    const timePerFrame = options?.timePerFrame || Defaults.animateTimePerFrame;
 
     super(textures.length * timePerFrame);
 
-    this.frames = textures;
+    this.textures = textures;
+    this.count = textures.length;
     this.timePerFrame = timePerFrame;
-    this.resize = options.resize ?? false;
-    this.restore = options.restore ?? false;
+    this.resize = options?.resize ?? false;
+    this.restore = options?.restore ?? false;
   }
 
   public reversed(): Action {
-    return new AnimateAction({
-      frames: [ ...this.frames ].reverse(),
+    const reversedTextures = [ ...this.textures ].reverse();
+
+    return new AnimateAction(reversedTextures, {
       timePerFrame: this.timePerFrame,
       resize: this.resize,
       restore: this.restore,
-    });
+    })._apply(this);
   }
 
   public _onTickerAdded(target: SpriteTarget): AnimateTickerData {
@@ -105,7 +88,7 @@ export class AnimateAction extends Action {
     }
 
     return {
-      restoreTexture: target.texture,
+      previousTexture: target.texture,
     };
   }
 
@@ -116,7 +99,7 @@ export class AnimateAction extends Action {
     if ( !ticker.data ) return;
 
     if (this.restore) {
-      const texture = ticker.data.restoreTexture;
+      const texture = ticker.data.previousTexture;
 
       target.texture = texture;
 
@@ -128,8 +111,8 @@ export class AnimateAction extends Action {
   }
 
   public _onTickerUpdate(target: SpriteTarget, t: number): void {
-    const i = Math.floor(t * this.frames.length);
-    const texture = this.frames[i];
+    const i = Math.floor(t * this.count);
+    const texture = this.textures[i];
 
     if (texture == null) return;
 
