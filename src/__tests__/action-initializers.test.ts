@@ -634,6 +634,40 @@ describe('Action', () => {
     });
   });
 
+  describe('tintTo()', () => {
+    it('can be initialized with (tint, duration)', () => {
+      const node = new MockSprite();
+      expect(node.tint).toBe(0xffffff); // Sanity check.
+
+      node.run(Action.tintTo(0x000000, 1.0));
+
+      simulateTime(0.5);
+      expect(node.tint).toBe(0x7f7f7f);
+
+      simulateTime(0.5);
+      expect(node.tint).toBe(0x000000);
+    });
+
+    it('correctly blends tint', () => {
+      const node = new MockSprite();
+      expect(node.tint).toBe(0xffffff); // Sanity check.
+
+      node.run(Action.tintTo(0xff0000, 1.0));
+      simulateTime(0.5);
+      expect(node.tint).toBe(0xff7f7f);
+      simulateTime(0.5);
+      expect(node.tint).toBe(0xff0000);
+
+      node.run(Action.tintTo(0x00ff00, 1.0));
+      simulateTime(1.0);
+      expect(node.tint).toBe(0x00ff00);
+
+      node.run(Action.tintTo(0x0000ff, 1.0));
+      simulateTime(1.0);
+      expect(node.tint).toBe(0x0000ff);
+    });
+  });
+
   describe('scaleTo()', () => {
     it('can be initialized with (x, y, duration)', () => {
       const node = new Container();

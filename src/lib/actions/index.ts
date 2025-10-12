@@ -9,4 +9,5 @@ export * from './scale/index';
 export * from './skew/index';
 export * from './speed/index';
 export * from './sprite/index';
+export * from './tint/index';
 export * from './transparency/index';

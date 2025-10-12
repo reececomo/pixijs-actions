@@ -5,7 +5,7 @@ export class DelayAction extends Action {
     super(duration);
   }
 
-  public _onTickerTick(): void {
+  public _onTickerUpdate(): void {
   }
 
   public reversed(): Action {

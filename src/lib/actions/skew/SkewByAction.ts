@@ -20,8 +20,8 @@ export class SkewByAction extends Action {
     return new SkewByAction(-this.dx, -this.dy, this.duration)._apply(this);
   }
 
-  public _onTickerTick(
-    { skew }: TargetNode,
+  public _onTickerUpdate(
+    { skew }: Target,
     t: number,
     dt: number,
   ): void {

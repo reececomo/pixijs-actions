@@ -17,11 +17,11 @@ export class MockTexture implements TextureLike {
 }
 
 /**
- * A fake "Sprite" like that has "width", "height" and
- * "texture" properties.
+ * A mock Sprite-like container.
  */
 export class MockSprite extends Container {
   public texture: MockTexture;
+  public tint = 0xffffff;
 
   public constructor(texture?: TextureLike) {
     texture ??= new MockTexture({ width: 100, height: 100});

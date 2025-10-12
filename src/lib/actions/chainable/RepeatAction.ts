@@ -26,8 +26,8 @@ export class RepeatAction extends Action {
     return new RepeatAction(action, this.count)._apply(this);
   }
 
-  public _onTickerInit(
-    target: TargetNode,
+  public _onTickerAdded(
+    target: Target,
     ticker: IActionTicker<RepeatTickerData>
   ): RepeatTickerData {
     const childTicker = new ActionTicker(target, this.action);
@@ -41,8 +41,8 @@ export class RepeatAction extends Action {
     };
   }
 
-  public _onTickerTick(
-    target: TargetNode,
+  public _onTickerUpdate(
+    target: Target,
     t: number,
     dt: number,
     ticker: IActionTicker<RepeatTickerData>,
@@ -73,7 +73,7 @@ export class RepeatAction extends Action {
     ticker.data.i = 0;
   }
 
-  public _onTickerRemoved(target: TargetNode, ticker: IActionTicker<RepeatTickerData>): void {
+  public _onTickerRemoved(target: Target, ticker: IActionTicker<RepeatTickerData>): void {
     if (!ticker.data) return;
     ticker.data.childTicker.destroy();
   }

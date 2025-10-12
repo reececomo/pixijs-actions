@@ -19,7 +19,7 @@ export class MoveByAction extends Action {
     return new MoveByAction(-this.x, -this.y, this.duration)._apply(this);
   }
 
-  public _onTickerTick(target: TargetNode, t: number, dt: number): void {
+  public _onTickerUpdate(target: Target, t: number, dt: number): void {
     target.position.x += this.x * dt;
     target.position.y += this.y * dt;
   }

@@ -20,12 +20,12 @@ export class SkewToAction extends Action {
     return new SkewToAction(this.x1, this.y1, this.duration)._apply(this);
   }
 
-  public _onTickerInit({ skew }: TargetNode): any {
+  public _onTickerAdded({ skew }: Target): any {
     return { x0: skew._x, y0: skew._y };
   }
 
-  public _onTickerTick(
-    { skew }: TargetNode,
+  public _onTickerUpdate(
+    { skew }: Target,
     t: number,
     _: number,
     { data }: IActionTicker

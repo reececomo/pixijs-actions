@@ -12,7 +12,7 @@ export class RepeatForeverAction extends Action {
 
   public constructor(action: Action) {
     if (action.scaledDuration <= 0) {
-      throw new TypeError('The action to be repeated must have a non-instantaneous duration.');
+      throw new RangeError('The action to be repeated must have a non-instantaneous duration.');
     }
 
     super(action.scaledDuration, true);
@@ -25,8 +25,8 @@ export class RepeatForeverAction extends Action {
     return new RepeatForeverAction(reversedAction)._apply(this);
   }
 
-  public _onTickerInit(
-    target: TargetNode,
+  public _onTickerAdded(
+    target: Target,
     ticker: IActionTicker<RepeatForeverTickerData>
   ): RepeatForeverTickerData {
     const childTicker = new ActionTicker(target, this.action);
@@ -39,8 +39,8 @@ export class RepeatForeverAction extends Action {
     return { childTicker };
   }
 
-  public _onTickerTick(
-    target: TargetNode,
+  public _onTickerUpdate(
+    target: Target,
     t: number,
     dt: number,
     ticker: IActionTicker<RepeatForeverTickerData>,
@@ -62,7 +62,7 @@ export class RepeatForeverAction extends Action {
     ticker.data.childTicker.reset();
   }
 
-  public _onTickerRemoved(target: TargetNode, ticker: IActionTicker<RepeatForeverTickerData>): void {
+  public _onTickerRemoved(target: Target, ticker: IActionTicker<RepeatForeverTickerData>): void {
     if (!ticker.data) return;
     ticker.data.childTicker.destroy();
   }

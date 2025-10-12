@@ -20,12 +20,12 @@ export class ScaleToAction extends Action {
     return new ScaleToAction(this.x1, this.y1, this.duration)._apply(this);
   }
 
-  public _onTickerInit({ scale }: TargetNode): any {
+  public _onTickerAdded({ scale }: Target): any {
     return { x0: scale._x, y0: scale._y };
   }
 
-  public _onTickerTick(
-    { scale }: TargetNode,
+  public _onTickerUpdate(
+    { scale }: Target,
     t: number,
     _: number,
     { data }: IActionTicker

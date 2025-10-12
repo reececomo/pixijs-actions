@@ -1,4 +1,3 @@
-import { Sprite, Spritesheet, Texture } from 'pixi.js';
 import { Action } from '../../ActionClass';
 import { IActionTicker } from '../../IActionTicker';
 import { Defaults } from '../../Defaults';
@@ -9,14 +8,17 @@ export interface AnimateTextureOptions extends BaseAnimateOptions {
   /**
    * Array of textures to animate.
    */
-  frames: Texture[];
+  frames: PixiTexture[];
 }
 
 export interface AnimateSpritesheetOptions extends BaseAnimateOptions {
   /**
    * A spritesheet containing textures to animate.
    */
-  spritesheet: Spritesheet;
+  spritesheet: {
+    textures: Record<string, PixiTexture>;
+  };
+
   /**
    * Whether spritesheet frames are sorted on key.
    *
@@ -49,14 +51,18 @@ interface BaseAnimateOptions {
   restore?: boolean;
 }
 
-export class AnimateAction extends Action {
-  protected readonly frames: Texture[];
+interface AnimateTickerData {
+  restoreTexture: PixiTexture;
+}
+
+export class AnimateAction extends Action<SpriteTarget> {
+  protected readonly frames: PixiTexture[];
   protected readonly timePerFrame: number;
   protected readonly resize: boolean;
   protected readonly restore: boolean;
 
   public constructor(options: AnimateOptions) {
-    let textures: Texture[];
+    let textures: PixiTexture[];
 
     if ("frames" in options) {
       textures = options.frames;
@@ -84,29 +90,6 @@ export class AnimateAction extends Action {
     this.restore = options.restore ?? false;
   }
 
-  public _onTickerInit(target: TargetNode): any {
-    if ("texture" in target) {
-      return { restoreTexture: target.texture };
-    }
-
-    throw new TypeError('Target must be a Sprite.');
-  }
-
-  public _onTickerRemoved(target: TargetNode, ticker: IActionTicker): void {
-    if ( !ticker.data ) return;
-
-    if (this.restore) {
-      const texture: Texture = ticker.data.restoreTexture;
-
-      (target as Sprite).texture = texture;
-
-      if (this.resize) {
-        target.width = texture.width;
-        target.height = texture.height;
-      }
-    }
-  }
-
   public reversed(): Action {
     return new AnimateAction({
       frames: [ ...this.frames ].reverse(),
@@ -116,18 +99,46 @@ export class AnimateAction extends Action {
     });
   }
 
-  public _onTickerTick(target: TargetNode, t: number, _dt: number): void {
+  public _onTickerAdded(target: SpriteTarget): AnimateTickerData {
+    if (typeof target.texture === "undefined") {
+      throw new TypeError('Action target must be a Sprite.');
+    }
+
+    return {
+      restoreTexture: target.texture,
+    };
+  }
+
+  public _onTickerRemoved(
+    target: SpriteTarget,
+    ticker: IActionTicker<AnimateTickerData>
+  ): void {
+    if ( !ticker.data ) return;
+
+    if (this.restore) {
+      const texture = ticker.data.restoreTexture;
+
+      target.texture = texture;
+
+      if (this.resize) {
+        target.width = texture.width;
+        target.height = texture.height;
+      }
+    }
+  }
+
+  public _onTickerUpdate(target: SpriteTarget, t: number): void {
     const i = Math.floor(t * this.frames.length);
     const texture = this.frames[i];
 
-    if (
-      texture === undefined || (target as Sprite).texture === texture
-    ) {
+    if (texture == null) return;
+
+    if (target.texture === texture) {
       // no texture change
       return;
     }
 
-    (target as Sprite).texture = texture;
+    target.texture = texture;
 
     if (this.resize) {
       target.width = texture.width;

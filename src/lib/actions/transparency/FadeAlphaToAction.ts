@@ -16,12 +16,12 @@ export class FadeAlphaToAction extends Action {
     return new FadeAlphaToAction(this.a1, this.duration)._apply(this);
   }
 
-  public _onTickerInit({ alpha }: TargetNode): any {
+  public _onTickerAdded({ alpha }: Target): any {
     return { a0: alpha };
   }
 
-  public _onTickerTick(
-    target: TargetNode,
+  public _onTickerUpdate(
+    target: Target,
     t: number,
     dt: number,
     { data }: IActionTicker
