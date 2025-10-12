@@ -40,8 +40,7 @@ export class MockSprite extends Container {
   }
 
   public override set width(value: number) {
-    this._setWidth(value, this.texture.width);
-    this._width = value;
+    this.__setWidth(value, this.texture.width);
   }
 
   public override get height(): number {
@@ -49,20 +48,19 @@ export class MockSprite extends Container {
   }
 
   public override set height(value: number) {
-    this._setHeight(value, this.texture.height);
-    this._height = value;
+    this.__setHeight(value, this.texture.height);
   }
 
   // ----- Internal methods: -----
 
-  protected _setWidth(value: number, local: number): void {
+  private __setWidth(value: number, local: number): void {
     const sign = Math.sign(this.scale.x) || 1;
     const z = local ? value / local : 1;
 
     this.scale.x = z * sign;
   }
 
-  protected _setHeight(value: number, local: number): void {
+  private __setHeight(value: number, local: number): void {
     const sign = Math.sign(this.scale.y) || 1;
     const z = local ? value / local : 1;
 
