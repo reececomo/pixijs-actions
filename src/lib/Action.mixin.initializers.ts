@@ -22,6 +22,8 @@ import {
   ScaleByAction,
   ScaleToAction,
   ScaleToSizeAction,
+  SkewByAction,
+  SkewToAction,
   SequenceAction,
   SetVisibleAction,
   SpeedByAction,
@@ -261,7 +263,7 @@ declare module './ActionClass' {
      * This action is reversible.
      */
     function scaleBy(scale: number, duration: TimeInterval): Action;
-    function scaleBy(size: VectorLike, duration: TimeInterval): Action;
+    function scaleBy(vector: VectorLike, duration: TimeInterval): Action;
     function scaleBy(dx: number, dy: number, duration: TimeInterval): Action;
 
     /**
@@ -283,9 +285,10 @@ declare module './ActionClass' {
      *
      * This action is not reversible; the reverse of this action is the same action.
      */
+    function scaleTo(x: number, y: number, duration: TimeInterval): Action;
     function scaleTo(scale: number, duration: TimeInterval): Action;
     function scaleTo(size: SizeLike, duration: TimeInterval): Action;
-    function scaleTo(x: number, y: number, duration: TimeInterval): Action;
+    function scaleTo(vector: VectorLike, duration: TimeInterval): Action;
 
     /**
      * Creates an action that changes the y scale values of a node.
@@ -300,6 +303,66 @@ declare module './ActionClass' {
      * This action is not reversible; the reverse of this action is the same action.
      */
     function scaleToY(y: number, duration: TimeInterval): Action;
+
+    /**
+     * Creates an action that changes the x and y scale values of a node to achieve
+     * a target size (width, height).
+     *
+     * This action is not reversible; the reverse of this action is the same action.
+     */
+    function scaleToSize(width: number, height: number, duration: TimeInterval): Action;
+    function scaleToSize(size: number, duration: TimeInterval): Action;
+    function scaleToSize(size: SizeLike, duration: TimeInterval): Action;
+
+    //
+    // ----------------- Skew Actions: -----------------
+    //
+
+    /**
+     * Creates an action that changes the skew of a node by a relative value.
+     *
+     * This action is reversible.
+     */
+    function skewBy(skew: number, duration: TimeInterval): Action;
+    function skewBy(vector: VectorLike, duration: TimeInterval): Action;
+    function skewBy(dx: number, dy: number, duration: TimeInterval): Action;
+
+    /**
+     * Creates an action that changes the x skew of a node by a relative value.
+     *
+     * This action is reversible.
+     */
+    function skewByX(x: number, duration: TimeInterval): Action;
+
+    /**
+     * Creates an action that changes the y skew of a node by a relative value.
+     *
+     * This action is reversible.
+     */
+    function skewByY(y: number, duration: TimeInterval): Action;
+
+    /**
+     * Creates an action that changes the x and y skew values of a node.
+     *
+     * This action is not reversible; the reverse of this action is the same action.
+     */
+    function skewTo(skew: number, duration: TimeInterval): Action;
+    function skewTo(vector: VectorLike, duration: TimeInterval): Action;
+    function skewTo(x: number, y: number, duration: TimeInterval): Action;
+
+    /**
+     * Creates an action that changes the y skew values of a node.
+     *
+     * This action is not reversible; the reverse of this action is the same action.
+     */
+    function skewToX(x: number, duration: TimeInterval): Action;
+
+    /**
+     * Creates an action that changes the x skew values of a node.
+     *
+     * This action is not reversible; the reverse of this action is the same action.
+     */
+    function skewToY(y: number, duration: TimeInterval): Action;
 
     //
     // ----------------- Transparency Actions: -----------------
@@ -573,11 +636,21 @@ Action.scaleByY = function(y: number, duration: TimeInterval): Action {
   return Action.scaleBy(1, y, duration);
 };
 
-Action.scaleTo = function(a: number | SizeLike, b: number | TimeInterval, c?: TimeInterval): Action {
+Action.scaleTo = function(a: number | SizeLike | VectorLike, b: number | TimeInterval, c?: TimeInterval): Action {
   return typeof a === 'number'
     ? c == null
       ? new ScaleToAction(a, a, b)
       : new ScaleToAction(a, b, c)
+    : 'width' in a
+      ? new ScaleToSizeAction(a.width, a.height, b)
+      : new ScaleToAction(a.x, a.y, b);
+};
+
+Action.scaleToSize = function(a: number | SizeLike, b: number | TimeInterval, c?: TimeInterval): Action {
+  return typeof a === 'number'
+    ? c == null
+      ? new ScaleToSizeAction(a, a, b)
+      : new ScaleToSizeAction(a, b, c)
     : new ScaleToSizeAction(a.width, a.height, b);
 };
 
@@ -587,6 +660,38 @@ Action.scaleToX = function(x: number, duration: TimeInterval): Action {
 
 Action.scaleToY = function(y: number, duration: TimeInterval): Action {
   return new ScaleToAction(null, y, duration);
+};
+
+Action.skewBy = function(a: number | VectorLike, b: number | TimeInterval, c?: TimeInterval): Action {
+  return typeof a === 'number'
+    ? c == null
+      ? new SkewByAction(a, a, b)
+      : new SkewByAction(a, b, c)
+    : new SkewByAction(a.x, a.y, b);
+};
+
+Action.skewByX = function(x: number, duration: TimeInterval): Action {
+  return Action.skewBy(x, 1, duration);
+};
+
+Action.skewByY = function(y: number, duration: TimeInterval): Action {
+  return Action.skewBy(1, y, duration);
+};
+
+Action.skewTo = function(a: number | VectorLike, b: number | TimeInterval, c?: TimeInterval): Action {
+  return typeof a === 'number'
+    ? c == null
+      ? new SkewToAction(a, a, b)
+      : new SkewToAction(a, b, c)
+    : new SkewToAction(a.x, a.y, b);
+};
+
+Action.skewToX = function(x: number, duration: TimeInterval): Action {
+  return new SkewToAction(x, null, duration);
+};
+
+Action.skewToY = function(y: number, duration: TimeInterval): Action {
+  return new SkewToAction(null, y, duration);
 };
 
 Action.fadeIn = function(duration: TimeInterval): Action {
