@@ -291,7 +291,7 @@ declare module './ActionClass' {
     /**
      * Creates an action that changes the x and y scale values of a node.
      *
-     * Note: Action target must have 'width' and 'height'.
+     * Note: Action target must have width and height.
      *
      * This action is not reversible; the reverse of this action is the same action.
      */
@@ -316,7 +316,7 @@ declare module './ActionClass' {
      * Creates an action that changes the x and y scale values of a node to achieve
      * a target size (width, height).
      *
-     * Note: Action target must have 'width' and 'height'.
+     * Note: Action target must have width and height.
      *
      * This action is not reversible; the reverse of this action is the same action.
      */
@@ -412,6 +412,8 @@ declare module './ActionClass' {
 
     /**
      * Creates an action that changes the tint value of the node.
+     *
+     * Note: Action target must have tint.
      *
      * This action is not reversible; the reverse of this action is the same action.
      */

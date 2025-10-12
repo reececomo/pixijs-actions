@@ -162,20 +162,21 @@ Most actions implement specific predefined animations that are ready to use. If 
 | `Action.rotateByDegrees(delta, duration)` | Rotate a node by a relative value (in degrees). | Yes |
 | `Action.rotateTo(radians, duration)` | Rotate a node to a specified value (in radians). |  _†Identical_ |
 | `Action.rotateToDegrees(degrees, duration)` | Rotate a node to a specified value (in degrees). | _†Identical_ |
-|***Animating the Scaling of a Node***|||
+|***Animating the Scale of a Node***|||
 | `Action.scaleBy(vector, duration)` | Scale a node by a relative vector `{ x, y }` (e.g. `PIXI.Point`). | Yes |
 | `Action.scaleBy(scale, duration)` | Scale a node by a relative value. | Yes |
 | `Action.scaleBy(dx, dy, duration)` | Scale a node in each axis by relative values. | Yes |
 | `Action.scaleByX(dx, duration)` | Scale a node horizontally by a relative value. | Yes |
 | `Action.scaleByY(dy, duration)` | Scale a node vertically by a relative value. | Yes |
-| `Action.scaleTo(vector, duration)` | Scale a node to a vector `{ x, y }` (e.g. `PIXI.Point`). | _†Identical_ |
-| `Action.scaleTo(scale, duration)` | Scale a node to a specified value. |  _†Identical_ |
 | `Action.scaleTo(x, y, duration)` | Scale a node in each axis to specified values. |  _†Identical_ |
+| `Action.scaleTo(scale, duration)` | Scale a node to a specified value. |  _†Identical_ |
+| `Action.scaleTo(vector, duration)` | Scale a node to achieve a specified size `{ width, height }` (e.g. `PIXI.Container`). | _†Identical_ |
+| `Action.scaleTo(vector, duration)` | Scale a node to a vector `{ x, y }` (e.g. `PIXI.Point`). | _†Identical_ |
 | `Action.scaleToX(x, duration)` | Scale a node horizontally to a specified value. |  _†Identical_ |
 | `Action.scaleToY(y, duration)` | Scale a node vertically to a specified value. |  _†Identical_ |
 | `Action.scaleToSize(size, duration)` | Scale a node to achieve a specified size `{ width, height }` (e.g. `PIXI.ISize`, `PIXI.Container`). | _†Identical_ |
 | `Action.scaleToSize(width, height, duration)` | Scale a node to achieve a specified size (width and height). | _†Identical_ |
-|***Animating the Skewing of a Node***|||
+|***Animating the Skew of a Node***|||
 | `Action.skewBy(vector, duration)` | Skew a node by a relative vector `{ x, y }` (e.g. `PIXI.Point`). | Yes |
 | `Action.skewBy(scale, duration)` | Skew a node by a relative value. | Yes |
 | `Action.skewBy(dx, dy, duration)` | Skew a node in each axis by relative values. | Yes |
@@ -191,6 +192,8 @@ Most actions implement specific predefined animations that are ready to use. If 
 | `Action.fadeOut(duration)` | Fade the alpha to `0.0`. | Yes |
 | `Action.fadeAlphaBy(delta, duration)` | Fade the alpha by a relative value. | Yes |
 | `Action.fadeAlphaTo(alpha, duration)` | Fade the alpha to a specified value. | _†Identical_ |
+|***Animating the Tint of a Node***|||
+| `Action.tintTo(duration)` | Tint a node to a specified color. | _†Identical_ |
 |***Animating a Sprite by Changing its Texture***|||
 | `Action.animate({ frames, timePerFrame?, resize?, restore? })` | Animate a sprite by changing its texture. See options. | Yes |
 | `Action.animate({ spritesheet, timePerFrame?, resize?, restore?, sortKeys? })` | Animate a sprite by changing its texture an entire spritesheet as frames. See options. | Yes |

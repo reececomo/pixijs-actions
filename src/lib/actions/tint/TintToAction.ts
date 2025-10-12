@@ -6,18 +6,13 @@ type TintableTarget = Target & { tint: HexColor; };
 
 interface TintData {
   start: HexColor;
-  end: HexColor;
 }
 
 export class TintToAction extends Action<TintableTarget, TintData> {
   protected readonly color: HexColor;
 
-  public constructor(
-    color: HexColor,
-    duration: TimeInterval,
-  ) {
+  public constructor(color: HexColor, duration: TimeInterval) {
     super(duration);
-
     this.color = color;
   }
 
@@ -30,10 +25,7 @@ export class TintToAction extends Action<TintableTarget, TintData> {
       throw new TypeError("Action target must have a 'tint'.");
     }
 
-    return {
-      start: target.tint,
-      end: this.color,
-    };
+    return { start: target.tint };
   }
 
   public _onTickerUpdate(
@@ -42,7 +34,7 @@ export class TintToAction extends Action<TintableTarget, TintData> {
     _: number,
     { data }: IActionTicker<TintData>
   ): void {
-    target.tint = blend(data.start, data.end, t);
+    target.tint = blend(data.start, this.color, t);
   }
 }
 
