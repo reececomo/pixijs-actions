@@ -5,7 +5,7 @@ import { IActionTicker } from '../../IActionTicker';
 type SizedTarget = Target & ISize;
 type Data = ISize;
 
-export class ScaleToSizeAction extends Action<SizedTarget, Data> {
+export class ScaleToSizeAction extends Action {
   protected readonly width: number;
   protected readonly height: number;
 

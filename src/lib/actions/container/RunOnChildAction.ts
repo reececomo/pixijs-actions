@@ -10,7 +10,7 @@ interface CompatibilityTarget
   getChildByLabel?: (label: string) => Target | undefined; // PIXI 8+
 }
 
-export class RunOnChildAction extends Action<Target> {
+export class RunOnChildAction extends Action {
   protected readonly action: Action;
   protected readonly label: string;
 

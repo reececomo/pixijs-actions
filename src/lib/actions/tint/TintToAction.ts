@@ -8,7 +8,7 @@ interface TintData {
   start: HexColor;
 }
 
-export class TintToAction extends Action<TintableTarget, TintData> {
+export class TintToAction extends Action {
   protected readonly color: HexColor;
 
   public constructor(color: HexColor, duration: TimeInterval) {

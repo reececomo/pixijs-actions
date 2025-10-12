@@ -1,9 +1,5 @@
 import { Timing, type TimingFunction, type TimingKey } from './Timing';
 import { Defaults } from './Defaults';
-import { IActionTicker } from './IActionTicker';
-
-
-type UnknownTarget = Target;
 
 /**
  * Create, configure, and run actions in PixiJS.
@@ -14,10 +10,7 @@ type UnknownTarget = Target;
  * @example
  * Ticker.shared.add( Action.tick )
  */
-export abstract class Action<
-  TargetType = Target,
-  TickerData = any
-> {
+export abstract class Action {
 
   //
   // ----------------- Global Defaults: -----------------
@@ -237,67 +230,6 @@ export abstract class Action<
   public easeInOut(): this {
     return this.setTiming(Defaults.timingEaseInOut);
   }
-
-  //
-  // ----------------- Action Ticker Methods: -----------------
-  //
-
-  /**
-   * @internal
-   *
-   * An action ticker started running.
-   *
-   * @param target The affected node.
-   * @param t Ticker runner.
-   *
-   * @throws TypeError - If target is not correct type.
-   */
-  public _onTickerAdded(
-    target: UnknownTarget,
-    ticker: IActionTicker<TickerData>,
-  ): any {
-    return undefined;
-  }
-
-  /**
-   * @internal
-   *
-   * An action ticker updated.
-   *
-   * @param target The affected node.
-   * @param t Progress of the action (0, 1). Values may under/overshoot if timingMode allows.
-   * @param dt Change in `t`. Use for relative actions.
-   * @param ticker The action ticker running this update.
-   * @param deltaTime The amount of scaled time elapsed in this tick.
-   *
-   * @throws Error - any runtime error.
-   */
-  public _onTickerUpdate(
-    target: TargetType,
-    t: number,
-    dt: number,
-    ticker: IActionTicker<TickerData>,
-    deltaTime: number,
-  ): void {}
-
-  /**
-   * @internal
-   *
-   * An action ticker was removed.
-   */
-  public _onTickerRemoved(
-    target: TargetType,
-    ticker: IActionTicker<TickerData>
-  ): void {}
-
-  /**
-   * @internal
-   *
-   * An action ticker was reset.
-   */
-  public _onTickerDidReset(
-    ticker: IActionTicker<TickerData>
-  ): void {}
 
   //
   // ----------------- Abstract Methods: -----------------

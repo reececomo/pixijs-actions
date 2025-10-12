@@ -55,7 +55,7 @@ interface AnimateTickerData {
   restoreTexture: PixiTexture;
 }
 
-export class AnimateAction extends Action<SpriteTarget> {
+export class AnimateAction extends Action {
   protected readonly frames: PixiTexture[];
   protected readonly timePerFrame: number;
   protected readonly resize: boolean;

@@ -1,5 +1,4 @@
 import { Action } from '../../ActionClass';
-import { IActionTicker } from '../../IActionTicker';
 
 export class SkewByAction extends Action {
   protected readonly dx: number;
