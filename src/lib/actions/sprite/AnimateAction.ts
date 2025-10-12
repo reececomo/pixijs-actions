@@ -51,9 +51,9 @@ export class AnimateAction extends Action {
    */
   public static fromSpritesheet(
     spritesheet: PixiSpritesheet,
-    options?: AnimateOptions & { sortKey?: boolean },
+    options?: AnimateSpritesheetOptions,
   ): Action {
-    const textures = (options.sortKey === false)
+    const textures = options?.sortKeys === false
       ? Object.values(spritesheet.textures)
       : Object.keys(spritesheet.textures).sort().map((key) => spritesheet.textures[key]);
 
