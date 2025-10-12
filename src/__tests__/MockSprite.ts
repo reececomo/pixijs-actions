@@ -21,7 +21,7 @@ export class MockTexture implements TextureLike {
  */
 export class MockSprite extends Container {
   public texture: MockTexture;
-  public tint = 0xffffff;
+  private __tint = 0xffffff;
 
   public constructor(texture?: TextureLike) {
     texture ??= new MockTexture({ width: 100, height: 100});
@@ -34,6 +34,14 @@ export class MockSprite extends Container {
   }
 
   // ----- Methods: -----
+
+  public get tint(): number {
+    return this.__tint;
+  }
+
+  public set tint(value: number) {
+    this.__tint = value;
+  }
 
   public override get width(): number {
     return Math.abs(this.scale.x) * this.texture.width;
