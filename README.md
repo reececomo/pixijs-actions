@@ -57,7 +57,7 @@ Ticker.shared.add(Action.tick);
 > _If not using PixiJS ticker, put `Action.tick(deltaMs)` in your `requestAnimationFrame()` loop._
 
 > [!TIP]
-> **PixiJS v7/6 Ticker?** _Use:_ `Ticker.shared.add(dt => Action.tick(dt))`
+> **PixiJS v7/6 Ticker?** _Use:_ `Ticker.shared.add(() => Action.tick(Ticker.shared.deltaMS))`
 
 **3.** Done!
 
