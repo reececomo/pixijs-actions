@@ -206,8 +206,8 @@ Most actions implement specific predefined animations that are ready to use. If 
 |***Running Actions on Children***|||
 | `Action.runOnChild(childLabel, action)` | Add an action to a child node. | Yes |
 |***Delaying Actions***|||
-| `Action.waitForDuration(duration)` | Idle for a specified period of time. | _†Identical_ |
-| `Action.waitForDurationWithRange(duration, range)` | Idle for a randomized period of time. | _†Identical_ |
+| `Action.waitForDuration(duration, thenRunAction?)` | Idle for a specified period of time. | _†Identical_ |
+| `Action.waitForDurationWithRange(duration, range, thenRunAction?)` | Idle for a randomized period of time. | _†Identical_ |
 |***Triggers and Custom Actions***|||
 | `Action.run(callback)` | Execute a custom function. | _†Identical_ |
 | `Action.custom(duration, callback)` | Execute a custom stepping function over the action duration. | _†Identical_ |

@@ -99,7 +99,7 @@ declare module './ActionClass' {
      *
      * This action is not reversible; the reverse of this action is the same action.
      */
-    function waitForDuration(duration: TimeInterval): Action;
+    function waitForDuration(duration: TimeInterval, thenRun?: Action): Action;
 
     /**
      * Creates an action that idles for a randomized period of time.
@@ -112,7 +112,7 @@ declare module './ActionClass' {
      *
      * This action is not reversible; the reverse of this action is the same action.
      */
-    function waitForDurationWithRange(average: TimeInterval, rangeSize: TimeInterval): Action;
+    function waitForDurationWithRange(average: TimeInterval, rangeSize: TimeInterval, thenRun?: Action): Action;
 
     //
     // ----------------- Linear Path Actions: -----------------
@@ -574,12 +574,15 @@ Action.repeatForever = function(action: Action): Action {
   return new RepeatForeverAction(action);
 };
 
-Action.waitForDuration = function(duration: TimeInterval): Action {
-  return new DelayAction(duration);
+Action.waitForDuration = function(duration: TimeInterval, action?: Action): Action {
+  return action
+    ? Action.sequence([ new DelayAction(duration), action ])
+    : new DelayAction(duration);
 };
 
-Action.waitForDurationWithRange = function(average: TimeInterval, rangeSize: TimeInterval): Action {
-  return new DelayAction(average + (rangeSize * Math.random() - rangeSize * 0.5));
+Action.waitForDurationWithRange = function(average: TimeInterval, rangeSize: TimeInterval, action?: Action): Action {
+  const duration = average + (rangeSize * Math.random() - rangeSize * 0.5);
+  return Action.waitForDuration(duration, action);
 };
 
 Action.moveBy = function(a: number | VectorLike, b: number | TimeInterval, c?: TimeInterval): Action {

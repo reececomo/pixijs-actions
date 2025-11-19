@@ -448,7 +448,7 @@ export namespace Action {
 	 *
 	 * This action is not reversible; the reverse of this action is the same action.
 	 */
-	function waitForDuration(duration: TimeInterval): Action;
+	function waitForDuration(duration: TimeInterval, thenRun?: Action): Action;
 	/**
 	 * Creates an action that idles for a randomized period of time.
 	 * The resulting action will wait for averageDuration ± (rangeSize / 2).
@@ -460,7 +460,7 @@ export namespace Action {
 	 *
 	 * This action is not reversible; the reverse of this action is the same action.
 	 */
-	function waitForDurationWithRange(average: TimeInterval, rangeSize: TimeInterval): Action;
+	function waitForDurationWithRange(average: TimeInterval, rangeSize: TimeInterval, thenRun?: Action): Action;
 	/**
 	 * Creates an action that moves a node relative to its current position.
 	 *
