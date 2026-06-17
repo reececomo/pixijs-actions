@@ -79,6 +79,7 @@ Containers are extended with the following properties and methods:
 | `runAsPromise(action): Promise<void>` | Run an action as a promise. |
 | `hasActions(): boolean` | Whether the container is executing actions. |
 | `action(forKey): Action \| undefined` | Return an action associated with a specified key. |
+| `seekAction(forKey, time): boolean` | Seek a keyed action to a time in seconds. |
 | `removeAction(forKey): void` | Remove an action associated with a specified key. |
 | `removeAllActions(): void` | End and removes all actions from the container. |
 
@@ -96,6 +97,9 @@ mySprite.runWithKey("mySpin", spinForever);
 
 // Replace an existing action
 mySprite.runWithKey("mySpin", spinForever.reverse());
+
+// Seek an action to a time in seconds
+mySprite.seekAction("mySpin", 0.5);
 
 // Remove an action entirely
 mySprite.removeAction("mySpin");
