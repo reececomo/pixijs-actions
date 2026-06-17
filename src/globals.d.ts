@@ -100,6 +100,13 @@ declare module 'pixi.js' {
     action(forKey: string): Action | undefined;
 
     /**
+     * Seeks an action associated with a specific key to a time in seconds.
+     *
+     * Returns false when no keyed action exists or the time is greater than the action duration.
+     */
+    seekAction(forKey: string, time: TimeInterval): boolean;
+
+    /**
      * Returns a boolean value that indicates whether the node is executing actions.
      */
     hasActions(): boolean;

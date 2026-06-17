@@ -13,6 +13,7 @@ export interface IActionTicker<TickerData = any>
 
   // ----- Methods: -----
   tick(deltaTime: number): number;
+  seek(time: number): boolean;
   reset(): void;
   destroy(): void;
 }

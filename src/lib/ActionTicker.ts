@@ -111,6 +111,21 @@ export class ActionTicker {
     return this.tickers.get(target)?.get(key)?.action;
   }
 
+  /** Seek an action with a key on a specific target to a time in seconds. */
+  public static seekTargetActionForKey(target: Target, key: string, time: number): boolean {
+    const actionTicker = this.tickers.get(target)?.get(key);
+
+    if (!actionTicker || !actionTicker.seek(time)) {
+      return false;
+    }
+
+    if (actionTicker.isDone) {
+      ActionTicker._removeActionTicker(actionTicker);
+    }
+
+    return true;
+  }
+
   /** Remove an action with a key from a specific target. */
   public static removeTargetActionForKey(target: Target, key: string): void {
     const actionTicker = this.tickers.get(target)?.get(key);
@@ -342,6 +357,30 @@ export class ActionTicker {
     }
 
     return Math.max(this._elapsed - duration, 0);
+  }
+
+  /**
+   * Seek this run to a specific elapsed time.
+   *
+   * @param time Absolute elapsed time in seconds from this action's start.
+   * @returns Whether the seek was applied.
+   */
+  public seek(time: number): boolean {
+    if (time < 0) {
+      throw new RangeError('Action seek time must be 0 or more.');
+    }
+    if (time > this.duration) {
+      return false;
+    }
+    if (time < this._elapsed) {
+      this.reset();
+    }
+    const deltaTime: number = time - this._elapsed;
+    if (deltaTime === 0) {
+      return true;
+    }
+    this.tick(deltaTime / this.speed);
+    return true;
   }
 
   /**
