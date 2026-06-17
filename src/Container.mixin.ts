@@ -41,6 +41,10 @@ export function registerPixiJSActionsMixin(containerType: any): void {
     return ActionTicker.getTargetActionForKey(this, forKey);
   };
 
+  prototype.seekAction = function (this: PIXI.Container, forKey: string, time: TimeInterval): boolean {
+    return ActionTicker.seekTargetActionForKey(this, forKey, time);
+  };
+
   prototype.hasActions = function (this: PIXI.Container): boolean {
     return ActionTicker.hasTargetActions(this);
   };
