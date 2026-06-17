@@ -76,6 +76,141 @@ describe('keyed actions', () => {
 
     node.removeAllActions();
   });
+
+  it('seek next time', ()=> {
+    const action = Action.sequence([
+      Action.fadeOut(3)
+    ]);
+    const myNode = new Container();
+
+    myNode.runWithKey('test', action);
+    expect(myNode.alpha).toBeCloseTo(1);
+
+    myNode.seekAction('test',0.30);
+
+    expect(myNode.hasActions()).toBe(true);
+    expect(myNode.alpha).toBeCloseTo(0.90);
+
+    myNode.seekAction('test', 1.5);
+
+    expect(myNode.alpha).toBeCloseTo(0.5);
+  });
+
+  it('seek sequence action previous time', ()=> {
+    const action = Action.sequence([
+      Action.fadeOut(3)
+    ]);
+    const node = new Container();
+
+    node.runWithKey('test', action);
+    expect(node.hasActions()).toBe(true);
+    expect(node.alpha).toBeCloseTo(1);
+
+    simulateTime(1.5);
+
+    node.seekAction('test', 0.30);
+
+    expect(node.alpha).toBeCloseTo(0.45);
+  });
+
+  it('The state should be limited to the final value if the seek exceeds the maximum duration.', () => {
+    const myAction = Action.sequence([Action.fadeOut(2)]);
+    const myNode = new Container();
+
+    myNode.runWithKey('test', myAction);
+    simulateTime(2);
+
+    myNode.seekAction('test', 5.0);
+    expect(myNode.alpha).toBeCloseTo(0);
+  });
+
+  it('The state should be limited to the initial value if the seek receives a negative time.', () => {
+    const action = Action.sequence([Action.fadeOut(3)]);
+    const node = new Container();
+
+    node.runWithKey('test', action);
+    simulateTime(1.5);
+    expect(node.alpha).toBeCloseTo(0.5);
+
+    node.seekAction('test', 0.0);
+
+    expect(node.alpha).toBeCloseTo(0.5);
+  });
+
+  it('seeks keyed sequence actions to a time', () => {
+    const action = Action.sequence([
+      Action.moveByX(10, 5.0),
+      Action.moveByY(10, 5.0),
+    ]);
+
+    const node = new Container();
+    node.runWithKey(action, 'myKey');
+
+    expect(node.seekAction('myKey', 7.0)).toBe(true);
+    expect(node.x).toBeCloseTo(10.0);
+    expect(node.y).toBeCloseTo(4.0);
+    expect(node.hasActions()).toBe(true);
+
+    expect(node.seekAction('myKey', 11.0)).toBe(false);
+    expect(node.x).toBeCloseTo(10.0);
+    expect(node.y).toBeCloseTo(4.0);
+    expect(node.hasActions()).toBe(true);
+
+    node.removeAllActions();
+  });
+
+  it('seeks keyed group actions to a time', () => {
+    const action = Action.group([
+      Action.moveByX(10, 10.0),
+      Action.moveByY(10, 5.0),
+    ]);
+
+    const node = new Container();
+    node.runWithKey(action, 'myKey');
+
+    expect(node.seekAction('myKey', 7.0)).toBe(true);
+    expect(node.x).toBeCloseTo(7.0);
+    expect(node.y).toBeCloseTo(10.0);
+    expect(node.hasActions()).toBe(true);
+
+    expect(node.seekAction('myKey', 11.0)).toBe(false);
+    expect(node.x).toBeCloseTo(7.0);
+    expect(node.y).toBeCloseTo(10.0);
+    expect(node.hasActions()).toBe(true);
+
+    node.removeAllActions();
+  });
+
+  it('It should reflect the current behavior of FadeAlphaToAction when fetching forward and backward.', () => {
+    const action = Action.sequence([
+      Action.fadeIn(2),
+      Action.fadeOut(2),
+    ]);
+    const node = new Container();
+    node.alpha = 0;
+
+    node.runWithKey('complexTest', action);
+    expect(node.alpha).toBeCloseTo(0);
+
+    node.seekAction('complexTest', 1);
+    expect(node.alpha).toBeCloseTo(0.5);
+
+    node.seekAction('complexTest', 2);
+    expect(node.alpha).toBeCloseTo(1);
+
+    node.seekAction('complexTest', 3);
+    expect(node.alpha).toBeCloseTo(0.5);
+
+    node.seekAction('complexTest', 2);
+    expect(node.alpha).toBeCloseTo(1);
+
+    node.seekAction('complexTest', 1);
+    expect(node.alpha).toBeCloseTo(1);
+
+    node.seekAction('complexTest', 0);
+    expect(node.alpha).toBeCloseTo(1);
+  });
+
 });
 
 describe('Action Chaining', () => {
