@@ -276,6 +276,112 @@ export declare abstract class Action {
 	 */
 	abstract reversed(): Action;
 }
+/**
+ * An internal utility class that runs (or "ticks") stateless
+ * actions for the duration of their lifespan.
+ */
+export declare class ActionTicker {
+	/**
+	 * All currently executing actions.
+	 */
+	private static tickers;
+	/**
+	 * Tick all actions forward.
+	 *
+	 * @param value Ticker instance or delta time given in milliseconds.
+	 * @param onErrorHandler Error handler for individual action errors.
+	 */
+	static tickAll(value: number | TickerLike, onErrorHandler?: (error: any) => void): void;
+	/** Adds an action to the list of actions executed by the node. */
+	static runAction(target: Target, action: Action, key?: string): void;
+	/** Whether a target has any actions. */
+	static hasTargetActions(target: Target): boolean;
+	/** Retrieve an action with a key from a specific target. */
+	static getTargetActionForKey(target: Target, key: string): Action | undefined;
+	/** Remove an action with a key from a specific target. */
+	static removeTargetActionForKey(target: Target, key: string): void;
+	/** Remove all actions for a specific target. */
+	static removeAllTargetActions(target: Target): void;
+	/** Remove all actions for every target. */
+	static removeAll(): void;
+	/**
+	 * Remove an action ticker for a target.
+	 *
+	 * This cleans up any references to target too.
+	 */
+	protected static _removeActionTicker(ticker: ActionTicker, propagate?: boolean): void;
+	/**
+	 * Unique key when running action on a target.
+	 *
+	 * Cancels existing actions.
+	 */
+	key?: string;
+	/**
+	 * The container receiving the action.
+	 */
+	target: Target;
+	/**
+	 * The action to apply.
+	 */
+	action: Action;
+	/**
+	 * Relative speed of the action ticker.
+	 *
+	 * Copy-on-run: Copies the action's `speed` when the action is run.
+	 */
+	speed: number;
+	/**
+	 * Relative speed of the action ticker.
+	 *
+	 * Copy-on-run: Copies the action's `timing` when the action is run.
+	 */
+	timing: TimingFunction;
+	/**
+	 * Expected duration of the action ticker.
+	 *
+	 * Copy-on-run: Copies the action's scaled duration when the action is run.
+	 */
+	duration: number;
+	/**
+	 * Any instance data that will live for the duration of the ticker.
+	 *
+	 * @see {Action._onTickerSetup()}
+	 */
+	data: any;
+	/**
+	 * Whether the action has completed.
+	 *
+	 * Used by chainable actions.
+	 */
+	isDone: boolean;
+	/**
+	 * Whether the action ticker has initialized.
+	 *
+	 * Triggered on the first iteration to copy-on-run the attributes
+	 * from the action to the ticker.
+	 */
+	protected _init: boolean;
+	/**
+	 * Time elapsed in the action.
+	 */
+	protected _elapsed: number;
+	constructor(target: Target, action: Action, key?: string);
+	/**
+	 * @param deltaTime Maximum amount of time to increment forward.
+	 * @returns Any unused time delta. Negative value means action is still in progress.
+	 */
+	tick(deltaTime: number): number;
+	/**
+	 * Reset the ticker for this run.
+	 *
+	 * Used by chainable actions to reset their child action's tickers.
+	 */
+	reset(): void;
+	/**
+	 * Destroy ticker and clean up references.
+	 */
+	destroy(): void;
+}
 /** @deprecated Use `Action.defaults` instead. */
 export declare const ActionSettings: {
 	animateTimePerFrame: number;
