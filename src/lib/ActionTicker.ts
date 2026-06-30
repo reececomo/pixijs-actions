@@ -22,7 +22,7 @@ export class ActionTicker {
   /**
    * All currently executing actions.
    */
-  private static tickers = new Map<Target, TickerMap>(); // TODO: weakmap
+  protected static tickers = new Map<Target, TickerMap>(); // TODO: weakmap
 
   //
   // ----- Global ticker: -----
