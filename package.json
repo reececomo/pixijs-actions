@@ -24,7 +24,9 @@
     "build": "npm run build:rollup && npm run build:rm-dts && npm run build:dts-gen && npm run build:export-globals",
     "coverage": "jest --no-cache --runInBand --collectCoverage",
     "lint": "eslint src --ext .ts",
-    "test": "jest --no-cache"
+    "lint:fix": "eslint src --ext .ts --fix",
+    "test": "jest --no-cache",
+    "prepublishOnly": "npm run lint:fix && npm run build && npm run test"
   },
   "peerDependencies": {
     "pixi.js": "^6.3.0 || ^7.0.0 || ^8.0.0"
