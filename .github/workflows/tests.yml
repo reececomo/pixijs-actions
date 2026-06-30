@@ -3,14 +3,8 @@ name: "tests"
 on:
   push:
     branches: ["main"]
-    paths:
-      - "**/*.js"
-      - "**/*.ts"
   pull_request:
     branches: ["*"]
-    paths:
-      - "**/*.js"
-      - "**/*.ts"
 
 jobs:
   tests:
