@@ -39,6 +39,11 @@ export class SequenceAction extends Action {
     ticker: IActionTicker<SequenceTickerData>,
     deltaTime: number,
   ): void {
+    if (deltaTime < 0) {
+      this._tickBackward(ticker, deltaTime);
+      return;
+    }
+
     let remainingDeltaTime = deltaTime;
     let allDone = true;
 
@@ -57,6 +62,29 @@ export class SequenceAction extends Action {
     }
 
     if (allDone) ticker.isDone = true;
+  }
+
+  protected _tickBackward(
+    ticker: IActionTicker<SequenceTickerData>,
+    deltaTime: number,
+  ): void {
+    let remainingDeltaTime = deltaTime;
+
+    for (const childTicker of [...ticker.data.childTickers].reverse()) {
+      if (childTicker.elapsed <= 0 && !childTicker.isDone) continue;
+
+      const elapsed = childTicker.elapsed;
+      childTicker.tick(remainingDeltaTime);
+
+      const remainingElapsed = elapsed + remainingDeltaTime * childTicker.speed;
+      if (remainingElapsed >= 0) {
+        break;
+      }
+
+      remainingDeltaTime = remainingElapsed / childTicker.speed;
+    }
+
+    ticker.isDone = false;
   }
 
   public _onTickerDidReset(ticker: IActionTicker<SequenceTickerData>): SequenceTickerData {

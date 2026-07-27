@@ -72,15 +72,16 @@ Containers are extended with the following properties and methods:
 | `speed` | A speed modifier applied to all actions executed by the container and its children. Defaults to `1.0`. |
 | `isPaused` | A boolean value that determines whether actions on the container and its children are processed. Defaults to `false`. |
 
-| Method | Description |
-| :----- | :------ |
-| `run(action)` | Run an action. |
-| `runWithKey(key, action)` | Run an identifiable, replacing any actions with the same key. |
+| Method                                | Description |
+|:--------------------------------------| :------ |
+| `run(action)`                         | Run an action. |
+| `runWithKey(key, action)`             | Run an identifiable, replacing any actions with the same key. |
 | `runAsPromise(action): Promise<void>` | Run an action as a promise. |
-| `hasActions(): boolean` | Whether the container is executing actions. |
+| `hasActions(): boolean`               | Whether the container is executing actions. |
 | `action(forKey): Action \| undefined` | Return an action associated with a specified key. |
-| `removeAction(forKey): void` | Remove an action associated with a specified key. |
-| `removeAllActions(): void` | End and removes all actions from the container. |
+| `seekWithKey(forKey, time): void`     | Seek a keyed action to a time in seconds. |
+| `removeAction(forKey): void`          | Remove an action associated with a specified key. |
+| `removeAllActions(): void`            | End and removes all actions from the container. |
 
 ### Running identifiable actions
 
@@ -96,6 +97,9 @@ mySprite.runWithKey("mySpin", spinForever);
 
 // Replace an existing action
 mySprite.runWithKey("mySpin", spinForever.reverse());
+
+// Seek an action to a time in seconds
+mySprite.seekWithKey("mySpin", 0.5);
 
 // Remove an action entirely
 mySprite.removeAction("mySpin");

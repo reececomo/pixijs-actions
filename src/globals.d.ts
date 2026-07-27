@@ -113,6 +113,11 @@ declare module 'pixi.js' {
      * Removes an action associated with a specific key.
      */
     removeAction(forKey: string): void;
+
+    /**
+     * Seeks an action associated with a specific key to a time in seconds.
+     */
+    seekWithKey(forKey: string, time: number):void;
   }
 
 }

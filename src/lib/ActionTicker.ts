@@ -1,9 +1,8 @@
-import { Action } from "./ActionClass";
-import { TimingFunction } from "./Timing";
+import {Action} from "./ActionClass";
+import {TimingFunction} from "./Timing";
 
 
-export interface TickerLike
-{
+export interface TickerLike {
   /**
    * Scalar time elapsed in milliseconds from last frame to this frame.
    */
@@ -85,6 +84,48 @@ export class ActionTicker {
     }
   }
 
+  /**
+   *
+   * @param time
+   */
+  public seek(time: number): void {
+    const action = this.action;
+    const target = this.target;
+
+    if (!this._init) {
+      this.speed = action.speed;
+      this.timing = action.timing;
+      this.duration = action.scaledDuration;
+      this.data = action._onTickerAdded(target, this);
+      this._init = true;
+    }
+
+    if (target.destroyed) {
+      this.isDone = true;
+      ActionTicker.removeAllTargetActions(target);
+      return;
+    }
+
+    const duration = this.duration;
+    const timingFn = this.timing;
+
+    const elapsed0 = this._elapsed;
+    const t0 = duration === 0 ? 1 : Math.max(0, Math.min(elapsed0 / duration, 1));
+    const tScaled0 = timingFn(t0);
+
+    this._elapsed = Math.max(0, Math.min(time, duration));
+
+    const t1 = duration === 0 ? 1 : this._elapsed / duration;
+    const tScaled1 = timingFn(t1);
+
+    const tDelta = tScaled1 - tScaled0;
+    const simulatedDeltaTime = this._elapsed - elapsed0;
+
+    action._onTickerUpdate(this.target, tScaled1, tDelta, this, simulatedDeltaTime);
+
+    this.isDone = !action.hasChildren && t1 >= EPSILON_1;
+  }
+
   //
   // ----- Ticker Management: -----
   //
@@ -133,6 +174,23 @@ export class ActionTicker {
   public static removeAll(): void {
     for (const target of this.tickers.keys()) {
       this.removeAllTargetActions(target);
+    }
+  }
+
+  public static seekTargetActionForKey(target: Target, key: string, time: number): void {
+    const actionTicker = this.tickers.get(target)?.get(key);
+    if (actionTicker) {
+      actionTicker.seek(time);
+    }
+  }
+
+  public static seekAllActionsForTarget(target: Target, percent: number): void {
+    const actionTickers = this.tickers.get(target);
+    if (!actionTickers) return;
+
+    for (const actionTicker of actionTickers.values()) {
+      const targetTime = actionTicker.duration * Math.max(0, Math.min(percent, 1));
+      actionTicker.seek(targetTime);
     }
   }
 
@@ -323,17 +381,18 @@ export class ActionTicker {
 
     // after
     const elapsed1 = elapsed0 + scaledDeltaTime;
+    const boundedElapsed1 = Math.max(Math.min(elapsed1, duration), 0);
     const t1 = Math.max(Math.min(elapsed1 / duration, 1), 0);
     const tScaled1 = timingFn(t1);
     const tDelta = tScaled1 - tScaled0;
 
     // apply
-    this._elapsed = elapsed1;
+    this._elapsed = boundedElapsed1;
     action._onTickerUpdate(this.target, tScaled1, tDelta, this, scaledDeltaTime);
 
     // queue completed actions to auto remove
-    if (!action.hasChildren && t1 >= EPSILON_1) {
-      this.isDone = true;
+    if (!action.hasChildren) {
+      this.isDone = t1 >= EPSILON_1;
     }
 
     // relinquish no time if still in progress left in this action
@@ -341,7 +400,7 @@ export class ActionTicker {
       return -1;
     }
 
-    return Math.max(this._elapsed - duration, 0);
+    return Math.max((elapsed1 - duration) / this.speed, 0);
   }
 
   /**
