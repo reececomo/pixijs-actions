@@ -1175,7 +1175,7 @@ describe('Action seek', () => {
     ]);
     const myNode = new Container();
 
-    myNode.runWithKey('test', myAction);
+    myNode.runWithKey('myKey', myAction);
     expect(myNode.alpha).toBeCloseTo(1);
 
     simulateTime(0.30);
@@ -1183,7 +1183,7 @@ describe('Action seek', () => {
     expect(myNode.hasActions()).toBe(true);
     expect(myNode.alpha).toBeCloseTo(0.90);
 
-    myNode.seekWithKey('test', 1.5);
+    myNode.seekWithKey('myKey', 1.5);
 
     expect(myNode.alpha).toBeCloseTo(0.5);
   });
@@ -1194,7 +1194,7 @@ describe('Action seek', () => {
     ]);
     const myNode = new Container();
 
-    myNode.runWithKey('test', myAction);
+    myNode.runWithKey('myKey', myAction);
     expect(myNode.alpha).toBeCloseTo(1);
 
     simulateTime(1.5);
@@ -1202,69 +1202,123 @@ describe('Action seek', () => {
     expect(myNode.hasActions()).toBe(true);
     expect(myNode.alpha).toBeCloseTo(0.50);
 
-    myNode.seekWithKey('test', 0.30);
+    myNode.seekWithKey('myKey', 0.30);
 
     expect(myNode.alpha).toBeCloseTo(0.90);
   });
 
-  it('deve limitar o estado no valor final caso o seek passe da duração máxima', () => {
+  it('should cap the state at the final value if the seek goes beyond the maximum duration.', () => {
     const myAction = Action.sequence([Action.fadeOut(2)]);
     const myNode = new Container();
 
-    myNode.runWithKey('test', myAction);
+    myNode.runWithKey('myKey', myAction);
     simulateTime(2);
 
-    myNode.seekWithKey('test', 5.0);
+    myNode.seekWithKey('myKey', 5.0);
     expect(myNode.alpha).toBeCloseTo(0);
   });
 
-  it('deve limitar o estado no valor inicial caso o seek receba um tempo negativo', () => {
+  it('should cap the state at the initial value if the seek receives a negative time.', () => {
     const myAction = Action.sequence([Action.fadeOut(3)]);
     const myNode = new Container();
 
-    myNode.runWithKey('test', myAction);
+    myNode.runWithKey('myKey', myAction);
     simulateTime(1.5);
     expect(myNode.alpha).toBeCloseTo(0.5);
 
-    myNode.seekWithKey('test', -2.0);
+    myNode.seekWithKey('myKey', -2.0);
 
     expect(myNode.alpha).toBeCloseTo(1);
   });
 
-  it('deve resolver o estado visual corretamente ao navegar por uma sequência de múltiplas ações', () => {
-    // Sequência de 4 segundos no total:
-    // Passo 1: fadeIn(2s)  -> vai de alpha 0 a 1
-    // Passo 2: fadeOut(2s) -> vai de alpha 1 a 0
-    const myAction = Action.sequence([
+  it('should correctly resolve a sequence when navigating forward.', () => {
+    const action = Action.sequence([
       Action.fadeIn(2),
       Action.fadeOut(2),
     ]);
-    const myNode = new Container();
-    myNode.alpha = 0;
 
-    myNode.runWithKey('complexTest', myAction);
-    expect(myNode.alpha).toBeCloseTo(0);
+    const node = new Container();
+    node.alpha = 0;
 
-    // myNode.seekWithKey('complexTest', 1);
-    simulateTime(1);
-    expect(myNode.alpha).toBeCloseTo(0.5);
+    node.runWithKey('sequence', action);
 
-    // simulateTime(2);
-    // // myNode.seekWithKey('complexTest', 2);
-    // expect(myNode.alpha).toBeCloseTo(0);
+    const cases = [
+      [0.0, 0.00],
+      [0.5, 0.25],
+      [1.0, 0.50],
+      [1.5, 0.75],
+      [2.0, 1.00],
+      [2.5, 0.75],
+      [3.0, 0.50],
+      [3.5, 0.25],
+      [4.0, 0.00],
+    ] as const;
 
-    simulateTime(3);
-    // myNode.seekWithKey('complexTest', 3);
-    expect(myNode.alpha).toBeCloseTo(0);
+    for (const [time, expected] of cases) {
+      node.seekWithKey('sequence', time);
+      expect(node.alpha).toBeCloseTo(expected);
+    }
+  });
 
-    simulateTime(4);
-    // myNode.seekWithKey('complexTest', 2);
-    expect(myNode.alpha).toBeCloseTo(0);
+  it('should correctly solve a sequence when navigating backwards.', () => {
+    const action = Action.sequence([
+      Action.fadeIn(2),
+      Action.fadeOut(2),
+    ]);
 
-    // myNode.seekWithKey('complexTest', 1);
-    // expect(myNode.alpha).toBeCloseTo(0.5);
+    const node = new Container();
+    node.alpha = 0;
 
-    // myNode.seekWithKey('complexTest', 0);
-    // expect(myNode.alpha).toBeCloseTo(0);
+    node.runWithKey('sequence', action);
+    node.seekWithKey('sequence', 4);
+
+    const cases = [
+      [4.0, 0.00],
+      [3.5, 0.25],
+      [3.0, 0.50],
+      [2.5, 0.75],
+      [2.0, 1.00],
+      [1.5, 0.75],
+      [1.0, 0.50],
+      [0.5, 0.25],
+      [0.0, 0.00],
+    ] as const;
+
+    for (const [time, expected] of cases) {
+      node.seekWithKey('sequence', time);
+      expect(node.alpha).toBeCloseTo(expected);
+    }
+  });
+
+  it('should resolve the same state regardless of the seek order.', () => {
+    const action = Action.sequence([
+      Action.fadeIn(2),
+      Action.fadeOut(2),
+    ]);
+
+    const node = new Container();
+    node.alpha = 0;
+
+    node.runWithKey('sequence', action);
+
+    const cases = [
+      [3.0, 0.50],
+      [1.0, 0.50],
+      [4.0, 0.00],
+      [2.5, 0.75],
+      [0.0, 0.00],
+      [3.5, 0.25],
+      [2.0, 1.00],
+      [1.5, 0.75],
+      [0.5, 0.25],
+      [4.0, 0.00],
+      [2.5, 0.75],
+      [1.0, 0.50],
+    ] as const;
+
+    for (const [time, expected] of cases) {
+      node.seekWithKey('sequence', time);
+      expect(node.alpha).toBeCloseTo(expected);
+    }
   });
 });
