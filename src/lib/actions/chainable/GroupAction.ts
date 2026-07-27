@@ -38,7 +38,7 @@ export class GroupAction extends Action {
     let allDone = true;
 
     for (const childTicker of ticker.data.childTickers) {
-      if (childTicker.isDone) continue;
+      if (deltaTime >= 0 && childTicker.isDone) continue;
 
       childTicker.tick(deltaTime);
 

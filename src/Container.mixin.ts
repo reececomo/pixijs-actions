@@ -37,6 +37,10 @@ export function registerPixiJSActionsMixin(containerType: any): void {
     return new Promise((resolve) => this.run(action, () => resolve()));
   };
 
+  prototype.seekWithKey = function (this: PIXI.Container, forKey: string, t: TimeInterval): void {
+    return ActionTicker.seekTargetActionForKey(this, forKey, t);
+  };
+
   prototype.action = function (this: PIXI.Container, forKey: string): Action | undefined {
     return ActionTicker.getTargetActionForKey(this, forKey);
   };

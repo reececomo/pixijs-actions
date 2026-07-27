@@ -6,6 +6,7 @@ export interface IActionTicker<TickerData = any>
   readonly timing: TimingFunction;
   readonly duration: number;
   readonly speed: number;
+  readonly elapsed: number;
 
   // ----- State: -----
   isDone: boolean;
@@ -13,6 +14,7 @@ export interface IActionTicker<TickerData = any>
 
   // ----- Methods: -----
   tick(deltaTime: number): number;
+  seek(deltaTime: number): void;
   reset(): void;
   destroy(): void;
 }

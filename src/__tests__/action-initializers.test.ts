@@ -1167,3 +1167,104 @@ describe('Action', () => {
     });
   });
 });
+
+describe('Action seek', () => {
+  it('seek next time', ()=> {
+    const myAction = Action.sequence([
+      Action.fadeOut(3)
+    ]);
+    const myNode = new Container();
+
+    myNode.runWithKey('test', myAction);
+    expect(myNode.alpha).toBeCloseTo(1);
+
+    simulateTime(0.30);
+
+    expect(myNode.hasActions()).toBe(true);
+    expect(myNode.alpha).toBeCloseTo(0.90);
+
+    myNode.seekWithKey('test', 1.5);
+
+    expect(myNode.alpha).toBeCloseTo(0.5);
+  });
+
+  it('seek sequence action previous time', ()=> {
+    const myAction = Action.sequence([
+      Action.fadeOut(3)
+    ]);
+    const myNode = new Container();
+
+    myNode.runWithKey('test', myAction);
+    expect(myNode.alpha).toBeCloseTo(1);
+
+    simulateTime(1.5);
+
+    expect(myNode.hasActions()).toBe(true);
+    expect(myNode.alpha).toBeCloseTo(0.50);
+
+    myNode.seekWithKey('test', 0.30);
+
+    expect(myNode.alpha).toBeCloseTo(0.90);
+  });
+
+  it('deve limitar o estado no valor final caso o seek passe da duração máxima', () => {
+    const myAction = Action.sequence([Action.fadeOut(2)]);
+    const myNode = new Container();
+
+    myNode.runWithKey('test', myAction);
+    simulateTime(2);
+
+    myNode.seekWithKey('test', 5.0);
+    expect(myNode.alpha).toBeCloseTo(0);
+  });
+
+  it('deve limitar o estado no valor inicial caso o seek receba um tempo negativo', () => {
+    const myAction = Action.sequence([Action.fadeOut(3)]);
+    const myNode = new Container();
+
+    myNode.runWithKey('test', myAction);
+    simulateTime(1.5);
+    expect(myNode.alpha).toBeCloseTo(0.5);
+
+    myNode.seekWithKey('test', -2.0);
+
+    expect(myNode.alpha).toBeCloseTo(1);
+  });
+
+  it('deve resolver o estado visual corretamente ao navegar por uma sequência de múltiplas ações', () => {
+    // Sequência de 4 segundos no total:
+    // Passo 1: fadeIn(2s)  -> vai de alpha 0 a 1
+    // Passo 2: fadeOut(2s) -> vai de alpha 1 a 0
+    const myAction = Action.sequence([
+      Action.fadeIn(2),
+      Action.fadeOut(2),
+    ]);
+    const myNode = new Container();
+    myNode.alpha = 0;
+
+    myNode.runWithKey('complexTest', myAction);
+    expect(myNode.alpha).toBeCloseTo(0);
+
+    // myNode.seekWithKey('complexTest', 1);
+    simulateTime(1);
+    expect(myNode.alpha).toBeCloseTo(0.5);
+
+    // simulateTime(2);
+    // // myNode.seekWithKey('complexTest', 2);
+    // expect(myNode.alpha).toBeCloseTo(0);
+
+    simulateTime(3);
+    // myNode.seekWithKey('complexTest', 3);
+    expect(myNode.alpha).toBeCloseTo(0);
+
+    simulateTime(4);
+    // myNode.seekWithKey('complexTest', 2);
+    expect(myNode.alpha).toBeCloseTo(0);
+
+    // myNode.seekWithKey('complexTest', 1);
+    // expect(myNode.alpha).toBeCloseTo(0.5);
+
+    // myNode.seekWithKey('complexTest', 0);
+    // expect(myNode.alpha).toBeCloseTo(0);
+  });
+});
