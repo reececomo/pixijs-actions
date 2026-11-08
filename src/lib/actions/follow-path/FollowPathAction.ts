@@ -85,11 +85,16 @@ export class FollowPathAction extends Action {
     )._apply(this);
   }
 
-  public _onTickerAdded(target: any): any {
-    return {
-      x: this.asOffset ? target.x : 0,
-      y: this.asOffset ? target.y : 0,
-    };
+  public _onTickerAdded(target: any, { data }: IActionTicker): any {
+    const x = this.asOffset ? target.x : 0;
+    const y = this.asOffset ? target.y : 0;
+
+    if (data === undefined) return { x, y };
+
+    data.x = x;
+    data.y = y;
+
+    return data;
   }
 
   public _onTickerUpdate(target: any, t: number, dt: number, ticker: IActionTicker): void {

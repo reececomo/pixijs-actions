@@ -17,8 +17,12 @@ export class RotateToAction extends Action {
     return new RotateToAction(this.r1, this.duration)._apply(this);
   }
 
-  public _onTickerAdded({ rotation }: Target): any {
-    return { r0: rotation };
+  public _onTickerAdded({ rotation }: Target, { data }: IActionTicker): any {
+    if (data === undefined) return { r0: rotation };
+
+    data.r0 = rotation;
+
+    return data;
   }
 
   public _onTickerUpdate(

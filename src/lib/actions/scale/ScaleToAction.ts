@@ -20,8 +20,13 @@ export class ScaleToAction extends Action {
     return new ScaleToAction(this.x1, this.y1, this.duration)._apply(this);
   }
 
-  public _onTickerAdded({ scale }: Target): any {
-    return { x0: scale._x, y0: scale._y };
+  public _onTickerAdded({ scale }: Target, { data }: IActionTicker): any {
+    if (data === undefined) return { x0: scale._x, y0: scale._y };
+
+    data.x0 = scale._x;
+    data.y0 = scale._y;
+
+    return data;
   }
 
   public _onTickerUpdate(

@@ -39,10 +39,12 @@ export class SequenceAction extends Action {
     ticker: IActionTicker<SequenceTickerData>,
     deltaTime: number,
   ): void {
+    const childTickers = ticker.data.childTickers;
     let remainingDeltaTime = deltaTime;
     let allDone = true;
 
-    for (const childTicker of ticker.data.childTickers) {
+    for (let i = 0; i < childTickers.length; i++) {
+      const childTicker = childTickers[i];
       if (childTicker.isDone) continue;
 
       remainingDeltaTime = childTicker.tick(remainingDeltaTime);
@@ -61,12 +63,14 @@ export class SequenceAction extends Action {
 
   public _onTickerDidReset(ticker: IActionTicker<SequenceTickerData>): SequenceTickerData {
     if (!ticker.data) return;
-    ticker.data.childTickers.forEach((ticker) => ticker.reset());
+    const childTickers = ticker.data.childTickers;
+    for (let i = 0; i < childTickers.length; i++) childTickers[i].reset();
   }
 
   public _onTickerRemoved(target: Target, ticker: IActionTicker<SequenceTickerData>): void {
     if (!ticker.data) return;
-    ticker.data.childTickers.forEach((ticker) => ticker.reset());
+    const childTickers = ticker.data.childTickers;
+    for (let i = 0; i < childTickers.length; i++) childTickers[i].reset();
   }
 
   // ----- Implementation: -----

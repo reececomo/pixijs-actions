@@ -10,7 +10,17 @@ export interface TickerLike
   deltaMS: number;
 }
 
-type TickerMap = Map<string | ActionTicker, ActionTicker>;
+class TickerMap extends Map<string | ActionTicker, ActionTicker> {
+  public readonly target: Target;
+  public readonly list: (ActionTicker | undefined)[] = [];
+  public index = -1;
+  public holes = 0;
+
+  public constructor(target: Target) {
+    super();
+    this.target = target;
+  }
+}
 
 const EPSILON_1 = 1 - 1e-15;
 
@@ -23,6 +33,10 @@ export class ActionTicker {
    * All currently executing actions.
    */
   protected static tickers = new Map<Target, TickerMap>(); // TODO: weakmap
+
+  protected static _active: (TickerMap | undefined)[] = [];
+  protected static _dirty = false;
+  protected static _depth = 0;
 
   //
   // ----- Global ticker: -----
@@ -41,46 +55,68 @@ export class ActionTicker {
     const deltaMS = typeof value === "number" ? value : value.deltaMS;
     const deltaTime = deltaMS * 0.001;
 
-    let _leaf: Target;
-    let _isPaused: boolean;
-    let _speed: number;
+    const active = ActionTicker._active;
 
-    for (const [target, tickers] of ActionTicker.tickers) {
-      // calculate global isPaused and speed
-      _leaf = target;
-      _isPaused = target.isPaused;
-      _speed = target.speed;
+    if (ActionTicker._dirty && ActionTicker._depth === 0) {
+      ActionTicker._compact();
+    }
 
-      while (!_isPaused && _leaf.parent != null) {
-        _leaf = _leaf.parent;
-        _isPaused = _leaf.isPaused;
-        _speed *= _leaf.speed;
-      }
+    ActionTicker._depth++;
 
-      if (_isPaused || _speed <= 0 || !tickers) {
-        continue;
-      }
+    try {
+      for (let i = 0; i < active.length; i++) {
+        const tickers = active[i];
+        if (tickers === undefined) continue;
 
-      for (const actionTicker of tickers.values()) {
-        try {
-          actionTicker.tick(deltaTime * _speed);
+        // calculate global isPaused and speed
+        let _leaf: Target = tickers.target;
+        let _isPaused: boolean = _leaf.isPaused;
+        let _speed: number = _leaf.speed;
 
-          if (actionTicker.isDone) {
+        while (!_isPaused && _leaf.parent != null) {
+          _leaf = _leaf.parent;
+          _isPaused = _leaf.isPaused;
+          _speed *= _leaf.speed;
+        }
+
+        if (_isPaused || _speed <= 0) {
+          continue;
+        }
+
+        const scaledDeltaTime = deltaTime * _speed;
+        const list = tickers.list;
+
+        for (let j = 0; j < list.length; j++) {
+          const actionTicker = list[j];
+          if (actionTicker === undefined) continue;
+
+          try {
+            actionTicker.tick(scaledDeltaTime);
+
+            if (actionTicker.isDone) {
+              ActionTicker._removeActionTicker(actionTicker);
+            }
+          }
+          catch (error) {
+            // Report individual action errors.
+            if (onErrorHandler === undefined) {
+              console.error('Action failed with error: ', error);
+            }
+            else {
+              onErrorHandler(error);
+            }
+
+            // Remove offending ticker.
             ActionTicker._removeActionTicker(actionTicker);
           }
         }
-        catch (error) {
-          // Report individual action errors.
-          if (onErrorHandler === undefined) {
-            console.error('Action failed with error: ', error);
-          }
-          else {
-            onErrorHandler(error);
-          }
+      }
+    }
+    finally {
+      ActionTicker._depth--;
 
-          // Remove offending ticker.
-          ActionTicker._removeActionTicker(actionTicker);
-        }
+      if (ActionTicker._dirty && ActionTicker._depth === 0) {
+        ActionTicker._compact();
       }
     }
   }
@@ -91,14 +127,28 @@ export class ActionTicker {
 
   /** Adds an action to the list of actions executed by the node. */
   public static runAction(target: Target, action: Action, key?: string): void {
-    if (!this.tickers.has(target)) {
-      this.tickers.set(target, new Map());
+    let tickers = this.tickers.get(target);
+
+    if (tickers === undefined) {
+      tickers = new TickerMap(target);
+      tickers.index = this._active.length;
+      this._active.push(tickers);
+      this.tickers.set(target, tickers);
     }
 
     const actionTicker = new ActionTicker(target, action, key);
+    const mapKey = key ?? actionTicker;
+    const existing = tickers.get(mapKey);
 
     // Replaces any existing, identical-keyed actions on insert.
-    this.tickers.get(target).set(key ?? actionTicker, actionTicker);
+    if (existing === undefined) {
+      tickers.list.push(actionTicker);
+    }
+    else {
+      tickers.list[tickers.list.indexOf(existing)] = actionTicker;
+    }
+
+    tickers.set(mapKey, actionTicker);
   }
 
   /** Whether a target has any actions. */
@@ -157,14 +207,54 @@ export class ActionTicker {
       ticker.action._onTickerRemoved?.(target, ticker);
     }
 
-    targetTickers.delete(ticker.key ?? ticker);
+    const mapKey = ticker.key ?? ticker;
+    const removed = targetTickers.get(mapKey);
+
+    if (removed !== undefined) {
+      const list = targetTickers.list;
+      list[list.indexOf(removed)] = undefined;
+      targetTickers.holes++;
+      targetTickers.delete(mapKey);
+      this._dirty = true;
+    }
 
     // if no more actions then remove target from map
     if (targetTickers.size === 0) {
       this.tickers.delete(target);
+      this._active[targetTickers.index] = undefined;
+      this._dirty = true;
     }
 
     ticker.destroy();
+  }
+
+  protected static _compact(): void {
+    const active = this._active;
+    let w = 0;
+
+    for (let r = 0; r < active.length; r++) {
+      const tickers = active[r];
+      if (tickers === undefined) continue;
+
+      if (tickers.holes > 0) {
+        const list = tickers.list;
+        let lw = 0;
+
+        for (let lr = 0; lr < list.length; lr++) {
+          const ticker = list[lr];
+          if (ticker !== undefined) list[lw++] = ticker;
+        }
+
+        list.length = lw;
+        tickers.holes = 0;
+      }
+
+      tickers.index = w;
+      active[w++] = tickers;
+    }
+
+    active.length = w;
+    this._dirty = false;
   }
 
   //

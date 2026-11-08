@@ -20,11 +20,16 @@ export class ScaleByAction extends Action {
     return new ScaleByAction(1/this.x, 1/this.y, this.duration)._apply(this);
   }
 
-  public _onTickerAdded({ scale }: Target): any {
-    return {
-      dx: scale.x * this.x - scale.x,
-      dy: scale.y * this.y - scale.y
-    };
+  public _onTickerAdded({ scale }: Target, { data }: IActionTicker): any {
+    const dx = scale.x * this.x - scale.x;
+    const dy = scale.y * this.y - scale.y;
+
+    if (data === undefined) return { dx, dy };
+
+    data.dx = dx;
+    data.dy = dy;
+
+    return data;
   }
 
   public _onTickerUpdate(

@@ -20,12 +20,16 @@ export class TintToAction extends Action {
     return new TintToAction(this.color, this.duration)._apply(this);
   }
 
-  public _onTickerAdded(target: TintableTarget): TintData {
+  public _onTickerAdded(target: TintableTarget, { data }: IActionTicker<TintData>): TintData {
     if (typeof target.tint !== "number") {
       throw new TypeError("Action target must have a 'tint'.");
     }
 
-    return { start: target.tint };
+    if (data === undefined) return { start: target.tint };
+
+    data.start = target.tint;
+
+    return data;
   }
 
   public _onTickerUpdate(
