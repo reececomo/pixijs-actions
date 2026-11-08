@@ -91,7 +91,8 @@ export class ActionTicker {
           if (actionTicker === undefined) continue;
 
           try {
-            actionTicker.tick(scaledDeltaTime);
+            actionTicker._delta = scaledDeltaTime;
+            actionTicker._step();
 
             if (actionTicker.isDone) {
               ActionTicker._removeActionTicker(actionTicker);
@@ -293,11 +294,26 @@ export class ActionTicker {
   public timing: TimingFunction;
 
   /**
-   * Expected duration of the action ticker.
+   * Expected duration of the action ticker, before speed is applied.
    *
-   * Copy-on-run: Copies the action's scaled duration when the action is run.
+   * Copy-on-run: Copies the action's duration when the action is run.
    */
   public duration: number;
+
+  /** @internal */
+  public t: number = 0;
+
+  /** @internal */
+  public dt: number = 0;
+
+  /** @internal */
+  public deltaTime: number = 0;
+
+  /** @internal */
+  public _delta: number = 0;
+
+  /** @internal */
+  public _remaining: number = 0;
 
   /**
    * Any instance data that will live for the duration of the ticker.
@@ -330,6 +346,8 @@ export class ActionTicker {
    */
   protected _elapsed: number = 0;
 
+  protected _tScaled: number = 0;
+
   //
   // ----- Constructor: -----
   //
@@ -343,7 +361,7 @@ export class ActionTicker {
     this.target = target;
     this.action = action;
     this.speed = action.speed;
-    this.duration = action.scaledDuration;
+    this.duration = action.duration;
     this.timing = action.timing;
   }
 
@@ -356,14 +374,24 @@ export class ActionTicker {
    * @returns Any unused time delta. Negative value means action is still in progress.
    */
   public tick(deltaTime: number): number {
+    this._delta = deltaTime;
+    this._step();
+
+    return this._remaining;
+  }
+
+  /** @internal */
+  public _step(): void {
     const action = this.action;
     const target = this.target;
+    const deltaTime = this._delta;
 
     if (!this._init) {
       // Copy-on-run attributes:
       this.speed = action.speed;
       this.timing = action.timing;
-      this.duration = action.scaledDuration;
+      this.duration = action.duration;
+      this._tScaled = this.timing(0);
 
       // Perform first time setup:
       try {
@@ -383,55 +411,55 @@ export class ActionTicker {
     // If target no longer valid, we garbage collect its runners.
     if (target.destroyed || target == null) {
       this.isDone = true;
+      this._remaining = -1;
 
       ActionTicker.removeAllTargetActions(target);
 
       return;
     }
 
-    const scaledDeltaTime = deltaTime * this.speed;
+    const speed = this.speed;
+    const scaledDeltaTime = deltaTime * speed;
     const duration = this.duration;
 
     // Instantaneous actions:
     if (duration === 0) {
       this._elapsed = 1;
-      action._onTickerUpdate(this.target, 1, 1, this, scaledDeltaTime);
+      this.t = 1;
+      this.dt = 1;
+      this.deltaTime = scaledDeltaTime;
+      action._onTickerUpdate(target, this);
 
       // remove ticker on next tick
       this.isDone = true;
 
       // relinquish full time
-      return deltaTime;
+      this._remaining = deltaTime;
+
+      return;
     }
 
-    const timingFn = this.timing;
-
-    // before
-    const elapsed0 = this._elapsed;
-    const t0 = Math.max(Math.min(elapsed0 / duration, 1), 0);
-    const tScaled0 = timingFn(t0);
-
-    // after
-    const elapsed1 = elapsed0 + scaledDeltaTime;
-    const t1 = Math.max(Math.min(elapsed1 / duration, 1), 0);
-    const tScaled1 = timingFn(t1);
-    const tDelta = tScaled1 - tScaled0;
+    const elapsed = this._elapsed + scaledDeltaTime;
+    const t = Math.max(Math.min(elapsed / duration, 1), 0);
+    const tScaled = this.timing(t);
 
     // apply
-    this._elapsed = elapsed1;
-    action._onTickerUpdate(this.target, tScaled1, tDelta, this, scaledDeltaTime);
+    this._elapsed = elapsed;
+    this.t = tScaled;
+    this.dt = tScaled - this._tScaled;
+    this.deltaTime = scaledDeltaTime;
+    this._tScaled = tScaled;
+    action._onTickerUpdate(target, this);
 
     // queue completed actions to auto remove
-    if (!action.hasChildren && t1 >= EPSILON_1) {
+    if (!action.hasChildren && t >= EPSILON_1) {
       this.isDone = true;
     }
 
     // relinquish no time if still in progress left in this action
-    if (!this.isDone) {
-      return -1;
-    }
-
-    return Math.max(this._elapsed - duration, 0);
+    this._remaining = this.isDone
+      ? Math.max(this._elapsed - duration, 0) / speed
+      : -1;
   }
 
   /**
@@ -445,6 +473,9 @@ export class ActionTicker {
     if (!action.hasChildren) {
       // allow non-chainable actions to re-initialize
       this._init = false;
+    }
+    else {
+      this._tScaled = this.timing(0);
     }
 
     this._elapsed = 0;

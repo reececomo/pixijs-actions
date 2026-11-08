@@ -24,12 +24,7 @@ export class FadeAlphaToAction extends Action {
     return data;
   }
 
-  public _onTickerUpdate(
-    target: Target,
-    t: number,
-    dt: number,
-    { data }: IActionTicker
-  ): void {
+  public _onTickerUpdate(target: Target, { data, t }: IActionTicker): void {
     target.alpha = data.a0 + (this.a1 - data.a0) * t;
   }
 }

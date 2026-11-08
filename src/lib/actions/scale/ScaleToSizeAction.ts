@@ -42,12 +42,7 @@ export class ScaleToSizeAction extends Action {
     return data;
   }
 
-  public _onTickerUpdate(
-    target: SizedTarget,
-    t: number,
-    dt: number,
-    { data }: IActionTicker
-  ): void {
+  public _onTickerUpdate(target: SizedTarget, { data, t }: IActionTicker): void {
     target.width = data.width + (this.width - data.width) * t;
     target.height = data.height + (this.height - data.height) * t;
   }

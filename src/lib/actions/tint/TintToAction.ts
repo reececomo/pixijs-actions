@@ -32,12 +32,7 @@ export class TintToAction extends Action {
     return data;
   }
 
-  public _onTickerUpdate(
-    target: TintableTarget,
-    t: number,
-    _: number,
-    { data }: IActionTicker<TintData>
-  ): void {
+  public _onTickerUpdate(target: TintableTarget, { data, t }: IActionTicker<TintData>): void {
     target.tint = blend(data.start, this.color, t);
   }
 }

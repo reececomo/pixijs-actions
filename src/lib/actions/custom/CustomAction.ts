@@ -1,4 +1,5 @@
 import { Action } from '../../ActionClass';
+import { IActionTicker } from '../../IActionTicker';
 
 export type StepFunction = (target: Target, t: number, dt: number) => void;
 
@@ -10,7 +11,7 @@ export class CustomAction extends Action {
     this.stepFn = stepFn;
   }
 
-  public _onTickerUpdate(target: Target, t: number, dt: number): void {
+  public _onTickerUpdate(target: Target, { t, dt }: IActionTicker): void {
     this.stepFn(target, t, dt);
   }
 

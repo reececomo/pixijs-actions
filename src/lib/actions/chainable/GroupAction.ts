@@ -28,21 +28,17 @@ export class GroupAction extends Action {
     return { childTickers };
   }
 
-  public _onTickerUpdate(
-    target: Target,
-    t: number,
-    dt: number,
-    ticker: IActionTicker<GroupTickerData>,
-    deltaTime: number,
-  ): void {
+  public _onTickerUpdate(target: Target, ticker: IActionTicker<GroupTickerData>): void {
     const childTickers = ticker.data.childTickers;
+    const deltaTime = ticker.deltaTime;
     let allDone = true;
 
     for (let i = 0; i < childTickers.length; i++) {
       const childTicker = childTickers[i];
       if (childTicker.isDone) continue;
 
-      childTicker.tick(deltaTime);
+      childTicker._delta = deltaTime;
+      childTicker._step();
 
       if (!childTicker.isDone) allDone = false;
     }

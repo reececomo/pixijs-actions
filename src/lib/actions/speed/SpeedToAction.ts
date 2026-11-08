@@ -21,12 +21,7 @@ export class SpeedToAction extends Action {
     return data;
   }
 
-  public _onTickerUpdate(
-    target: Target,
-    t: number,
-    dt: number,
-    { data }: IActionTicker
-  ): void {
+  public _onTickerUpdate(target: Target, { data, t }: IActionTicker): void {
     target.speed = data.s0 + (this.s1 - data.s0) * t;
   }
 }

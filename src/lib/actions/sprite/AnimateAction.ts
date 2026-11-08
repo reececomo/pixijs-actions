@@ -119,7 +119,7 @@ export class AnimateAction extends Action {
     }
   }
 
-  public _onTickerUpdate(target: SpriteTarget, t: number): void {
+  public _onTickerUpdate(target: SpriteTarget, { t }: IActionTicker): void {
     const i = Math.floor(t * this.count);
     const texture = this.textures[i];
 

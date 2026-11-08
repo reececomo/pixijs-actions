@@ -32,22 +32,18 @@ export class SequenceAction extends Action {
     return { childTickers };
   }
 
-  public _onTickerUpdate(
-    target: Target,
-    t: number,
-    dt: number,
-    ticker: IActionTicker<SequenceTickerData>,
-    deltaTime: number,
-  ): void {
+  public _onTickerUpdate(target: Target, ticker: IActionTicker<SequenceTickerData>): void {
     const childTickers = ticker.data.childTickers;
-    let remainingDeltaTime = deltaTime;
+    let remainingDeltaTime = ticker.deltaTime;
     let allDone = true;
 
     for (let i = 0; i < childTickers.length; i++) {
       const childTicker = childTickers[i];
       if (childTicker.isDone) continue;
 
-      remainingDeltaTime = childTicker.tick(remainingDeltaTime);
+      childTicker._delta = remainingDeltaTime;
+      childTicker._step();
+      remainingDeltaTime = childTicker._remaining;
 
       if (!childTicker.isDone) allDone = false;
 

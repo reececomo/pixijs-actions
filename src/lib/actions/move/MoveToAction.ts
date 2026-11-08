@@ -29,12 +29,7 @@ export class MoveToAction extends Action {
     return data;
   }
 
-  public _onTickerUpdate(
-    { position }: Target,
-    t: number,
-    dt: number,
-    { data }: IActionTicker,
-  ): void {
+  public _onTickerUpdate({ position }: Target, { data, t }: IActionTicker): void {
     position.set(
       this.x1 == null ? position._x : data.x0 + (this.x1 - data.x0) * t,
       this.y1 == null ? position._y : data.y0 + (this.y1 - data.y0) * t

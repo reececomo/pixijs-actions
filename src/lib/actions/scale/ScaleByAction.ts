@@ -32,12 +32,7 @@ export class ScaleByAction extends Action {
     return data;
   }
 
-  public _onTickerUpdate(
-    { scale }: Target,
-    t: number,
-    dt: number,
-    { data }: IActionTicker
-  ): void {
+  public _onTickerUpdate({ scale }: Target, { data, dt }: IActionTicker): void {
     scale.set(scale._x + data.dx * dt, scale._y + data.dy * dt);
   }
 }

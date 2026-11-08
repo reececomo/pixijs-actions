@@ -1,4 +1,5 @@
 import { Action } from '../../ActionClass';
+import { IActionTicker } from '../../IActionTicker';
 
 export class SpeedByAction extends Action {
   protected readonly _speed: number;
@@ -16,7 +17,7 @@ export class SpeedByAction extends Action {
     return new SpeedByAction(-this._speed, this.duration)._apply(this);
   }
 
-  public _onTickerUpdate(target: Target, t: number, dt: number): void {
+  public _onTickerUpdate(target: Target, { dt }: IActionTicker): void {
     target.speed += this._speed * dt;
   }
 }

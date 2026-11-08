@@ -1,4 +1,5 @@
 import { Action } from '../../ActionClass';
+import { IActionTicker } from '../../IActionTicker';
 
 export class MoveByAction extends Action {
   protected readonly x: number;
@@ -19,7 +20,7 @@ export class MoveByAction extends Action {
     return new MoveByAction(-this.x, -this.y, this.duration)._apply(this);
   }
 
-  public _onTickerUpdate(target: Target, t: number, dt: number): void {
+  public _onTickerUpdate(target: Target, { dt }: IActionTicker): void {
     target.position.x += this.x * dt;
     target.position.y += this.y * dt;
   }

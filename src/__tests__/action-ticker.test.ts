@@ -275,6 +275,129 @@ describe('pause and speed', () => {
   });
 });
 
+describe('action speed', () => {
+  it('completes in its scaled duration', () => {
+    const node = new Container();
+    const action = Action.moveByX(100, 10).setSpeed(2);
+
+    expect(action.scaledDuration).toBeCloseTo(5);
+
+    node.run(action);
+    simulateTime(2.5);
+    expect(node.x).toBeCloseTo(50);
+
+    simulateTime(2.5 + 1 / 60);
+    expect(node.x).toBeCloseTo(100);
+    expect(node.hasActions()).toBe(false);
+  });
+
+  it('combines target speed with action speed', () => {
+    const node = new Container();
+    node.speed = 2;
+
+    node.run(Action.moveByX(100, 10).setSpeed(2));
+    simulateTime(1);
+
+    expect(node.x).toBeCloseTo(40);
+  });
+
+  it('applies to children of a sped-up sequence', () => {
+    const node = new Container();
+    const action = Action.sequence([
+      Action.moveByX(10, 1),
+      Action.moveByX(10, 1),
+    ]).setSpeed(2);
+
+    expect(action.scaledDuration).toBeCloseTo(1);
+
+    node.run(action);
+    simulateTime(0.5);
+    expect(node.x).toBeCloseTo(10);
+
+    simulateTime(0.5 + 1 / 60);
+    expect(node.x).toBeCloseTo(20);
+    expect(node.hasActions()).toBe(false);
+  });
+
+  it('applies to a sped-up child in a sequence', () => {
+    const node = new Container();
+    const action = Action.sequence([
+      Action.moveByX(10, 1).setSpeed(2),
+      Action.moveByY(10, 1),
+    ]);
+
+    expect(action.scaledDuration).toBeCloseTo(1.5);
+
+    node.run(action);
+    simulateTime(0.5);
+    expect(node.x).toBeCloseTo(10);
+    expect(node.y).toBeCloseTo(0);
+
+    simulateTime(0.5);
+    expect(node.y).toBeCloseTo(5);
+  });
+
+  it('applies to repeated sped-up actions', () => {
+    const node = new Container();
+    const action = Action.repeat(Action.moveByX(1, 0.1).setSpeed(2), 10);
+
+    expect(action.scaledDuration).toBeCloseTo(0.5);
+
+    node.run(action);
+    simulateTime(0.25);
+    expect(node.x).toBeCloseTo(5);
+
+    simulateTime(0.25 + 1 / 60);
+    expect(node.x).toBeCloseTo(10);
+    expect(node.hasActions()).toBe(false);
+  });
+
+  it('returns unused time in the caller\'s time scale', () => {
+    const node = new Container();
+    const ticker = new ActionTicker(node, Action.moveByX(10, 1).setSpeed(2));
+
+    expect(ticker.tick(0.25)).toBe(-1);
+    expect(ticker.tick(0.5)).toBeCloseTo(0.25);
+    expect(ticker.isDone).toBe(true);
+    expect(node.x).toBeCloseTo(10);
+  });
+});
+
+describe('update state', () => {
+  it('passes progress and its change to update hooks', () => {
+    const node = new Container();
+    const ts: number[] = [];
+    let sum = 0;
+
+    node.run(Action.custom(1, (_, t, dt) => {
+      ts.push(t);
+      sum += dt;
+    }).easeInOut());
+
+    simulateTime(1.5);
+
+    expect(ts[ts.length - 1]).toBe(1);
+    expect(sum).toBeCloseTo(1, 10);
+    expect(ts.every((t, i) => i === 0 || t >= ts[i - 1])).toBe(true);
+  });
+
+  it('starts progress from zero on every repeat cycle', () => {
+    const node = new Container();
+    const firsts: number[] = [];
+    let previous = 1;
+
+    node.run(Action.repeat(Action.custom(0.5, (_, t, dt) => {
+      if (t < previous) firsts.push(t - dt);
+      previous = t;
+    }).easeIn(), 4));
+
+    simulateTime(2.5);
+
+    expect(firsts).toHaveLength(4);
+    firsts.forEach((t0) => expect(t0).toBeCloseTo(0, 10));
+  });
+});
+
 describe('repeating actions', () => {
   it('repeat() accumulates relative actions over many cycles', () => {
     const node = new Container();

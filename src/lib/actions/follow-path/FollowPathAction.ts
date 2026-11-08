@@ -3,6 +3,8 @@ import { Action } from '../../ActionClass';
 
 const HALF_PI = Math.PI / 2;
 
+let segmentT = 0;
+
 export class FollowPathAction extends Action {
   protected readonly path: VectorLike[];
   protected readonly lastIndex: number;
@@ -97,14 +99,15 @@ export class FollowPathAction extends Action {
     return data;
   }
 
-  public _onTickerUpdate(target: any, t: number, dt: number, ticker: IActionTicker): void {
+  public _onTickerUpdate(target: any, ticker: IActionTicker): void {
     if (this.lastIndex < 0) {
       return; // Empty path.
     }
 
-    const [index, st] = this.fixedSpeed
-      ? this._getFixedSpeedProgress(t)
-      : this._getDynamicSpeedProgress(t);
+    const index = this.fixedSpeed
+      ? this._getFixedSpeedProgress(ticker.t)
+      : this._getDynamicSpeedProgress(ticker.t);
+    const st = segmentT;
 
     const startPoint = this.path[index]!;
     const endPoint = this.path[index + 1] ?? startPoint;
@@ -139,15 +142,15 @@ export class FollowPathAction extends Action {
     return [...this.path].reverse();
   }
 
-  protected _getDynamicSpeedProgress(t: number): [index: number, segmentT: number] {
+  protected _getDynamicSpeedProgress(t: number): number {
     const index = Math.max(Math.min(Math.floor(t * this.lastIndex), this.lastIndex - 1), 0);
     const lastIndexNonZero = this.lastIndex || 1;
-    const st = (t - index / lastIndexNonZero) * lastIndexNonZero;
+    segmentT = (t - index / lastIndexNonZero) * lastIndexNonZero;
 
-    return [index, st];
+    return index;
   }
 
-  protected _getFixedSpeedProgress(t: number): [index: number, segmentT: number] {
+  protected _getFixedSpeedProgress(t: number): number {
     let remainingProgress = t;
     let index = 0;
     let st = 0;
@@ -164,6 +167,8 @@ export class FollowPathAction extends Action {
       index++;
     }
 
-    return [index, st];
+    segmentT = st;
+
+    return index;
   }
 }

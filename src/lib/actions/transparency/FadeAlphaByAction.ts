@@ -1,4 +1,5 @@
 import { Action } from '../../ActionClass';
+import { IActionTicker } from '../../IActionTicker';
 
 export class FadeByAction extends Action {
   protected readonly alpha: number;
@@ -15,7 +16,7 @@ export class FadeByAction extends Action {
     return new FadeByAction(-this.alpha, this.duration)._apply(this);
   }
 
-  public _onTickerUpdate(target: Target, t: number, dt: number): void {
+  public _onTickerUpdate(target: Target, { dt }: IActionTicker): void {
     target.alpha += this.alpha * dt;
   }
 }

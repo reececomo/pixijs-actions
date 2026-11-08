@@ -29,12 +29,7 @@ export class SkewToAction extends Action {
     return data;
   }
 
-  public _onTickerUpdate(
-    { skew }: Target,
-    t: number,
-    _: number,
-    { data }: IActionTicker
-  ): void {
+  public _onTickerUpdate({ skew }: Target, { data, t }: IActionTicker): void {
     skew.set(
       this.x1 == null ? skew._x : data.x0 + (this.x1 - data.x0) * t,
       this.y1 == null ? skew._y : data.y0 + (this.y1 - data.y0) * t

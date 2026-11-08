@@ -25,12 +25,7 @@ export class RotateToAction extends Action {
     return data;
   }
 
-  public _onTickerUpdate(
-    target: Target,
-    t: number,
-    dt: number,
-    { data }: IActionTicker,
-  ): void {
+  public _onTickerUpdate(target: Target, { data, t }: IActionTicker): void {
     target.rotation = data.r0 + (this.r1 - data.r0) * t;
   }
 }
