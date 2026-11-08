@@ -24,23 +24,25 @@ export class ScaleToSizeAction extends Action {
     return new ScaleToSizeAction(this.width, this.height, this.duration)._apply(this);
   }
 
-  public _onTickerAdded(target: SizedTarget): Data {
+  public _onTickerAdded(target: SizedTarget, { data }: IActionTicker<Data>): Data {
     if (typeof target.width !== 'number' || typeof target.height !== 'number') {
       throw new TypeError("Action target must have 'width' and 'height'.");
     }
 
-    return {
-      width: target.width,
-      height: target.height,
-    };
+    if (data === undefined) {
+      return {
+        width: target.width,
+        height: target.height,
+      };
+    }
+
+    data.width = target.width;
+    data.height = target.height;
+
+    return data;
   }
 
-  public _onTickerUpdate(
-    target: SizedTarget,
-    t: number,
-    dt: number,
-    { data }: IActionTicker
-  ): void {
+  public _onTickerUpdate(target: SizedTarget, { data, t }: IActionTicker): void {
     target.width = data.width + (this.width - data.width) * t;
     target.height = data.height + (this.height - data.height) * t;
   }

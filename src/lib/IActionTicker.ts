@@ -7,9 +7,19 @@ export interface IActionTicker<TickerData = any>
   readonly duration: number;
   readonly speed: number;
 
+  // ----- Update state: -----
+  readonly t: number;
+  readonly dt: number;
+  readonly deltaTime: number;
+
   // ----- State: -----
   isDone: boolean;
   data: TickerData;
+
+  // ----- Stepping: -----
+  _delta: number;
+  readonly _remaining: number;
+  _step(): void;
 
   // ----- Methods: -----
   tick(deltaTime: number): number;

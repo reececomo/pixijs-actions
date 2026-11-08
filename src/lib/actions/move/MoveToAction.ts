@@ -20,16 +20,16 @@ export class MoveToAction extends Action {
     return new MoveToAction(this.x1, this.y1, this.duration)._apply(this);
   }
 
-  public _onTickerAdded({ position }: Target): any {
-    return { x0: position._x, y0: position._y };
+  public _onTickerAdded({ position }: Target, { data }: IActionTicker): any {
+    if (data === undefined) return { x0: position._x, y0: position._y };
+
+    data.x0 = position._x;
+    data.y0 = position._y;
+
+    return data;
   }
 
-  public _onTickerUpdate(
-    { position }: Target,
-    t: number,
-    dt: number,
-    { data }: IActionTicker,
-  ): void {
+  public _onTickerUpdate({ position }: Target, { data, t }: IActionTicker): void {
     position.set(
       this.x1 == null ? position._x : data.x0 + (this.x1 - data.x0) * t,
       this.y1 == null ? position._y : data.y0 + (this.y1 - data.y0) * t

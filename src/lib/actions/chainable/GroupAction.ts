@@ -28,19 +28,17 @@ export class GroupAction extends Action {
     return { childTickers };
   }
 
-  public _onTickerUpdate(
-    target: Target,
-    t: number,
-    dt: number,
-    ticker: IActionTicker<GroupTickerData>,
-    deltaTime: number,
-  ): void {
+  public _onTickerUpdate(target: Target, ticker: IActionTicker<GroupTickerData>): void {
+    const childTickers = ticker.data.childTickers;
+    const deltaTime = ticker.deltaTime;
     let allDone = true;
 
-    for (const childTicker of ticker.data.childTickers) {
+    for (let i = 0; i < childTickers.length; i++) {
+      const childTicker = childTickers[i];
       if (childTicker.isDone) continue;
 
-      childTicker.tick(deltaTime);
+      childTicker._delta = deltaTime;
+      childTicker._step();
 
       if (!childTicker.isDone) allDone = false;
     }
@@ -50,11 +48,13 @@ export class GroupAction extends Action {
 
   public _onTickerDidReset(ticker: IActionTicker<GroupTickerData>): GroupTickerData {
     if (!ticker.data) return;
-    ticker.data.childTickers.forEach((ticker) => ticker.reset());
+    const childTickers = ticker.data.childTickers;
+    for (let i = 0; i < childTickers.length; i++) childTickers[i].reset();
   }
 
   public _onTickerRemoved(target: Target, ticker: IActionTicker<GroupTickerData>): void {
     if (!ticker.data) return;
-    ticker.data.childTickers.forEach((ticker) => ticker.destroy());
+    const childTickers = ticker.data.childTickers;
+    for (let i = 0; i < childTickers.length; i++) childTickers[i].destroy();
   }
 }

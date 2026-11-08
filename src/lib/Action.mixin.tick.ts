@@ -61,19 +61,15 @@ declare module './ActionClass' {
      * An action ticker updated.
      *
      * @param target The affected node.
-     * @param t Progress of the action (0, 1). Values may under/overshoot if timingMode allows.
-     * @param dt Change in `t`. Use for relative actions.
-     * @param ticker The action ticker running this update.
-     * @param deltaTime The amount of scaled time elapsed in this tick.
+     * @param ticker The action ticker running this update. `ticker.t` is the progress of the
+     * action (0, 1), which may under/overshoot if timingMode allows. `ticker.dt` is the change
+     * in `t`, for relative actions. `ticker.deltaTime` is the scaled time elapsed in this tick.
      *
      * @throws Error - any runtime error.
      */
     _onTickerUpdate(
       target: any,
-      t: number,
-      dt: number,
       ticker: IActionTicker<any>,
-      deltaTime: number,
     ): void;
 
     /**

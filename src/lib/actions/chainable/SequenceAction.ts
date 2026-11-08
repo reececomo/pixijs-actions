@@ -32,20 +32,18 @@ export class SequenceAction extends Action {
     return { childTickers };
   }
 
-  public _onTickerUpdate(
-    target: Target,
-    t: number,
-    dt: number,
-    ticker: IActionTicker<SequenceTickerData>,
-    deltaTime: number,
-  ): void {
-    let remainingDeltaTime = deltaTime;
+  public _onTickerUpdate(target: Target, ticker: IActionTicker<SequenceTickerData>): void {
+    const childTickers = ticker.data.childTickers;
+    let remainingDeltaTime = ticker.deltaTime;
     let allDone = true;
 
-    for (const childTicker of ticker.data.childTickers) {
+    for (let i = 0; i < childTickers.length; i++) {
+      const childTicker = childTickers[i];
       if (childTicker.isDone) continue;
 
-      remainingDeltaTime = childTicker.tick(remainingDeltaTime);
+      childTicker._delta = remainingDeltaTime;
+      childTicker._step();
+      remainingDeltaTime = childTicker._remaining;
 
       if (!childTicker.isDone) allDone = false;
 
@@ -61,12 +59,14 @@ export class SequenceAction extends Action {
 
   public _onTickerDidReset(ticker: IActionTicker<SequenceTickerData>): SequenceTickerData {
     if (!ticker.data) return;
-    ticker.data.childTickers.forEach((ticker) => ticker.reset());
+    const childTickers = ticker.data.childTickers;
+    for (let i = 0; i < childTickers.length; i++) childTickers[i].reset();
   }
 
   public _onTickerRemoved(target: Target, ticker: IActionTicker<SequenceTickerData>): void {
     if (!ticker.data) return;
-    ticker.data.childTickers.forEach((ticker) => ticker.reset());
+    const childTickers = ticker.data.childTickers;
+    for (let i = 0; i < childTickers.length; i++) childTickers[i].reset();
   }
 
   // ----- Implementation: -----

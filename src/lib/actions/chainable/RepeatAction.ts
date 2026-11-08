@@ -41,17 +41,13 @@ export class RepeatAction extends Action {
     };
   }
 
-  public _onTickerUpdate(
-    target: Target,
-    t: number,
-    dt: number,
-    ticker: IActionTicker<RepeatTickerData>,
-    deltaTime: number
-  ): void {
+  public _onTickerUpdate(target: Target, ticker: IActionTicker<RepeatTickerData>): void {
     const childTicker = ticker.data.childTicker;
-    let remainingDeltaTime = deltaTime;
 
-    remainingDeltaTime = childTicker.tick(remainingDeltaTime);
+    childTicker._delta = ticker.deltaTime;
+    childTicker._step();
+
+    const remainingDeltaTime = childTicker._remaining;
 
     if (remainingDeltaTime > 0 || childTicker.duration === 0) {
       ticker.data.i += 1;
@@ -63,7 +59,8 @@ export class RepeatAction extends Action {
       }
 
       childTicker.reset();
-      remainingDeltaTime = childTicker.tick(remainingDeltaTime);
+      childTicker._delta = remainingDeltaTime;
+      childTicker._step();
     }
   }
 

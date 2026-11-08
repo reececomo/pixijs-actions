@@ -82,14 +82,23 @@ export class AnimateAction extends Action {
     })._apply(this);
   }
 
-  public _onTickerAdded(target: SpriteTarget): AnimateTickerData {
+  public _onTickerAdded(
+    target: SpriteTarget,
+    { data }: IActionTicker<AnimateTickerData>
+  ): AnimateTickerData {
     if (typeof target.texture === "undefined") {
       throw new TypeError('Action target must be a Sprite.');
     }
 
-    return {
-      previousTexture: target.texture,
-    };
+    if (data === undefined) {
+      return {
+        previousTexture: target.texture,
+      };
+    }
+
+    data.previousTexture = target.texture;
+
+    return data;
   }
 
   public _onTickerRemoved(
@@ -110,7 +119,7 @@ export class AnimateAction extends Action {
     }
   }
 
-  public _onTickerUpdate(target: SpriteTarget, t: number): void {
+  public _onTickerUpdate(target: SpriteTarget, { t }: IActionTicker): void {
     const i = Math.floor(t * this.count);
     const texture = this.textures[i];
 

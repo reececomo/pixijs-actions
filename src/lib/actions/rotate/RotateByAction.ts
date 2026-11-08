@@ -1,4 +1,5 @@
 import { Action } from '../../ActionClass';
+import { IActionTicker } from '../../IActionTicker';
 
 export class RotateByAction extends Action {
   protected readonly rotation: number;
@@ -16,7 +17,7 @@ export class RotateByAction extends Action {
     return new RotateByAction(-this.rotation, this.duration)._apply(this);
   }
 
-  public _onTickerUpdate(target: Target, t: number, dt: number): void {
+  public _onTickerUpdate(target: Target, { dt }: IActionTicker): void {
     target.rotation += this.rotation * dt;
   }
 }
